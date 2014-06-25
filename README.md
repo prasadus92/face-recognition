@@ -1,14 +1,22 @@
 FaceRecognition
 ===============
 
-A java application for face recognition under expressions, occlusions and pose variations.
+Brief: A java application for face recognition under expressions, occlusions and pose variations.
+
+Description:
+
+-> We have developed this prototype model with the goal of improving recognition accuracy and reliability under
+
+   uncooperative scenarios like expressions, occlusions ( obstacles like spectacles ) and pose variations ( <60deg).
+   
+-> The project is tested with Bosphorous Database ( http://bosphorus.ee.boun.edu.tr/default.aspx ).
 
 
 
 
 ********************************************Steps to execute the project:*************************************************
 
-1. Make sure that JDK is installed in the system.
+1. Make sure that JDK is installed in the system ( JDK latest version ).
 
 2. Check for NetBeans, if not installed, please install the same.
 
@@ -66,9 +74,6 @@ A java application for face recognition under expressions, occlusions and pose v
 
     
 12. Yeah!! All set! You are done and run the project.
-
-    Check by registering a new user and do well.
-
 
 
 **************************************************************************************************************************
