@@ -1,6 +1,6 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+/* Author: Prasad U S
+ * 
+ * 
  */
 package src;
 
@@ -12,10 +12,6 @@ import java.io.*;
 import java.net.URL;
 
 
-/**
- *
- * @author SILVERSTONE
- */
 public class ImageBackgroundPanel extends JPanel {
 
     BufferedImage img;
