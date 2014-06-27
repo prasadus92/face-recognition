@@ -76,4 +76,8 @@ Description:
 12. Yeah!! All set! You are done and run the project.
 
 
+
+License: See License.txt
+
+
 **************************************************************************************************************************
