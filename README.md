@@ -1,28 +1,28 @@
 FaceRecognition
 ===============
 
-Brief: A java application for face recognition under expressions, occlusions and pose variations.
+Brief: A Java application for face recognition under expressions, occlusions and pose variations.
 
 Description:
 
 -> We have developed this prototype model with the goal of improving recognition accuracy and reliability under
 
-   uncooperative scenarios like expressions, occlusions ( obstacles like spectacles ) and pose variations ( <60deg).
+   un-cooperative scenarios like expressions, occlusions (obstacles like spectacles) and pose variations (<60deg).
    
--> The project is tested with Bosphorous Database ( http://bosphorus.ee.boun.edu.tr/default.aspx ).
+-> The project is tested with Bosphorous Database (http://bosphorus.ee.boun.edu.tr/default.aspx).
 
 
 
 
 ********************************************Steps to execute the project:*************************************************
 
-1. Make sure that JDK is installed in the system ( JDK latest version ).
+1. Make sure that latest version of JDK is installed in your system.
 
 2. Check for NetBeans, if not installed, please install the same.
 
 3. Go to Control Panel->Add or Remove Programs(Uninstall Programs) and
 
-   check any other databases are installed ( e.g. Microsoft SQL or simply MySQL).
+   check any other databases are installed (e.g. Microsoft SQL or simply MySQL).
 
    If so, uninstall all.
 
@@ -32,7 +32,7 @@ Description:
 
 6. Open NetBeans and create a new Java project. Delete the default package created.
 
-   ( For example, if the project name is abc, then NetBeans automatically creates
+   (For example, if the project name is abc, then NetBeans automatically creates
 
      a package with the same name along with a .java file. Delete the complete package
 
