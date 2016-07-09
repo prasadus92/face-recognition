@@ -35,7 +35,7 @@ A Java application for face recognition under expressions, occlusions and pose v
 
 12. Open System Tray->Wamp Server green icon->Left Click->MySQL->MySQL Console. Press Enter. You should see mysql> prompt.
    
-    Enter the following command:
+    Enter the following commands:
    ```mysql
     create database 3dface;
     use 3dface;
