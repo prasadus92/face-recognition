@@ -22,8 +22,7 @@ public class ImageBackgroundPanel extends JPanel {
             
             imgPath=System.getProperty("user.dir");
             imgPath=imgPath.replace('\\','/');
-            //System.out.println(imgPath);
-            img = ImageIO.read(new File(imgPath+"/src/src/bkd.png"));
+            img = ImageIO.read(new File(imgPath + "/src/src/bkd.png"));
 
         } catch (IOException e) {
             System.out.println("Image face.png missing\n" + e);
