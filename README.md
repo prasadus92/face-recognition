@@ -1,14 +1,14 @@
-#Face Recognition
+# Face Recognition
 
 A Java application for face recognition under expressions, occlusions and pose variations.
 
-##Description:
+## Description:
 
 - This is a prototype with the goal of improving recognition accuracy and reliability under un-cooperative scenarios like expressions, occlusions (obstacles like spectacles) and pose variations (<60deg).
    
 - The project is tested with Bosphorous Database (http://bosphorus.ee.boun.edu.tr/default.aspx).
 
-##Running the project:
+## Running the project:
 
 1. Install latest version of JDK.
 
@@ -35,13 +35,15 @@ A Java application for face recognition under expressions, occlusions and pose v
 
 12. Open System Tray->Wamp Server green icon->Left Click->MySQL->MySQL Console. Press Enter. You should see mysql> prompt.
    
-    Enter the following commands:
-   ```mysql
-    create database 3dface;
-    use 3dface;
-    create table users(UserName varchar(30),Email varchar(50),Phone varchar(10),Password varchar(20));
-    exit;
-    ```
+ Enter the following commands:
+```mysql
+ 
+ create database 3dface;
+ use 3dface;
+ create table users(UserName varchar(30),Email varchar(50),Phone varchar(10),Password varchar(20));
+ exit;
+ 
+ ```
 
 13. Again open system tray->Wamp green icon left click->phpMyAdmin. Browser will be opened. Database list on left side. Click on "3dface". You can see "users" table and get confirmed with the same.
 
