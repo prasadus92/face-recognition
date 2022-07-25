@@ -105,27 +105,6 @@ public class TSCD {
         trained = true;
 
         progress.finished();
-
-        /*System.out.println("There are " + numGood + " eigenVectors\n\nEigenVectorSize");
-         System.out.println(eigVectors.getRowDimension());
-         System.out.println(eigVectors.getColumnDimension());
-         try {
-         PrintWriter pw = new PrintWriter("c:\\tmp\\test.txt");
-         eigVectors.print(pw, 8, 4);
-         pw.flush();
-         pw.close();
-         } catch (Exception e) {
-         e.printStackTrace();
-         }
-        
-         int width = pics[0].img.getWidth(null);
-         BufferedImage biAvg = imageFromMatrix(bigAvg.getArrayCopy()[0], width);
-		
-         try {
-         saveImage(new File("c:\\tmp\\test.jpg"), biAvg);
-         } catch (IOException e1) {
-         e1.printStackTrace();
-         }*/
     }
 
     public double[] getEigenFaces(Picture pic, int number) {
