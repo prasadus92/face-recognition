@@ -98,7 +98,7 @@ public class FeatureSpace {
         int max = 0;
         int ind = 0;
 
-        //find the most common neighbouring classification
+        // find the most common neighbouring classification
         for (int i = 0; i < nn; i++) {
             int c = dp[i].obj.getClassification();
             accm[c]++;
@@ -179,7 +179,8 @@ public class FeatureSpace {
 
         double max0 = features[0][0], max1 = features[0][1], max2 = features[0][2];
         double min0 = features[0][0], min1 = features[0][1], min2 = features[0][2];
-        for (int i = 1; i < features.length - 18; i++) {                       //get the max and min on each axis
+        for (int i = 1; i < features.length - 18; i++) {                       
+            // get the max and min on each axis
             if (features[i][0] > max0) {
                 max0 = features[i][0];
             }
@@ -206,7 +207,8 @@ public class FeatureSpace {
         double mult1 = (max1 - min1) / 100;
         double mult2 = (max2 - min2) / 100;
 
-        for (int i = 0; i < features.length - 18; i++) {                       //perform the normalisation
+        for (int i = 0; i < features.length - 18; i++) {                       
+            // perform the normalisation
             features[i][0] -= min0;
             features[i][0] /= mult0;
 
@@ -215,8 +217,6 @@ public class FeatureSpace {
 
             features[i][2] -= min2;
             features[i][2] /= mult2;
-
-            //System.out.println("features[" + i + "] = [" +features[i][0] + ", " + features[i][1] + ", " + features[i][2] + "]");
         }
 
         return features;
@@ -283,7 +283,7 @@ public class FeatureSpace {
         double mult1 = (max1 - min1) / 100;
         double mult2 = (max2 - min2) / 100;
 
-        for (int i = 0; i < features.length - 18; i++) {                       //perform the normalisation
+        for (int i = 0; i < features.length - 18; i++) {
             features[i][0] -= min0;
             features[i][0] /= mult0;
 
@@ -292,8 +292,6 @@ public class FeatureSpace {
 
             features[i][2] -= min2;
             features[i][2] /= mult2;
-
-            //System.out.println("features[" + i + "] = [" +features[i][0] + ", " + features[i][1] + ", " + features[i][2] + "]");
         }
 
         return features;
