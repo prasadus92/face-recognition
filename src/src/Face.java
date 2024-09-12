@@ -24,9 +24,10 @@ public class Face {
     public Picture picture;
     public String classification;
     public String description;
-    int globalwindowsize=5;
+    int globalwindowsize;
     
     public Face(File f) throws MalformedURLException {
+        globalwindowsize = 5;
         classification = null;
         description = "";
         file = f;
@@ -37,8 +38,15 @@ public class Face {
     //manickam run the file
     public void load(boolean crop) throws MalformedURLException{
     	//System.out.println(file);
-        Image im = new ImageIcon(file.toURL()).getImage();
-        BufferedImage imb=new BufferedImage(im.getWidth(null),im.getHeight(null),BufferedImage.TYPE_INT_ARGB);
+        
+        Image im ;
+        URL fileUrl;
+        fileUrl = file.toURL();
+        ImageIcon imageIcon;
+        imageIcon = new ImageIcon(fileUrl);
+        im = imageIcon.getImage();
+        BufferedImage imb;
+        imb=new BufferedImage(im.getWidth(null),im.getHeight(null),BufferedImage.TYPE_INT_ARGB);
         
         Graphics2D g2d = imb.createGraphics();
         g2d.drawImage(im,0,0,null);
