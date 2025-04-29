@@ -1,7 +1,3 @@
-/* Author: Prasad U S
-*
-*
-*/
 package src;
 
 /**
