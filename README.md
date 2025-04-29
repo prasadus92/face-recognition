@@ -1,10 +1,10 @@
 # Face Recognition System
 
-[![Build Status](https://github.com/prasad/face-recognition/actions/workflows/build.yml/badge.svg)](https://github.com/prasad/face-recognition/actions/workflows/build.yml)
+[![Build Status](https://github.com/prasadus92/face-recognition/actions/workflows/build.yml/badge.svg)](https://github.com/prasadus92/face-recognition/actions/workflows/build.yml)
 
 ## Author
 **Prasad Subrahmanya**  
-[GitHub Profile](https://github.com/prasad)
+[GitHub Profile](https://github.com/prasadus92)
 
 A Java-based face recognition system that uses eigenfaces for face recognition under various conditions including expressions, occlusions, and pose variations.
 
@@ -41,7 +41,7 @@ A Java-based face recognition system that uses eigenfaces for face recognition u
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/face-recognition.git
+   git clone https://github.com/prasadus92/face-recognition.git
    cd face-recognition
    ```
 
