@@ -233,13 +233,17 @@ public class Main extends JApplet implements ActionListener {
                 long startTime = System.currentTimeMillis();
                 updateStatus("Loading Files");
                 File file = fc.getSelectedFile();
-                Face f = new Face(file);
-                f.load(true);
-                processFaceRecognition(f);
-                displayResults(startTime);
+                try {
+                    Face f = new Face(file);
+                    f.load(true);
+                    processFaceRecognition(f);
+                    displayResults(startTime);
+                } catch (MalformedURLException e) {
+                    System.err.println("There was a problem opening the file : " + e.getMessage());
+                }
             }
         } catch (Exception e) {
-            System.err.println("There was a problem opening a file : " + e.getMessage());
+            System.err.println("There was a problem with the file chooser : " + e.getMessage());
         }
     }
 
@@ -268,12 +272,16 @@ public class Main extends JApplet implements ActionListener {
             if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
                 setupMainPanel();
                 File folder = fc.getSelectedFile();
-                loadImagesFromFolder(folder);
-                setupFaceBrowser();
-                enableTrainingButtons();
+                try {
+                    loadImagesFromFolder(folder);
+                    setupFaceBrowser();
+                    enableTrainingButtons();
+                } catch (MalformedURLException e) {
+                    System.err.println("There was a problem opening a file : " + e.getMessage());
+                }
             }
         } catch (Exception e) {
-            System.err.println("There was a problem opening a file : " + e.getMessage());
+            System.err.println("There was a problem with the file chooser : " + e.getMessage());
         }
     }
 
@@ -282,7 +290,7 @@ public class Main extends JApplet implements ActionListener {
         c.add(main, BorderLayout.CENTER);
     }
 
-    private void loadImagesFromFolder(File folder) {
+    private void loadImagesFromFolder(File folder) throws MalformedURLException {
         File[] folders = folder.listFiles(pathname -> pathname.isDirectory());
         trainingSet.clear();
         faceBrowser.empty();
