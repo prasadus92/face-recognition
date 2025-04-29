@@ -12,7 +12,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <java3d.version>1.5.2</java3d.version>
         <mysql.version>8.2.0</mysql.version>
         <jama.version>1.0.3</jama.version>
     </properties>
@@ -29,17 +28,23 @@
         <dependency>
             <groupId>org.jogamp.java3d</groupId>
             <artifactId>j3d-core</artifactId>
-            <version>${java3d.version}</version>
+            <version>1.5.2</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/j3d-core.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.jogamp.java3d</groupId>
             <artifactId>j3d-utils</artifactId>
-            <version>${java3d.version}</version>
+            <version>1.5.2</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/j3d-utils.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.jogamp.java3d</groupId>
             <artifactId>vecmath</artifactId>
-            <version>${java3d.version}</version>
+            <version>1.5.2</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/vecmath.jar</systemPath>
         </dependency>
 
         <!-- Java Advanced Imaging -->
