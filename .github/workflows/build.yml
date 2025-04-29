@@ -2,9 +2,10 @@ name: Build and Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -33,6 +34,7 @@ jobs:
         wget https://download.java.net/media/jai/builds/release/1_1_3/jai-1_1_3-lib-linux-amd64.tar.gz
         tar -xzf jai-1_1_3-lib-linux-amd64.tar.gz
         cp jai-1_1_3/lib/*.jar lib/
+      continue-on-error: true
 
     - name: Build with Maven
       run: mvn -B clean package --file pom.xml
@@ -41,4 +43,5 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: face-recognition
-        path: target/*.jar 
+        path: target/*.jar
+      if: success() 
