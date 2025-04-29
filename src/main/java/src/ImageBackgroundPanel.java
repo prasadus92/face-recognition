@@ -13,6 +13,7 @@ import java.io.*;
 /**
  * A JPanel that displays a background image.
  * The image is scaled to fit the panel's dimensions.
+ * Provides a customizable background for the application interface.
  *
  * @author Prasad Subrahmanya
  * @version 1.0

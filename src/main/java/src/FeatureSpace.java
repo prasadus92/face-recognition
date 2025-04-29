@@ -1,6 +1,7 @@
 /**
  * Manages the feature space for face recognition.
  * Handles feature vector storage, distance calculations, and classification.
+ * Provides methods for k-nearest neighbor classification and feature space visualization.
  *
  * @author Prasad Subrahmanya
  * @version 1.0
@@ -14,6 +15,10 @@ import java.util.Comparator;
 
 public class FeatureSpace {
 
+    /**
+     * Euclidean distance measure implementation.
+     * Calculates the distance between two feature vectors using the Euclidean metric.
+     */
     public static final DistanceMeasure EUCLIDEAN_DISTANCE = new DistanceMeasure() {
         @Override
         public double calculateDistance(FeatureVector fv1, FeatureVector fv2) {
@@ -28,11 +33,22 @@ public class FeatureSpace {
     private final ArrayList<FeatureVector> featureSpace;
     private final ArrayList<String> classifications;
 
+    /**
+     * Creates a new FeatureSpace instance.
+     * Initializes empty collections for feature vectors and classifications.
+     */
     public FeatureSpace() {
         featureSpace = new ArrayList<>();
         classifications = new ArrayList<>();
     }
 
+    /**
+     * Inserts a face and its feature vector into the database.
+     * Associates the face with its classification and stores the feature vector.
+     *
+     * @param face the face to insert
+     * @param featureVector the extracted feature vector for the face
+     */
     public void insertIntoDatabase(Face face, double[] featureVector) {
         if (!classifications.contains(face.getClassification())) {
             classifications.add(face.getClassification());
@@ -47,6 +63,14 @@ public class FeatureSpace {
         featureSpace.add(obj);
     }
 
+    /**
+     * Finds the classification of the closest feature vector.
+     * Uses the specified distance measure to find the nearest neighbor.
+     *
+     * @param measure the distance measure to use
+     * @param obj the feature vector to classify
+     * @return the classification of the closest feature vector, or null if the feature space is empty
+     */
     public String closestFeature(DistanceMeasure measure, FeatureVector obj) {
         if (getFeatureSpaceSize() < 1) {
             return null;
@@ -64,6 +88,15 @@ public class FeatureSpace {
         return result;
     }
 
+    /**
+     * Performs k-nearest neighbor classification.
+     * Uses the specified distance measure to find the k nearest neighbors.
+     *
+     * @param measure the distance measure to use
+     * @param fv the feature vector to classify
+     * @param k the number of neighbors to consider
+     * @return the classification of the majority of k nearest neighbors, or null if the feature space is empty
+     */
     public String knn(DistanceMeasure measure, FeatureVector fv, int k) {
         FaceDistancePair[] distances = orderByDistance(measure, fv);
         if (distances.length == 0) {
@@ -72,6 +105,14 @@ public class FeatureSpace {
         return distances[0].getFace().getClassification();
     }
 
+    /**
+     * Orders all faces by their distance to a probe feature vector.
+     * Creates an array of face-distance pairs sorted by increasing distance.
+     *
+     * @param measure the distance measure to use
+     * @param fv the probe feature vector
+     * @return sorted array of face-distance pairs
+     */
     public FaceDistancePair[] orderByDistance(DistanceMeasure measure, FeatureVector fv) {
         FaceDistancePair[] distances = new FaceDistancePair[featureSpace.size()];
         for (int i = 0; i < featureSpace.size(); i++) {
@@ -83,27 +124,57 @@ public class FeatureSpace {
         return distances;
     }
 
+    /**
+     * Inner class representing a face and its distance to a probe vector.
+     * Used for sorting and displaying face matches by similarity.
+     */
     public static class FaceDistancePair {
         private Face face;
         private double dist;
 
+        /**
+         * Gets the face in this pair.
+         *
+         * @return the face
+         */
         public Face getFace() {
             return face;
         }
 
+        /**
+         * Sets the face in this pair.
+         *
+         * @param face the face to set
+         */
         public void setFace(Face face) {
             this.face = face;
         }
 
+        /**
+         * Gets the distance value in this pair.
+         *
+         * @return the distance value
+         */
         public double getDist() {
             return dist;
         }
 
+        /**
+         * Sets the distance value in this pair.
+         *
+         * @param dist the distance value to set
+         */
         public void setDist(double dist) {
             this.dist = dist;
         }
     }
 
+    /**
+     * Gets a 3D representation of the feature space.
+     * Creates a normalized array of 3D points representing feature vectors.
+     *
+     * @return array of 3D points representing the feature space
+     */
     public double[][] get3dFeatureSpace() {
         double[][] features = new double[classifications.size() * 18 + 18][3];
         for (int i = 0; i < classifications.size(); i++) {
@@ -170,6 +241,13 @@ public class FeatureSpace {
         return features;
     }
 
+    /**
+     * Gets a 3D representation of the feature space including a probe vector.
+     * Creates a normalized array of 3D points with the probe vector highlighted.
+     *
+     * @param probe the probe feature vector to include
+     * @return array of 3D points representing the feature space with probe
+     */
     public double[][] get3dFeatureSpace(FeatureVector probe) {
         if (probe == null) {
             return get3dFeatureSpace();
@@ -245,6 +323,11 @@ public class FeatureSpace {
         return features;
     }
 
+    /**
+     * Gets the number of feature vectors in the feature space.
+     *
+     * @return the size of the feature space
+     */
     public int getFeatureSpaceSize() {
         return featureSpace.size();
     }

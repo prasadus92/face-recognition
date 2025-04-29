@@ -1,6 +1,8 @@
 /**
  * Main application class for the face recognition system.
  * Provides the GUI interface and coordinates face recognition operations.
+ * This class serves as the entry point and controller for the face recognition
+ * application, managing the user interface, image processing, and recognition workflow.
  *
  * @author Prasad Subrahmanya
  * @version 1.0
@@ -87,6 +89,8 @@ public class Main extends JApplet implements ActionListener {
 
     /**
      * Creates a new Main instance.
+     * Initializes the core components including eigenfaces processor,
+     * feature space, face browser, and training set storage.
      */
     public Main() {
         eigenFaces = new TSCD();
@@ -96,7 +100,8 @@ public class Main extends JApplet implements ActionListener {
     }
 
     /**
-     * Initializes the applet.
+     * Initializes the applet with system look and feel.
+     * Sets up the main container and initializes all UI components.
      */
     @Override
     public void init() {
@@ -111,6 +116,13 @@ public class Main extends JApplet implements ActionListener {
         setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
     }
 
+    /**
+     * Initializes the general layout and components of the application.
+     * Sets up the main panel, background, buttons, face candidate,
+     * status bar, face browser, and right panel.
+     *
+     * @param container the main container to initialize
+     */
     private void generalInit(Container container) {
         container.setLayout(new BorderLayout());
         main = new JPanel();
@@ -124,6 +136,11 @@ public class Main extends JApplet implements ActionListener {
         initializeRightPanel();
     }
 
+    /**
+     * Initializes all control buttons with appropriate text and state.
+     * Creates buttons for loading images, cropping, computing eigenvectors,
+     * face identification, and result display.
+     */
     private void initializeButtons() {
         loadImageButton = createButton("Load Images", true);
         cropImageButton = createButton("Crop Images", false);
@@ -132,6 +149,13 @@ public class Main extends JApplet implements ActionListener {
         displayFeatureSpaceButton = createButton("Display Result Chart", false);
     }
 
+    /**
+     * Creates a styled button with the specified text and enabled state.
+     *
+     * @param text the button text
+     * @param enabled whether the button should be initially enabled
+     * @return the created and configured button
+     */
     private JButton createButton(String text, boolean enabled) {
         JButton button = new JButton(text);
         button.setFont(new Font(BUTTON_FONT, Font.PLAIN, BUTTON_FONT_SIZE));
@@ -140,17 +164,29 @@ public class Main extends JApplet implements ActionListener {
         return button;
     }
 
+    /**
+     * Initializes the face candidate component for displaying
+     * the current face being processed.
+     */
     private void initializeFaceCandidate() {
         faceCandidate = new FaceItem();
         faceCandidate.setBorder(BorderFactory.createRaisedBevelBorder());
     }
 
+    /**
+     * Initializes the status bar for showing progress information.
+     * Creates a horizontal progress bar with percentage display.
+     */
     private void initializeStatusBar() {
         statusBar = new JProgressBar(JProgressBar.HORIZONTAL, 0, 100);
         statusBar.setBorder(BorderFactory.createEtchedBorder());
         statusBar.setStringPainted(true);
     }
 
+    /**
+     * Initializes the face browser component for displaying
+     * multiple face images in a scrollable view.
+     */
     private void initializeFaceBrowser() {
         faceBrowserScrollPane = new JScrollPane(faceBrowser);
         faceBrowserScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
@@ -162,6 +198,10 @@ public class Main extends JApplet implements ActionListener {
         faceBrowserScrollPane.setBounds(0, 0, FACE_BROWSER_WIDTH, FACE_BROWSER_HEIGHT);
     }
 
+    /**
+     * Initializes the right panel containing the logo and control buttons.
+     * Sets up the layout and adds all necessary components.
+     */
     private void initializeRightPanel() {
         JPanel right = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = createGridBagConstraints();
@@ -176,6 +216,11 @@ public class Main extends JApplet implements ActionListener {
         container.add(right, BorderLayout.EAST);
     }
 
+    /**
+     * Creates and configures GridBagConstraints for button layout.
+     *
+     * @return configured GridBagConstraints object
+     */
     private GridBagConstraints createGridBagConstraints() {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -188,6 +233,12 @@ public class Main extends JApplet implements ActionListener {
         return gbc;
     }
 
+    /**
+     * Adds the application logo to the specified panel.
+     *
+     * @param panel the panel to add the logo to
+     * @throws IOException if the logo image file cannot be read
+     */
     private void addLogoToPanel(JPanel panel) throws IOException {
         String imPath = System.getProperty("user.dir").replace('\\', '/');
         BufferedImage myPicture = ImageIO.read(new File(imPath + "/src/src/face.png"));
@@ -195,6 +246,12 @@ public class Main extends JApplet implements ActionListener {
         panel.add(picLabel);
     }
 
+    /**
+     * Adds all control buttons to the specified panel using the given constraints.
+     *
+     * @param panel the panel to add buttons to
+     * @param gbc the GridBagConstraints to use for layout
+     */
     private void addButtonsToPanel(JPanel panel, GridBagConstraints gbc) {
         panel.add(loadImageButton, gbc);
         gbc.gridy = 4;
@@ -206,7 +263,10 @@ public class Main extends JApplet implements ActionListener {
     }
 
     /**
-     * Handles button click events.
+     * Handles button click events from the UI.
+     * Routes each action to its appropriate handler method.
+     *
+     * @param event the action event containing the source button
      */
     @Override
     public void actionPerformed(ActionEvent event) {
@@ -224,6 +284,11 @@ public class Main extends JApplet implements ActionListener {
         }
     }
 
+    /**
+     * Displays the feature space visualization.
+     * Creates and shows a 3D chart of the feature space with the current
+     * feature vector highlighted.
+     */
     private void displayFeatureSpace() {
         double[][] features = featureSpace.get3dFeatureSpace(lastFeatureVector);
         if (features == null) {
@@ -238,6 +303,11 @@ public class Main extends JApplet implements ActionListener {
         frame.setVisible(true);
     }
 
+    /**
+     * Processes a probe image for face recognition.
+     * Loads the selected image, extracts features, and attempts to
+     * identify the face using the trained eigenfaces.
+     */
     private void probe() {
         try {
             JFileChooser fc = new JFileChooser();
@@ -260,6 +330,12 @@ public class Main extends JApplet implements ActionListener {
         }
     }
 
+    /**
+     * Processes face recognition for a given face.
+     * Extracts features and performs k-nearest neighbor classification.
+     *
+     * @param f the face to process and classify
+     */
     private void processFaceRecognition(Face f) {
         double[] rslt = eigenFaces.getEigenFaces(f.getPicture(), NUM_EIGEN_VECTORS);
         lastFeatureVector = new FeatureVector();
@@ -269,6 +345,11 @@ public class Main extends JApplet implements ActionListener {
         faceCandidate.setVisible(true);
     }
 
+    /**
+     * Displays the recognition results and processing time.
+     *
+     * @param startTime the time when processing started
+     */
     private void displayResults(long startTime) {
         long elapsedTime = System.currentTimeMillis() - startTime;
         JOptionPane.showMessageDialog(FrontEnd.frame, 
@@ -276,6 +357,11 @@ public class Main extends JApplet implements ActionListener {
                 elapsedTime / 1000.0, classification));
     }
 
+    /**
+     * Handles the load image button action.
+     * Opens a file chooser for selecting face images and loads them
+     * into the face browser.
+     */
     private void loadImage() {
         try {
             faces = new ArrayList<>();
@@ -298,11 +384,23 @@ public class Main extends JApplet implements ActionListener {
         }
     }
 
+    /**
+     * Sets up the main panel for displaying face images.
+     * Removes the background and adds the main content panel.
+     */
     private void setupMainPanel() {
         container.remove(background);
         container.add(main, BorderLayout.CENTER);
     }
 
+    /**
+     * Loads all face images from a specified folder.
+     * Processes only .jpg and .png files, creating Face objects
+     * for each valid image.
+     *
+     * @param folder the folder containing face images
+     * @throws MalformedURLException if an image file URL is malformed
+     */
     private void loadImagesFromFolder(File folder) throws MalformedURLException {
         File[] folders = folder.listFiles(pathname -> pathname.isDirectory());
         trainingSet.clear();
@@ -322,17 +420,27 @@ public class Main extends JApplet implements ActionListener {
         updateStatus(files.length + " files loaded from " + folders.length + " folders.");
     }
 
+    /**
+     * Sets up the face browser component in the main panel.
+     * Configures the scroll pane and makes it visible.
+     */
     private void setupFaceBrowser() {
         faceBrowserScrollPane.setViewportView(faceBrowser);
         faceBrowserScrollPane.setVisible(true);
         main.add(faceBrowserScrollPane, BorderLayout.CENTER);
     }
 
+    /**
+     * Enables the training-related buttons after images are loaded.
+     */
     private void enableTrainingButtons() {
         trainButton.setEnabled(true);
         cropImageButton.setEnabled(true);
     }
 
+    /**
+     * Initiates the face cropping process for loaded images.
+     */
     private void crop() {
         int count = 0;
         for (Face f : faces) {
@@ -348,6 +456,12 @@ public class Main extends JApplet implements ActionListener {
         faceBrowser.refresh();
     }
 
+    /**
+     * Updates the progress bar with current progress.
+     *
+     * @param count current progress count
+     * @param total total number of steps
+     */
     private void updateProgress(int count, int total) {
         int val = (count * 100) / total;
         statusBar.setValue(val);
@@ -355,10 +469,17 @@ public class Main extends JApplet implements ActionListener {
         statusBar.paintImmediately(statusBar.getVisibleRect());
     }
 
+    /**
+     * Resets the progress bar to zero.
+     */
     private void resetProgress() {
         statusBar.setValue(0);
     }
 
+    /**
+     * Initiates the training process using loaded face images.
+     * Computes eigenfaces and builds the feature space.
+     */
     private void train() {
         final ProgressTracker progress = new ProgressTracker();
         Runnable calc = () -> {
@@ -377,11 +498,23 @@ public class Main extends JApplet implements ActionListener {
         progress.run(main, calc, "Training");
     }
 
+    /**
+     * Updates the status message in the progress bar.
+     *
+     * @param message the status message to display
+     */
     private void updateStatus(String message) {
         statusBar.setString(message);
         statusBar.paintImmediately(statusBar.getVisibleRect());
     }
 
+    /**
+     * Saves a BufferedImage to a file.
+     *
+     * @param f the file to save to
+     * @param img the image to save
+     * @throws IOException if there is an error writing the file
+     */
     public void saveImage(File f, BufferedImage img) throws IOException {
         Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
         ImageWriter writer = writers.next();
@@ -391,10 +524,22 @@ public class Main extends JApplet implements ActionListener {
         }
     }
 
+    /**
+     * Gets the average face image from the eigenfaces computation.
+     *
+     * @return the average face as a BufferedImage
+     */
     public BufferedImage getAverageFaceImage() {
         return CreateImageFromMatrix(eigenFaces.getAverageFace().getRowPackedCopy(), IDEAL_IMAGE_SIZE.width);
     }
 
+    /**
+     * Creates a BufferedImage from a matrix of pixel values.
+     *
+     * @param img the array of pixel values
+     * @param width the width of the image
+     * @return the created BufferedImage
+     */
     public static BufferedImage CreateImageFromMatrix(double[] img, int width) {
         BufferedImage bi = new BufferedImage(width, img.length / width, BufferedImage.TYPE_BYTE_GRAY);
         for (int i = 0; i < img.length; i++) {
@@ -408,7 +553,8 @@ public class Main extends JApplet implements ActionListener {
     }
 
     /**
-     * Helper class for tracking progress of long-running operations.
+     * Inner class for tracking progress of long-running operations.
+     * Provides methods for updating and displaying progress information.
      */
     public static class ProgressTracker {
         private ProgressMonitor progressMonitor;
@@ -416,12 +562,20 @@ public class Main extends JApplet implements ActionListener {
         private String sProgress;
         private boolean bFinished;
 
+        /**
+         * Updates the progress message.
+         *
+         * @param message the new progress message
+         */
         public void advanceProgress(final String message) {
             sProgress = message;
             progressMonitor.setProgress(1);
             progressMonitor.setNote(sProgress);
         }
 
+        /**
+         * Timer listener for updating the progress monitor.
+         */
         private class TimerListener implements ActionListener {
             @Override
             public void actionPerformed(ActionEvent evt) {
@@ -433,6 +587,13 @@ public class Main extends JApplet implements ActionListener {
             }
         }
 
+        /**
+         * Runs a task with progress monitoring.
+         *
+         * @param parent the parent component for the progress dialog
+         * @param calc the task to run
+         * @param title the title for the progress dialog
+         */
         public void run(JComponent parent, final Runnable calc, String title) {
             progressMonitor = new ProgressMonitor(parent, title, "", 0, 100);
             timer = new Timer(PROGRESS_TIMER_DELAY, new TimerListener());
@@ -456,6 +617,9 @@ public class Main extends JApplet implements ActionListener {
             timer.start();
         }
 
+        /**
+         * Marks the progress tracking as finished.
+         */
         public void finished() {
             bFinished = true;
             progressMonitor.close();

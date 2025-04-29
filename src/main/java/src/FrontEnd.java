@@ -130,6 +130,9 @@ public class FrontEnd extends JPanel implements ActionListener {
 
     /**
      * Creates GridBagConstraints for the login panel.
+     * Configures constraints for proper component layout in the login form.
+     *
+     * @return configured GridBagConstraints for login panel layout
      */
     private GridBagConstraints createLoginConstraints() {
         GridBagConstraints gbc = new GridBagConstraints();
@@ -141,7 +144,10 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Adds components to the login panel.
+     * Adds components to the login panel using the specified constraints.
+     * Arranges username and password fields, buttons, and registration link.
+     *
+     * @param gbc the GridBagConstraints to use for component layout
      */
     private void addLoginComponents(GridBagConstraints gbc) {
         loginPanel.add(usernameLabel, gbc);
@@ -207,6 +213,9 @@ public class FrontEnd extends JPanel implements ActionListener {
 
     /**
      * Creates GridBagConstraints for the registration panel.
+     * Configures constraints for proper component layout in the registration form.
+     *
+     * @return configured GridBagConstraints for registration panel layout
      */
     private GridBagConstraints createRegistrationConstraints() {
         GridBagConstraints gbc = new GridBagConstraints();
@@ -218,7 +227,10 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Adds components to the registration panel.
+     * Adds components to the registration panel using the specified constraints.
+     * Arranges username, email, phone, password fields, and buttons.
+     *
+     * @param gbc the GridBagConstraints to use for component layout
      */
     private void addRegistrationComponents(GridBagConstraints gbc) {
         registrationPanel.add(regUsernameLabel, gbc);
@@ -260,6 +272,12 @@ public class FrontEnd extends JPanel implements ActionListener {
         registrationPanel.add(regCancelButton, gbc);
     }
 
+    /**
+     * Handles button click events from the UI.
+     * Routes each action to its appropriate handler method.
+     *
+     * @param e the action event containing the source button
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         Object source = e.getSource();
@@ -277,7 +295,8 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Handles the login process.
+     * Handles the login button click event.
+     * Validates input and attempts to authenticate the user.
      */
     private void handleLogin() {
         if (!validateLoginInput()) {
@@ -298,7 +317,10 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Validates login input fields.
+     * Validates the login form input fields.
+     * Checks that required fields are not empty.
+     *
+     * @return true if all required fields are filled, false otherwise
      */
     private boolean validateLoginInput() {
         if (usernameField.getText().isEmpty()) {
@@ -313,7 +335,12 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Attempts to login using database credentials.
+     * Attempts to authenticate the user against the database.
+     *
+     * @param username the username to authenticate
+     * @param password the password to verify
+     * @return true if authentication succeeds, false otherwise
+     * @throws SQLException if there is an error accessing the database
      */
     private boolean tryDatabaseLogin(String username, String password) throws SQLException {
         String hashedPassword = hashPassword(password);
@@ -334,7 +361,10 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Attempts to login using file-based credentials.
+     * Attempts to authenticate the user against the local file.
+     *
+     * @param username the username to authenticate
+     * @param password the password to verify
      */
     private void tryFileLogin(String username, String password) {
         try (BufferedReader reader = new BufferedReader(new FileReader("users.txt"))) {
@@ -352,6 +382,7 @@ public class FrontEnd extends JPanel implements ActionListener {
 
     /**
      * Launches the main application window.
+     * Creates and displays the face recognition interface.
      */
     private void launchMainApplication() {
         JFrame j2 = new JFrame("3D Face Recognition under Expressions, Occlusions and Pose Variations");
@@ -379,7 +410,8 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Switches to the registration panel.
+     * Switches the display from login to registration panel.
+     * Removes the login panel and adds the registration panel.
      */
     private void switchToRegistration() {
         remove(loginPanel);
@@ -389,7 +421,8 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Switches to the login panel.
+     * Switches the display from registration to login panel.
+     * Removes the registration panel and adds the login panel.
      */
     private void switchToLogin() {
         remove(registrationPanel);
@@ -399,7 +432,8 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Handles the registration process.
+     * Handles the registration button click event.
+     * Validates input and attempts to register the new user.
      */
     private void handleRegistration() {
         if (!validateRegistrationInput()) {
@@ -422,7 +456,10 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Validates registration input fields.
+     * Validates the registration form input fields.
+     * Checks that all required fields are filled and properly formatted.
+     *
+     * @return true if all fields are valid, false otherwise
      */
     private boolean validateRegistrationInput() {
         if (regUsernameField.getText().isEmpty()) {
@@ -470,7 +507,10 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Validates email format.
+     * Validates an email address format.
+     *
+     * @param email the email address to validate
+     * @return true if the email format is valid, false otherwise
      */
     private boolean isValidEmail(String email) {
         String emailPattern = "^[_A-Za-z0-9-]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+" +
@@ -479,7 +519,10 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Validates phone number format.
+     * Validates a phone number format.
+     *
+     * @param phone the phone number to validate
+     * @return true if the phone format is valid, false otherwise
      */
     private boolean isValidPhone(String phone) {
         try {
@@ -493,7 +536,14 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Attempts to register using database.
+     * Attempts to register a new user in the database.
+     *
+     * @param username the username for the new account
+     * @param email the email address for the new account
+     * @param phone the phone number for the new account
+     * @param password the password for the new account
+     * @return true if registration succeeds, false otherwise
+     * @throws SQLException if there is an error accessing the database
      */
     private boolean tryDatabaseRegistration(String username, String email, 
                                           String phone, String password) throws SQLException {
@@ -528,7 +578,10 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Attempts to register using file-based storage.
+     * Attempts to register a new user in the local file.
+     *
+     * @param username the username for the new account
+     * @param password the password for the new account
      */
     private void tryFileRegistration(String username, String password) {
         try (PrintWriter writer = new PrintWriter("users.txt", "UTF-8")) {
@@ -541,14 +594,19 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Handles registration errors.
+     * Handles registration errors by displaying appropriate messages.
+     *
+     * @param ex the exception that occurred during registration
      */
     private void handleRegistrationError(Exception ex) {
         JOptionPane.showMessageDialog(frame, "Registration failed!");
     }
 
     /**
-     * Hashes a password using SHA-256.
+     * Hashes a password using SHA-256 algorithm.
+     *
+     * @param password the password to hash
+     * @return the hashed password as a Base64 encoded string
      */
     private String hashPassword(String password) {
         try {
@@ -561,7 +619,8 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Creates and shows the GUI.
+     * Creates and displays the main application window.
+     * Sets up the frame and initializes the UI components.
      */
     private static void createAndShowGUI() {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -576,7 +635,10 @@ public class FrontEnd extends JPanel implements ActionListener {
     }
 
     /**
-     * Main method to start the application.
+     * Main entry point for the application.
+     * Launches the login interface.
+     *
+     * @param args command line arguments (not used)
      */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
