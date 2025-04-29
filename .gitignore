@@ -25,6 +25,7 @@ out/
 bin/
 
 # NetBeans
+nbproject/
 nbproject/private/
 build/
 nbbuild/
@@ -32,6 +33,14 @@ dist/
 nbdist/
 nbactions.xml
 nb-configuration.xml
+*.nbattrs
+*.nboptions
+*.nbp
+*.nbproject
+*.nbproject.user
+*.nbproject.user.properties
+*.nbproject.user.xml
+*.nbproject.user.*
 
 # VS Code
 .vscode/
