@@ -3,11 +3,11 @@
 # Create lib directory if it doesn't exist
 mkdir -p lib
 
-# Download Java 3D libraries from NEA webstart and JogAmp
+# Download Java 3D libraries from NEA webstart and Maven
 echo "Downloading Java 3D libraries..."
 wget https://www.oecd-nea.org/webstart/java3d-1.5.2/j3d/1.5.2/j3dcore.jar -O lib/j3d-core.jar
 wget https://www.oecd-nea.org/webstart/java3d-1.5.2/j3d/1.5.2/j3dutils.jar -O lib/j3d-utils.jar
-wget https://jogamp.org/deployment/java3d/1.5.2/jogamp-java3d-1.5.2/jar/vecmath.jar -O lib/vecmath.jar
+wget https://repo1.maven.org/maven2/javax/vecmath/vecmath/1.5.2/vecmath-1.5.2.jar -O lib/vecmath.jar
 
 # Verify downloads
 for jar in lib/j3d-core.jar lib/j3d-utils.jar lib/vecmath.jar; do

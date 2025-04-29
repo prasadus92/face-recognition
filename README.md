@@ -1,6 +1,6 @@
 # Face Recognition System
 
-[![Build Status](https://github.com/${{ github.repository }}/actions/workflows/build.yml/badge.svg)](https://github.com/${{ github.repository }}/actions/workflows/build.yml)
+[![Build Status](https://github.com/prasad/face-recognition/actions/workflows/build.yml/badge.svg)](https://github.com/prasad/face-recognition/actions/workflows/build.yml)
 
 A Java-based face recognition system that uses eigenfaces for face recognition under various conditions including expressions, occlusions, and pose variations.
 
