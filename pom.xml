@@ -70,6 +70,22 @@
             <systemPath>${project.basedir}/lib/mlibwrapper_jai.jar</systemPath>
         </dependency>
 
+        <!-- Chart Builder -->
+        <dependency>
+            <groupId>uk.co.chartbuilder</groupId>
+            <artifactId>chartbuilder-core</artifactId>
+            <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/chartbuilder-core.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>uk.co.chartbuilder</groupId>
+            <artifactId>chartbuilder-examples</artifactId>
+            <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/chartbuilder-examples.jar</systemPath>
+        </dependency>
+
         <!-- MySQL Connector -->
         <dependency>
             <groupId>com.mysql</groupId>
