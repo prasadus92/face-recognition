@@ -1,50 +1,137 @@
-# Face Recognition
+# Face Recognition System
 
-A Java application for face recognition under expressions, occlusions and pose variations.
+[![Build Status](https://github.com/yourusername/face-recognition/actions/workflows/build.yml/badge.svg)](https://github.com/yourusername/face-recognition/actions/workflows/build.yml)
 
-## Description:
+A Java-based face recognition system that uses eigenfaces for face recognition under various conditions including expressions, occlusions, and pose variations.
 
-- This is a prototype with the goal of improving recognition accuracy and reliability under un-cooperative scenarios like expressions, occlusions (obstacles like spectacles) and pose variations (<60deg).
-   
-- The project is tested with Bosphorous Database (http://bosphorus.ee.boun.edu.tr/default.aspx).
+## Features
 
-## Running the project:
+- Face recognition under different conditions:
+  - Facial expressions
+  - Occlusions (e.g., glasses)
+  - Pose variations (up to 60 degrees)
+- Interactive GUI for:
+  - Loading and processing face images
+  - Training the recognition system
+  - Testing face recognition
+  - Visualizing results
+- Support for batch processing
+- Results visualization with 3D charts
 
-1. Install latest version of JDK.
+## Technical Details
 
-2. Install NetBeans.
+- Uses eigenfaces for face recognition
+- Implements Two-Stage Classification and Detection (TSCD)
+- Supports 3D face visualization
+- Uses Java 3D for 3D rendering
+- MySQL database for user management
 
-3. Go to Control Panel->Add or Remove Programs(Uninstall Programs) and check any other databases are installed (e.g. Microsoft SQL or simply MySQL). If so, uninstall all.
+## Prerequisites
 
-4. Install Microsoft Visual C++ Redistributable Package (vcredist_x86.exe).
+- Java Development Kit (JDK) 8 or higher
+- Maven 3.6 or higher
+- MySQL 5.7 or higher
+- Java 3D API
 
-5. Intall WAMP Server and start it.
+## Building the Project
 
-6. Open NetBeans and create a new Java project. Delete the default package created.
-   (For example, if the project name is abc, then NetBeans automatically creates a package with the same name along with .java file. Delete the complete package in Source Packages section )
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/face-recognition.git
+   cd face-recognition
+   ```
 
-7. Open the code and copy full "src" folder(Parent folder of all .java files) and paste it on Source Packages in NetBeans.
+2. Install Java 3D API:
+   - Download Java 3D API from Oracle's website
+   - Install it on your system
+   - Add the Java 3D libraries to your system's Java library path
 
-8. Now right click on Libraries and choose Add JAR/Folder option and open the "libs" folder that came with code. Select all(CTRL+A) and click Open.
+3. Set up MySQL:
+   ```sql
+   CREATE DATABASE face_recognition;
+   USE face_recognition;
+   CREATE TABLE users (
+       UserName VARCHAR(30),
+       Email VARCHAR(50),
+       Phone VARCHAR(10),
+       Password VARCHAR(20)
+   );
+   ```
 
-9. Copy all .dll files came with code in the "dll" folder to C:\Windows folder [ONLY FOR 32 BIT SYSTEMS].
+4. Install JAI libraries:
+   - Download JAI libraries from Oracle's website
+   - Place the following files in the `lib` directory:
+     - `jai_core.jar`
+     - `jai_codec.jar`
+     - `mlibwrapper_jai.jar`
 
-10. Install Java 3D API(java3d_1_5...exe).
+5. Build the project:
+   ```bash
+   mvn clean install
+   ```
 
-11. Go to C:\Program Files\Java\Java3D\bin and copy all DLLs to C:\Windows [ONLY FOR 64 BIT SYSTEMS].
+## Running the Application
 
-12. Open System Tray->Wamp Server green icon->Left Click->MySQL->MySQL Console. Press Enter. You should see mysql> prompt.
-   
- Enter the following commands:
-```mysql
- 
- create database 3dface;
- use 3dface;
- create table users(UserName varchar(30),Email varchar(50),Phone varchar(10),Password varchar(20));
- exit;
- 
- ```
+1. Start MySQL server
 
-13. Again open system tray->Wamp green icon left click->phpMyAdmin. Browser will be opened. Database list on left side. Click on "3dface". You can see "users" table and get confirmed with the same.
+2. Run the application:
+   ```bash
+   mvn exec:java -Dexec.mainClass="src.Main"
+   ```
 
-12. Run the project.
+## Platform-Specific Setup
+
+### Windows
+1. Install Microsoft Visual C++ Redistributable Package (vcredist_x86.exe)
+2. Copy the DLLs from `platform-specific/windows/` to your system's Java library path:
+   ```bash
+   copy platform-specific\windows\*.dll %JAVA_HOME%\bin
+   ```
+
+### Linux
+1. Install required system libraries:
+   ```bash
+   sudo apt-get install libj3d-java
+   ```
+
+### macOS
+1. Install required system libraries:
+   ```bash
+   brew install java3d
+   ```
+
+## Project Structure
+
+- `src/main/java/src/` - Source code
+  - `Main.java` - Main application entry point
+  - `Face.java` - Face recognition core logic
+  - `FeatureSpace.java` - Feature extraction and analysis
+  - `TSCD.java` - Two-Stage Classification and Detection
+  - `FaceBrowser.java` - Face visualization component
+- `src/main/resources/` - Application resources
+  - `face.png` - Application icon
+  - `bkd.png` - Background image
+- `lib/` - Local dependencies
+  - JAI libraries
+- `platform-specific/` - Platform-specific files
+  - `windows/` - Windows-specific DLLs
+- `pom.xml` - Maven project configuration
+- `README.md` - Project documentation
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [License.txt](License.txt) file for details.
+
+## Acknowledgments
+
+- Bosphorus Database for testing data
+- Java 3D API team
+- All contributors to the project
