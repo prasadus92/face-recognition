@@ -26,10 +26,9 @@ jobs:
 
     - name: Download Java 3D libraries
       run: |
-        wget https://download.java.net/media/java3d/builds/release/1.5.2/java3d-1.5.2-linux-amd64.zip -O java3d.zip
-        unzip -j java3d.zip "*/lib/*.jar" -d lib/
-        rm java3d.zip
-      continue-on-error: true
+        wget https://maven.imagej.net/content/repositories/public/java3d/j3d-core/1.5.2/j3d-core-1.5.2.jar -O lib/j3d-core.jar
+        wget https://maven.imagej.net/content/repositories/public/java3d/j3d-utils/1.5.2/j3d-utils-1.5.2.jar -O lib/j3d-utils.jar
+        wget https://maven.imagej.net/content/repositories/public/java3d/vecmath/1.5.2/vecmath-1.5.2.jar -O lib/vecmath.jar
 
     - name: Download JAI libraries
       run: |
