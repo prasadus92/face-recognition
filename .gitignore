@@ -10,6 +10,20 @@ buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 
+# Build directories
+build/
+out/
+bin/
+classes/
+generated/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
 # IntelliJ IDEA
 .idea/
 *.iws
