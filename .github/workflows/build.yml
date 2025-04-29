@@ -23,8 +23,11 @@ jobs:
 
     - name: Install Java 3D
       run: |
-        sudo apt-get update
-        sudo apt-get install -y libj3d-java
+        wget https://download.java.net/media/java3d/builds/release/1.5.2/java3d-1.5.2-linux-amd64.zip
+        unzip java3d-1.5.2-linux-amd64.zip
+        sudo cp java3d-1.5.2-linux-amd64/lib/amd64/*.so /usr/lib/
+        sudo cp java3d-1.5.2-linux-amd64/lib/*.jar /usr/share/java/
+        echo "export LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
     - name: Create lib directory
       run: mkdir -p lib
