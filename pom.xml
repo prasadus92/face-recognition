@@ -73,17 +73,24 @@
         <!-- Chart Builder -->
         <dependency>
             <groupId>uk.co.chartbuilder</groupId>
-            <artifactId>chartbuilder-core</artifactId>
+            <artifactId>chartbuilder-data</artifactId>
             <version>1.0.0</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/chartbuilder-core.jar</systemPath>
+            <systemPath>${project.basedir}/lib/chartbuilder-data.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>uk.co.chartbuilder</groupId>
-            <artifactId>chartbuilder-examples</artifactId>
+            <artifactId>chartbuilder-parser</artifactId>
             <version>1.0.0</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/chartbuilder-examples.jar</systemPath>
+            <systemPath>${project.basedir}/lib/chartbuilder-parser.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>uk.co.chartbuilder</groupId>
+            <artifactId>chartbuilder-examples-facialrecognition</artifactId>
+            <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/chartbuilder-examples-facialrecognition.jar</systemPath>
         </dependency>
 
         <!-- MySQL Connector -->
