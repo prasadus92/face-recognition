@@ -9,29 +9,46 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.*;
 import java.io.*;
-import java.net.URL;
 
-
+/**
+ * A JPanel that displays a background image.
+ * The image is scaled to fit the panel's dimensions.
+ *
+ * @author Prasad Subrahmanya
+ * @version 1.0
+ */
 public class ImageBackgroundPanel extends JPanel {
+    private static final long serialVersionUID = 1L;
+    private static final String BACKGROUND_IMAGE_PATH = "/src/src/bkd.png";
+    
+    private BufferedImage backgroundImage;
 
-    BufferedImage img;
-    public String imgPath;
-
+    /**
+     * Creates a new ImageBackgroundPanel with the default background image.
+     * If the image cannot be loaded, a blank panel will be displayed.
+     */
     public ImageBackgroundPanel() {
-        try {
-            
-            imgPath=System.getProperty("user.dir");
-            imgPath=imgPath.replace('\\','/');
-            img = ImageIO.read(new File(imgPath + "/src/src/bkd.png"));
+        loadBackgroundImage();
+    }
 
+    /**
+     * Loads the background image from the specified path.
+     * If the image cannot be loaded, a blank panel will be displayed.
+     */
+    private void loadBackgroundImage() {
+        try {
+            String imagePath = System.getProperty("user.dir").replace('\\', '/') + BACKGROUND_IMAGE_PATH;
+            backgroundImage = ImageIO.read(new File(imagePath));
         } catch (IOException e) {
-            System.out.println("Image face.png missing\n" + e);
+            System.err.println("Failed to load background image: " + e.getMessage());
         }
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        g.drawImage(img, 0, 0, getWidth(), getHeight(), this);
+        if (backgroundImage != null) {
+            g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+        }
     }
 }

@@ -24,12 +24,6 @@ tar -xzf jai-1_1_3-lib-linux-amd64.tar.gz
 cp jai-1_1_3/lib/*.jar lib/
 rm -rf jai-1_1_3 jai-1_1_3-lib-linux-amd64.tar.gz
 
-# Download Chart Builder libraries
-echo "Downloading Chart Builder libraries..."
-wget https://github.com/chartbuilder/chartbuilder/releases/download/v1.0.0/chartbuilder-data.jar -O lib/chartbuilder-data.jar
-wget https://github.com/chartbuilder/chartbuilder/releases/download/v1.0.0/chartbuilder-parser.jar -O lib/chartbuilder-parser.jar
-wget https://github.com/chartbuilder/chartbuilder/releases/download/v1.0.0/chartbuilder-examples-facialrecognition.jar -O lib/chartbuilder-examples-facialrecognition.jar
-
 # Verify all downloads
 for jar in lib/*.jar; do
     if [ ! -s "$jar" ]; then

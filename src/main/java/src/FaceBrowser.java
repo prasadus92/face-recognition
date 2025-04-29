@@ -20,6 +20,13 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.TitledBorder;
 
+/**
+ * A panel that displays a collection of face images with their classifications.
+ * Provides functionality for highlighting and ordering faces based on classification.
+ *
+ * @author Prasad Subrahmanya
+ * @version 1.0
+ */
 public class FaceBrowser extends JPanel {
 
     private static final long serialVersionUID = 1L;
@@ -108,6 +115,12 @@ public class FaceBrowser extends JPanel {
     }
 }
 
+/**
+ * A panel that displays a single face image with its classification and metadata.
+ *
+ * @author Prasad Subrahmanya
+ * @version 1.0
+ */
 class FaceItem extends JPanel {
 
     private static final long serialVersionUID = 1L;
