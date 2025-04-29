@@ -23,11 +23,12 @@ jobs:
 
     - name: Install Java 3D
       run: |
-        wget https://download.java.net/media/java3d/builds/release/1.5.2/java3d-1.5.2-linux-amd64.zip
-        unzip java3d-1.5.2-linux-amd64.zip
-        sudo cp java3d-1.5.2-linux-amd64/lib/amd64/*.so /usr/lib/
-        sudo cp java3d-1.5.2-linux-amd64/lib/*.jar /usr/share/java/
-        echo "export LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        wget https://jogamp.org/deployment/archive/rc/v1.5.2/jar/j3d-core.jar
+        wget https://jogamp.org/deployment/archive/rc/v1.5.2/jar/j3d-utils.jar
+        wget https://jogamp.org/deployment/archive/rc/v1.5.2/jar/vecmath.jar
+        sudo mkdir -p /usr/share/java
+        sudo cp *.jar /usr/share/java/
+        echo "export CLASSPATH=/usr/share/java/j3d-core.jar:/usr/share/java/j3d-utils.jar:/usr/share/java/vecmath.jar:$CLASSPATH" >> $GITHUB_ENV
 
     - name: Create lib directory
       run: mkdir -p lib
