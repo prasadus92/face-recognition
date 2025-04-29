@@ -21,21 +21,10 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    - name: Create lib directory
-      run: mkdir -p lib
-
-    - name: Download Java 3D libraries
+    - name: Setup libraries
       run: |
-        wget https://maven.scijava.org/content/repositories/public/org/jogamp/java3d/j3d-core/1.5.2/j3d-core-1.5.2.jar -O lib/j3d-core.jar
-        wget https://maven.scijava.org/content/repositories/public/org/jogamp/java3d/j3d-utils/1.5.2/j3d-utils-1.5.2.jar -O lib/j3d-utils.jar
-        wget https://maven.scijava.org/content/repositories/public/org/jogamp/java3d/vecmath/1.5.2/vecmath-1.5.2.jar -O lib/vecmath.jar
-
-    - name: Download JAI libraries
-      run: |
-        wget https://download.java.net/media/jai/builds/release/1_1_3/jai-1_1_3-lib-linux-amd64.tar.gz
-        tar -xzf jai-1_1_3-lib-linux-amd64.tar.gz
-        cp jai-1_1_3/lib/*.jar lib/
-      continue-on-error: true
+        chmod +x scripts/setup-libs.sh
+        ./scripts/setup-libs.sh
 
     - name: Build with Maven
       run: mvn -B clean package --file pom.xml

@@ -26,21 +26,21 @@
     <dependencies>
         <!-- Java 3D API -->
         <dependency>
-            <groupId>org.jogamp.java3d</groupId>
+            <groupId>java3d</groupId>
             <artifactId>j3d-core</artifactId>
             <version>1.5.2</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/j3d-core.jar</systemPath>
         </dependency>
         <dependency>
-            <groupId>org.jogamp.java3d</groupId>
+            <groupId>java3d</groupId>
             <artifactId>j3d-utils</artifactId>
             <version>1.5.2</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/j3d-utils.jar</systemPath>
         </dependency>
         <dependency>
-            <groupId>org.jogamp.java3d</groupId>
+            <groupId>java3d</groupId>
             <artifactId>vecmath</artifactId>
             <version>1.5.2</version>
             <scope>system</scope>
