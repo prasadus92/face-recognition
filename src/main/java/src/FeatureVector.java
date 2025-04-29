@@ -11,9 +11,10 @@ package src;
  *
  * @author Prasad Subrahmanya
  * @version 1.0
+ * @since 1.0
  */
 public class FeatureVector {
-	private double[] features;
+	private double[] featureVector;
 	private int classification;
 	private Face face;
 	
@@ -41,16 +42,16 @@ public class FeatureVector {
 	 * @return the feature vector array
 	 */
 	public double[] getFeatureVector() {
-		return features;
+		return featureVector;
 	}
 	
 	/**
 	 * Sets the feature vector array.
 	 *
-	 * @param features the feature vector array to set
+	 * @param featureVector the feature vector array to set
 	 */
-	public void setFeatureVector(double[] features) {
-		this.features = features;
+	public void setFeatureVector(double[] featureVector) {
+		this.featureVector = featureVector;
 	}
 	
 	/**

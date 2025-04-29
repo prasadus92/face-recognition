@@ -97,7 +97,7 @@ public class Picture extends JComponent {
 	 *
 	 * @return an array of RGB pixel values
 	 */
-	public double[] getImageColourPixels() {
+	public double[] getImageColorPixels() {
 		int width = image.getWidth(this);
 		int height = image.getHeight(this);
 		int[] pixels = new int[width * height];

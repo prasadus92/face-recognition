@@ -1,7 +1,11 @@
-/* Author: Prasad U S
-*
-*
-*/
+/**
+ * Main application class for the face recognition system.
+ * Provides the GUI interface and coordinates face recognition operations.
+ *
+ * @author Prasad Subrahmanya
+ * @version 1.0
+ * @since 1.0
+ */
 
 package src;
 
@@ -62,25 +66,28 @@ public class Main extends JApplet implements ActionListener {
     private TSCD eigenFaces;
     private FeatureSpace featureSpace;
     private JPanel main;
-    private ImageBackgroundPanel bkd;
-    private JProgressBar jlStatus;
-    private JList<File> jlist;
-    private JButton jbLoadImage;
-    private JButton jbTrain;
-    private JButton jbProbe;
-    private JButton jbCropImage;
-    private ImageIcon imageAverageFace;
-    private JLabel jlAverageFace;
-    private Container c;
+    private ImageBackgroundPanel background;
+    private JProgressBar statusBar;
+    private JList<File> fileList;
+    private JButton loadImageButton;
+    private JButton trainButton;
+    private JButton probeButton;
+    private JButton cropImageButton;
+    private ImageIcon averageFaceIcon;
+    private JLabel averageFaceLabel;
+    private Container container;
     private FaceItem faceCandidate;
     private FaceBrowser faceBrowser;
-    private JScrollPane jspFaceBrowser;
-    private JButton jbDisplayFeatureSpace;
-    private FeatureVector lastFV;
+    private JScrollPane faceBrowserScrollPane;
+    private JButton displayFeatureSpaceButton;
+    private FeatureVector lastFeatureVector;
     private ArrayList<Face> faces;
     private ArrayList<FeatureVector> trainingSet;
     private String classification;
 
+    /**
+     * Creates a new Main instance.
+     */
     public Main() {
         eigenFaces = new TSCD();
         featureSpace = new FeatureSpace();
@@ -88,6 +95,9 @@ public class Main extends JApplet implements ActionListener {
         trainingSet = new ArrayList<>();
     }
 
+    /**
+     * Initializes the applet.
+     */
     @Override
     public void init() {
         try {
@@ -96,16 +106,16 @@ public class Main extends JApplet implements ActionListener {
             // Use default look and feel if system look and feel is not available
         }
 
-        c = getContentPane();
-        generalInit(c);
+        container = getContentPane();
+        generalInit(container);
         setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
     }
 
-    private void generalInit(Container c) {
-        c.setLayout(new BorderLayout());
+    private void generalInit(Container container) {
+        container.setLayout(new BorderLayout());
         main = new JPanel();
-        bkd = new ImageBackgroundPanel();
-        c.add(bkd, BorderLayout.CENTER);
+        background = new ImageBackgroundPanel();
+        container.add(background, BorderLayout.CENTER);
 
         initializeButtons();
         initializeFaceCandidate();
@@ -115,11 +125,11 @@ public class Main extends JApplet implements ActionListener {
     }
 
     private void initializeButtons() {
-        jbLoadImage = createButton("Load Images", true);
-        jbCropImage = createButton("Crop Images", false);
-        jbTrain = createButton("Compute Eigen Vectors", false);
-        jbProbe = createButton("Identify Face", false);
-        jbDisplayFeatureSpace = createButton("Display Result Chart", false);
+        loadImageButton = createButton("Load Images", true);
+        cropImageButton = createButton("Crop Images", false);
+        trainButton = createButton("Compute Eigen Vectors", false);
+        probeButton = createButton("Identify Face", false);
+        displayFeatureSpaceButton = createButton("Display Result Chart", false);
     }
 
     private JButton createButton(String text, boolean enabled) {
@@ -136,20 +146,20 @@ public class Main extends JApplet implements ActionListener {
     }
 
     private void initializeStatusBar() {
-        jlStatus = new JProgressBar(JProgressBar.HORIZONTAL, 0, 100);
-        jlStatus.setBorder(BorderFactory.createEtchedBorder());
-        jlStatus.setStringPainted(true);
+        statusBar = new JProgressBar(JProgressBar.HORIZONTAL, 0, 100);
+        statusBar.setBorder(BorderFactory.createEtchedBorder());
+        statusBar.setStringPainted(true);
     }
 
     private void initializeFaceBrowser() {
-        jspFaceBrowser = new JScrollPane(faceBrowser);
-        jspFaceBrowser.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        jspFaceBrowser.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-        jspFaceBrowser.setPreferredSize(new Dimension(FACE_BROWSER_WIDTH, FACE_BROWSER_HEIGHT));
-        jspFaceBrowser.setMinimumSize(new Dimension(FACE_BROWSER_WIDTH, FACE_BROWSER_HEIGHT));
-        jspFaceBrowser.setMaximumSize(new Dimension(FACE_BROWSER_WIDTH, FACE_BROWSER_HEIGHT));
-        jspFaceBrowser.setSize(new Dimension(FACE_BROWSER_WIDTH, FACE_BROWSER_HEIGHT));
-        jspFaceBrowser.setBounds(0, 0, FACE_BROWSER_WIDTH, FACE_BROWSER_HEIGHT);
+        faceBrowserScrollPane = new JScrollPane(faceBrowser);
+        faceBrowserScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        faceBrowserScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+        faceBrowserScrollPane.setPreferredSize(new Dimension(FACE_BROWSER_WIDTH, FACE_BROWSER_HEIGHT));
+        faceBrowserScrollPane.setMinimumSize(new Dimension(FACE_BROWSER_WIDTH, FACE_BROWSER_HEIGHT));
+        faceBrowserScrollPane.setMaximumSize(new Dimension(FACE_BROWSER_WIDTH, FACE_BROWSER_HEIGHT));
+        faceBrowserScrollPane.setSize(new Dimension(FACE_BROWSER_WIDTH, FACE_BROWSER_HEIGHT));
+        faceBrowserScrollPane.setBounds(0, 0, FACE_BROWSER_WIDTH, FACE_BROWSER_HEIGHT);
     }
 
     private void initializeRightPanel() {
@@ -163,7 +173,7 @@ public class Main extends JApplet implements ActionListener {
         }
 
         addButtonsToPanel(right, gbc);
-        c.add(right, BorderLayout.EAST);
+        container.add(right, BorderLayout.EAST);
     }
 
     private GridBagConstraints createGridBagConstraints() {
@@ -186,33 +196,36 @@ public class Main extends JApplet implements ActionListener {
     }
 
     private void addButtonsToPanel(JPanel panel, GridBagConstraints gbc) {
-        panel.add(jbLoadImage, gbc);
+        panel.add(loadImageButton, gbc);
         gbc.gridy = 4;
-        panel.add(jbTrain, gbc);
+        panel.add(trainButton, gbc);
         gbc.gridy = 6;
-        panel.add(jbProbe, gbc);
+        panel.add(probeButton, gbc);
         gbc.gridy = 8;
-        panel.add(jbDisplayFeatureSpace, gbc);
+        panel.add(displayFeatureSpaceButton, gbc);
     }
 
+    /**
+     * Handles button click events.
+     */
     @Override
     public void actionPerformed(ActionEvent event) {
         Object source = event.getSource();
-        if (source == jbLoadImage) {
+        if (source == loadImageButton) {
             loadImage();
-        } else if (source == jbCropImage) {
+        } else if (source == cropImageButton) {
             crop();
-        } else if (source == jbTrain) {
+        } else if (source == trainButton) {
             train();
-        } else if (source == jbProbe) {
+        } else if (source == probeButton) {
             probe();
-        } else if (source == jbDisplayFeatureSpace) {
+        } else if (source == displayFeatureSpaceButton) {
             displayFeatureSpace();
         }
     }
 
     private void displayFeatureSpace() {
-        double[][] features = featureSpace.get3dFeatureSpace(lastFV);
+        double[][] features = featureSpace.get3dFeatureSpace(lastFeatureVector);
         if (features == null) {
             JOptionPane.showMessageDialog(this, "No feature space data available.");
             return;
@@ -248,10 +261,10 @@ public class Main extends JApplet implements ActionListener {
     }
 
     private void processFaceRecognition(Face f) {
-        double[] rslt = eigenFaces.getEigenFaces(f.picture, NUM_EIGEN_VECTORS);
-        lastFV = new FeatureVector();
-        lastFV.setFeatureVector(rslt);
-        classification = featureSpace.knn(FeatureSpace.EUCLIDEAN_DISTANCE, lastFV, CLASSIFICATION_THRESHOLD);
+        double[] rslt = eigenFaces.getEigenFaces(f.getPicture(), NUM_EIGEN_VECTORS);
+        lastFeatureVector = new FeatureVector();
+        lastFeatureVector.setFeatureVector(rslt);
+        classification = featureSpace.knn(FeatureSpace.EUCLIDEAN_DISTANCE, lastFeatureVector, CLASSIFICATION_THRESHOLD);
         faceCandidate.setFace(f);
         faceCandidate.setVisible(true);
     }
@@ -286,8 +299,8 @@ public class Main extends JApplet implements ActionListener {
     }
 
     private void setupMainPanel() {
-        c.remove(bkd);
-        c.add(main, BorderLayout.CENTER);
+        container.remove(background);
+        container.add(main, BorderLayout.CENTER);
     }
 
     private void loadImagesFromFolder(File folder) throws MalformedURLException {
@@ -298,10 +311,10 @@ public class Main extends JApplet implements ActionListener {
         File[] files = folder.listFiles(pathname -> 
             pathname.isFile() && (pathname.getName().endsWith(".jpg") || pathname.getName().endsWith(".png")));
 
-        jlist.setListData(files);
+        fileList.setListData(files);
         for (File file : files) {
             Face f = new Face(file);
-            f.description = "Face image in database.";
+            f.setDescription("Face image in database.");
             f.load(true);
             faces.add(f);
         }
@@ -310,14 +323,14 @@ public class Main extends JApplet implements ActionListener {
     }
 
     private void setupFaceBrowser() {
-        jspFaceBrowser.setViewportView(faceBrowser);
-        jspFaceBrowser.setVisible(true);
-        main.add(jspFaceBrowser, BorderLayout.CENTER);
+        faceBrowserScrollPane.setViewportView(faceBrowser);
+        faceBrowserScrollPane.setVisible(true);
+        main.add(faceBrowserScrollPane, BorderLayout.CENTER);
     }
 
     private void enableTrainingButtons() {
-        jbTrain.setEnabled(true);
-        jbCropImage.setEnabled(true);
+        trainButton.setEnabled(true);
+        cropImageButton.setEnabled(true);
     }
 
     private void crop() {
@@ -337,13 +350,13 @@ public class Main extends JApplet implements ActionListener {
 
     private void updateProgress(int count, int total) {
         int val = (count * 100) / total;
-        jlStatus.setValue(val);
-        jlStatus.setString(val + "%");
-        jlStatus.paintImmediately(jlStatus.getVisibleRect());
+        statusBar.setValue(val);
+        statusBar.setString(val + "%");
+        statusBar.paintImmediately(statusBar.getVisibleRect());
     }
 
     private void resetProgress() {
-        jlStatus.setValue(0);
+        statusBar.setValue(0);
     }
 
     private void train() {
@@ -351,22 +364,22 @@ public class Main extends JApplet implements ActionListener {
         Runnable calc = () -> {
             eigenFaces.processTrainingSet(faces.toArray(new Face[0]), progress);
             for (Face f : faces) {
-                double[] rslt = eigenFaces.getEigenFaces(f.picture, NUM_EIGEN_VECTORS);
+                double[] rslt = eigenFaces.getEigenFaces(f.getPicture(), NUM_EIGEN_VECTORS);
                 FeatureVector fv = new FeatureVector();
                 fv.setFeatureVector(rslt);
                 trainingSet.add(fv);
             }
 
-            imageAverageFace = new ImageIcon(getAverageFaceImage());
-            jlAverageFace.setVisible(true);
+            averageFaceIcon = new ImageIcon(getAverageFaceImage());
+            averageFaceLabel.setVisible(true);
         };
 
         progress.run(main, calc, "Training");
     }
 
     private void updateStatus(String message) {
-        jlStatus.setString(message);
-        jlStatus.paintImmediately(jlStatus.getVisibleRect());
+        statusBar.setString(message);
+        statusBar.paintImmediately(statusBar.getVisibleRect());
     }
 
     public void saveImage(File f, BufferedImage img) throws IOException {

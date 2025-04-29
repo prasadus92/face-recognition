@@ -19,10 +19,10 @@ public class TSCD {
     private static final int DEFAULT_EIGEN_VECTORS = 10;
 
     private Matrix averageFace;        // Stores the average face useful when probing the database
-    private Matrix eigVectors;         // Stores all the sorted eigen vectors from the training set
-    private Matrix eigValues;          // Stores all the sorted eigen Values from the training set
+    private Matrix eigenVectors;       // Stores all the sorted eigen vectors from the training set
+    private Matrix eigenValues;        // Stores all the sorted eigen Values from the training set
     private boolean trained;           // Has a training set been provided yet?
-    private int numEigenVecs;          // Number of eigen vectors available
+    private int numEigenVectors;       // Number of eigen vectors available
 
     /**
      * Processes the training set of faces to compute eigenfaces.
@@ -63,9 +63,9 @@ public class TSCD {
      * @return Matrix containing pixel values from all faces
      */
     private double[][] constructImageMatrix(Face[] faces) {
-        double[][] dpix = new double[faces.length][faces[0].picture.getImagePixels().length];
+        double[][] dpix = new double[faces.length][faces[0].getPicture().getImagePixels().length];
         for (int i = 0; i < faces.length; i++) {
-            double[] pixels = faces[i].picture.getImagePixels();
+            double[] pixels = faces[i].getPicture().getImagePixels();
             System.arraycopy(pixels, 0, dpix[i], 0, pixels.length);
         }
         return dpix;
@@ -109,17 +109,17 @@ public class TSCD {
         Matrix At = A.transpose();
         Matrix L = At.times(A);
         EigenvalueDecomposition eigen = L.eig();
-        eigValues = eigen.getD();
-        eigVectors = eigen.getV();
+        eigenValues = eigen.getD();
+        eigenVectors = eigen.getV();
     }
 
     /**
      * Sorts eigenvectors based on their corresponding eigenvalues.
      */
     private void sortEigenvectors() {
-        Matrix[] eigDVSorted = sortem(eigValues, eigVectors);
-        eigValues = eigDVSorted[0];
-        eigVectors = eigDVSorted[1];
+        Matrix[] eigDVSorted = sortem(eigenValues, eigenVectors);
+        eigenValues = eigDVSorted[0];
+        eigenVectors = eigDVSorted[1];
     }
 
     /**
@@ -128,7 +128,7 @@ public class TSCD {
      * @param A Transposed difference matrix
      */
     private void extractEigenvalues(Matrix A) {
-        double[] values = diag(eigValues);
+        double[] values = diag(eigenValues);
         for (int i = 0; i < values.length; i++) {
             values[i] /= A.getColumnDimension() - 1;
         }
@@ -138,19 +138,19 @@ public class TSCD {
      * Normalizes eigenvectors and removes those with small eigenvalues.
      */
     private void normalizeEigenvectors() {
-        numEigenVecs = 0;
-        for (int i = 0; i < eigVectors.getColumnDimension(); i++) {
+        numEigenVectors = 0;
+        for (int i = 0; i < eigenVectors.getColumnDimension(); i++) {
             Matrix tmp;
-            if (eigValues.get(i, i) < EIGENVALUE_THRESHOLD) {
-                tmp = new Matrix(eigVectors.getRowDimension(), 1);
+            if (eigenValues.get(i, i) < EIGENVALUE_THRESHOLD) {
+                tmp = new Matrix(eigenVectors.getRowDimension(), 1);
             } else {
-                tmp = eigVectors.getMatrix(0, eigVectors.getRowDimension() - 1, i, i)
-                    .times(1 / eigVectors.getMatrix(0, eigVectors.getRowDimension() - 1, i, i).normF());
-                numEigenVecs++;
+                tmp = eigenVectors.getMatrix(0, eigenVectors.getRowDimension() - 1, i, i)
+                    .times(1 / eigenVectors.getMatrix(0, eigenVectors.getRowDimension() - 1, i, i).normF());
+                numEigenVectors++;
             }
-            eigVectors.setMatrix(0, eigVectors.getRowDimension() - 1, i, i, tmp);
+            eigenVectors.setMatrix(0, eigenVectors.getRowDimension() - 1, i, i, tmp);
         }
-        eigVectors = eigVectors.getMatrix(0, eigVectors.getRowDimension() - 1, 0, numEigenVecs - 1);
+        eigenVectors = eigenVectors.getMatrix(0, eigenVectors.getRowDimension() - 1, 0, numEigenVectors - 1);
     }
 
     /**
@@ -161,78 +161,65 @@ public class TSCD {
      * @return Array of eigenface coefficients
      */
     public double[] getEigenFaces(Picture pic, int number) {
-        if (number > numEigenVecs) {
-            number = numEigenVecs;
+        if (number > numEigenVectors) {
+            number = numEigenVectors;
         }
 
         double[] pixels = pic.getImagePixels();
         Matrix face = new Matrix(pixels, pixels.length);
-        Matrix Vecs = eigVectors.getMatrix(0, eigVectors.getRowDimension() - 1, 0, number - 1).transpose();
-        Matrix rslt = Vecs.times(face);
+        Matrix vectors = eigenVectors.getMatrix(0, eigenVectors.getRowDimension() - 1, 0, number - 1).transpose();
+        Matrix result = vectors.times(face);
 
-        double[] ret = new double[number];
+        double[] coefficients = new double[number];
         for (int i = 0; i < number; i++) {
-            ret[i] = rslt.get(i, 0);
+            coefficients[i] = result.get(i, 0);
         }
-        return ret;
+        return coefficients;
     }
 
     /**
      * Extracts diagonal elements from a matrix.
      *
-     * @param M Input matrix
+     * @param matrix Input matrix
      * @return Array of diagonal elements
      */
-    private double[] diag(Matrix M) {
-        double[] dvec = new double[M.getColumnDimension()];
-        for (int i = 0; i < M.getColumnDimension(); i++) {
-            dvec[i] = M.get(i, i);
+    private double[] diag(Matrix matrix) {
+        double[] diagonal = new double[matrix.getColumnDimension()];
+        for (int i = 0; i < matrix.getColumnDimension(); i++) {
+            diagonal[i] = matrix.get(i, i);
         }
-        return dvec;
+        return diagonal;
     }
 
     /**
      * Sorts eigenvectors and eigenvalues.
      *
-     * @param D Matrix of eigenvalues
-     * @param V Matrix of eigenvectors
+     * @param eigenvalues Matrix of eigenvalues
+     * @param eigenvectors Matrix of eigenvectors
      * @return Array containing sorted eigenvalues and eigenvectors
      */
-    private Matrix[] sortem(Matrix D, Matrix V) {
-        double[] dvec = diag(D);
-        di_pair[] dvec_indexed = new di_pair[dvec.length];
+    private Matrix[] sortem(Matrix eigenvalues, Matrix eigenvectors) {
+        double[] values = diag(eigenvalues);
+        EigenPair[] pairs = new EigenPair[values.length];
         
-        for (int i = 0; i < dvec_indexed.length; i++) {
-            dvec_indexed[i] = new di_pair();
-            dvec_indexed[i].index = i;
-            dvec_indexed[i].value = dvec[i];
+        for (int i = 0; i < pairs.length; i++) {
+            pairs[i] = new EigenPair();
+            pairs[i].index = i;
+            pairs[i].value = values[i];
         }
 
-        Arrays.sort(dvec_indexed, (arg0, arg1) -> {
-            di_pair lt = (di_pair) arg0;
-            di_pair rt = (di_pair) arg1;
-            double dif = (lt.value - rt.value);
-            return dif > 0 ? -1 : (dif < 0 ? 1 : 0);
-        });
+        Arrays.sort(pairs, (a, b) -> Double.compare(b.value, a.value));
 
-        Matrix D2 = new Matrix(D.getRowDimension(), D.getColumnDimension());
-        Matrix V2 = new Matrix(V.getRowDimension(), V.getColumnDimension());
+        Matrix sortedEigenvalues = new Matrix(eigenvalues.getRowDimension(), eigenvalues.getColumnDimension());
+        Matrix sortedEigenvectors = new Matrix(eigenvectors.getRowDimension(), eigenvectors.getColumnDimension());
 
-        for (int i = 0; i < dvec_indexed.length; i++) {
-            D2.set(i, i, D.get(dvec_indexed[i].index, dvec_indexed[i].index));
-            int height = V.getRowDimension() - 1;
-            Matrix tmp = V.getMatrix(dvec_indexed[i].index, dvec_indexed[i].index, 0, height);
-            V2.setMatrix(i, i, 0, height, tmp);
+        for (int i = 0; i < pairs.length; i++) {
+            sortedEigenvalues.set(i, i, pairs[i].value);
+            sortedEigenvectors.setMatrix(0, sortedEigenvectors.getRowDimension() - 1, i, i,
+                eigenvectors.getMatrix(0, eigenvectors.getRowDimension() - 1, pairs[i].index, pairs[i].index));
         }
 
-        Matrix V3 = new Matrix(V.getRowDimension(), V.getColumnDimension());
-        for (int i = 0; i < V3.getRowDimension(); i++) {
-            for (int j = 0; j < V3.getColumnDimension(); j++) {
-                V3.set(i, j, V2.get(V3.getRowDimension() - i - 1, V3.getColumnDimension() - j - 1));
-            }
-        }
-
-        return new Matrix[]{D2, V3};
+        return new Matrix[]{sortedEigenvalues, sortedEigenvectors};
     }
 
     /**
@@ -249,8 +236,8 @@ public class TSCD {
      *
      * @return Number of eigenvectors
      */
-    public int getNumEigenVecs() {
-        return numEigenVecs;
+    public int getNumEigenVectors() {
+        return numEigenVectors;
     }
 
     /**
@@ -265,7 +252,7 @@ public class TSCD {
     /**
      * Helper class for sorting eigenvalues and eigenvectors.
      */
-    private static class di_pair {
+    private static class EigenPair {
         double value;
         int index;
     }

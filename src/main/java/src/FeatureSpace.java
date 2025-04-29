@@ -1,7 +1,11 @@
-/* Author: Prasad U S
-*
-*
-*/
+/**
+ * Manages the feature space for face recognition.
+ * Handles feature vector storage, distance calculations, and classification.
+ *
+ * @author Prasad Subrahmanya
+ * @version 1.0
+ * @since 1.0
+ */
 package src;
 
 import java.util.ArrayList;
@@ -21,19 +25,19 @@ public class FeatureSpace {
             return Math.sqrt(sum);
         }
     };
-    private ArrayList<FeatureVector> featureSpace;
-    private ArrayList<String> classifications;
+    private final ArrayList<FeatureVector> featureSpace;
+    private final ArrayList<String> classifications;
 
     public FeatureSpace() {
-        featureSpace = new ArrayList<FeatureVector>();
-        classifications = new ArrayList<String>();
+        featureSpace = new ArrayList<>();
+        classifications = new ArrayList<>();
     }
 
     public void insertIntoDatabase(Face face, double[] featureVector) {
-        if (!classifications.contains(face.classification)) {
-            classifications.add(face.classification);
+        if (!classifications.contains(face.getClassification())) {
+            classifications.add(face.getClassification());
         }
-        int clas = classifications.indexOf(face.classification);
+        int clas = classifications.indexOf(face.getClassification());
 
         FeatureVector obj = new FeatureVector();
         obj.setClassification(clas);
@@ -48,41 +52,56 @@ public class FeatureSpace {
             return null;
         }
 
-        String ret = classifications.get(featureSpace.get(0).getClassification());
-        double dist = measure.calculateDistance(obj, featureSpace.get(0));
+        String result = classifications.get(featureSpace.get(0).getClassification());
+        double distance = measure.calculateDistance(obj, featureSpace.get(0));
         for (int i = 1; i < featureSpace.size(); i++) {
-            double d = measure.calculateDistance(obj, featureSpace.get(i));
-            if (d < dist) {
-                dist = d;
-                ret = classifications.get(featureSpace.get(i).getClassification());
+            double currentDistance = measure.calculateDistance(obj, featureSpace.get(i));
+            if (currentDistance < distance) {
+                distance = currentDistance;
+                result = classifications.get(featureSpace.get(i).getClassification());
             }
         }
-        return ret;
+        return result;
     }
 
     public String knn(DistanceMeasure measure, FeatureVector fv, int k) {
-        FeatureSpace.fd_pair[] distances = orderByDistance(measure, fv);
+        FaceDistancePair[] distances = orderByDistance(measure, fv);
         if (distances.length == 0) {
             return null;
         }
-        return distances[0].face.getClassification();
+        return distances[0].getFace().getClassification();
     }
 
-    public FeatureSpace.fd_pair[] orderByDistance(DistanceMeasure measure, FeatureVector fv) {
-        FeatureSpace.fd_pair[] distances = new FeatureSpace.fd_pair[featureSpace.size()];
+    public FaceDistancePair[] orderByDistance(DistanceMeasure measure, FeatureVector fv) {
+        FaceDistancePair[] distances = new FaceDistancePair[featureSpace.size()];
         for (int i = 0; i < featureSpace.size(); i++) {
-            distances[i] = new FeatureSpace.fd_pair();
-            distances[i].face = featureSpace.get(i).getFace();
-            distances[i].dist = measure.calculateDistance(fv, featureSpace.get(i));
+            distances[i] = new FaceDistancePair();
+            distances[i].setFace(featureSpace.get(i).getFace());
+            distances[i].setDist(measure.calculateDistance(fv, featureSpace.get(i)));
         }
-        Arrays.sort(distances, (a, b) -> Double.compare(a.dist, b.dist));
+        Arrays.sort(distances, (a, b) -> Double.compare(a.getDist(), b.getDist()));
         return distances;
     }
 
-    public class fd_pair {
+    public static class FaceDistancePair {
+        private Face face;
+        private double dist;
 
-        public Face face;
-        public double dist;
+        public Face getFace() {
+            return face;
+        }
+
+        public void setFace(Face face) {
+            this.face = face;
+        }
+
+        public double getDist() {
+            return dist;
+        }
+
+        public void setDist(double dist) {
+            this.dist = dist;
+        }
     }
 
     public double[][] get3dFeatureSpace() {

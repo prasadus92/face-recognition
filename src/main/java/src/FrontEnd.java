@@ -38,29 +38,29 @@ public class FrontEnd extends JPanel implements ActionListener {
     public static final JFrame frame = new JFrame("3D Face Recognition under Expressions, Occlusions and Pose Variations");
     
     // Login panel components
-    private final JPanel firstPanel;
-    private final JLabel uname;
-    private final JLabel pwd;
-    private final JTextField un;
-    private final JPasswordField pd;
-    private final JButton login;
-    private final JButton cancel;
-    private final JButton register;
+    private final JPanel loginPanel;
+    private final JLabel usernameLabel;
+    private final JLabel passwordLabel;
+    private final JTextField usernameField;
+    private final JPasswordField passwordField;
+    private final JButton loginButton;
+    private final JButton cancelButton;
+    private final JButton registerButton;
 
     // Registration panel components
-    private final JPanel secondPanel;
-    private final JLabel uname1;
-    private final JLabel eml1;
-    private final JLabel ph1;
-    private final JLabel pwd1;
-    private final JLabel cpwd1;
-    private final JTextField un1;
-    private final JTextField email1;
-    private final JTextField pn1;
-    private final JPasswordField pd1;
-    private final JPasswordField cpd1;
-    private final JButton reg1;
-    private final JButton cancel1;
+    private final JPanel registrationPanel;
+    private final JLabel regUsernameLabel;
+    private final JLabel emailLabel;
+    private final JLabel phoneLabel;
+    private final JLabel regPasswordLabel;
+    private final JLabel confirmPasswordLabel;
+    private final JTextField regUsernameField;
+    private final JTextField emailField;
+    private final JTextField phoneField;
+    private final JPasswordField regPasswordField;
+    private final JPasswordField confirmPasswordField;
+    private final JButton registerSubmitButton;
+    private final JButton regCancelButton;
 
     /**
      * Creates a new FrontEnd instance and initializes the UI components.
@@ -69,31 +69,31 @@ public class FrontEnd extends JPanel implements ActionListener {
         super(new GridBagLayout());
         
         // Initialize components
-        firstPanel = new JPanel();
-        secondPanel = new JPanel();
+        loginPanel = new JPanel();
+        registrationPanel = new JPanel();
         
         // Initialize login components
-        uname = new JLabel("Username*:");
-        pwd = new JLabel("Password*:");
-        un = new JTextField(TEXT_FIELD_WIDTH);
-        pd = new JPasswordField(PASSWORD_FIELD_WIDTH);
-        login = new JButton("Login");
-        cancel = new JButton("Cancel");
-        register = new JButton("Click Here!");
+        usernameLabel = new JLabel("Username*:");
+        passwordLabel = new JLabel("Password*:");
+        usernameField = new JTextField(TEXT_FIELD_WIDTH);
+        passwordField = new JPasswordField(PASSWORD_FIELD_WIDTH);
+        loginButton = new JButton("Login");
+        cancelButton = new JButton("Cancel");
+        registerButton = new JButton("Click Here!");
 
         // Initialize registration components
-        uname1 = new JLabel("Username*:");
-        eml1 = new JLabel("Email*:");
-        ph1 = new JLabel("Phone*:");
-        pwd1 = new JLabel("Password*:");
-        cpwd1 = new JLabel("Confirm Password*:");
-        un1 = new JTextField(TEXT_FIELD_WIDTH);
-        email1 = new JTextField(PASSWORD_FIELD_WIDTH);
-        pn1 = new JTextField(PASSWORD_FIELD_WIDTH);
-        pd1 = new JPasswordField(PASSWORD_FIELD_WIDTH);
-        cpd1 = new JPasswordField(PASSWORD_FIELD_WIDTH);
-        reg1 = new JButton("Register");
-        cancel1 = new JButton("Cancel");
+        regUsernameLabel = new JLabel("Username*:");
+        emailLabel = new JLabel("Email*:");
+        phoneLabel = new JLabel("Phone*:");
+        regPasswordLabel = new JLabel("Password*:");
+        confirmPasswordLabel = new JLabel("Confirm Password*:");
+        regUsernameField = new JTextField(TEXT_FIELD_WIDTH);
+        emailField = new JTextField(PASSWORD_FIELD_WIDTH);
+        phoneField = new JTextField(PASSWORD_FIELD_WIDTH);
+        regPasswordField = new JPasswordField(PASSWORD_FIELD_WIDTH);
+        confirmPasswordField = new JPasswordField(PASSWORD_FIELD_WIDTH);
+        registerSubmitButton = new JButton("Register");
+        regCancelButton = new JButton("Cancel");
 
         initializeUI();
     }
@@ -104,28 +104,28 @@ public class FrontEnd extends JPanel implements ActionListener {
     private void initializeUI() {
         setupLoginPanel();
         setupRegistrationPanel();
-        add(firstPanel);
+        add(loginPanel);
     }
 
     /**
      * Sets up the login panel with all its components.
      */
     private void setupLoginPanel() {
-        firstPanel.setLayout(new GridBagLayout());
-        firstPanel.setBorder(new TitledBorder("Login"));
+        loginPanel.setLayout(new GridBagLayout());
+        loginPanel.setBorder(new TitledBorder("Login"));
 
         // Set fonts
-        uname.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
-        pwd.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
+        usernameLabel.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
+        passwordLabel.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
 
         // Add components to panel
         GridBagConstraints gbc = createLoginConstraints();
         addLoginComponents(gbc);
 
         // Add action listeners
-        login.addActionListener(this);
-        cancel.addActionListener(this);
-        register.addActionListener(this);
+        loginButton.addActionListener(this);
+        cancelButton.addActionListener(this);
+        registerButton.addActionListener(this);
     }
 
     /**
@@ -144,10 +144,10 @@ public class FrontEnd extends JPanel implements ActionListener {
      * Adds components to the login panel.
      */
     private void addLoginComponents(GridBagConstraints gbc) {
-        firstPanel.add(uname, gbc);
+        loginPanel.add(usernameLabel, gbc);
         gbc.gridy++;
         gbc.insets = new Insets(20, 20, 0, 0);
-        firstPanel.add(pwd, gbc);
+        loginPanel.add(passwordLabel, gbc);
 
         gbc.gridx++;
         gbc.gridy = 0;
@@ -155,10 +155,10 @@ public class FrontEnd extends JPanel implements ActionListener {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1;
         gbc.insets = new Insets(10, 10, 0, 20);
-        firstPanel.add(un, gbc);
+        loginPanel.add(usernameField, gbc);
         gbc.gridy++;
         gbc.insets = new Insets(20, 10, 0, 20);
-        firstPanel.add(pd, gbc);
+        loginPanel.add(passwordField, gbc);
 
         gbc.gridx = 1;
         gbc.gridy++;
@@ -166,9 +166,9 @@ public class FrontEnd extends JPanel implements ActionListener {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         gbc.insets = new Insets(20, 35, 0, 0);
-        firstPanel.add(login, gbc);
+        loginPanel.add(loginButton, gbc);
         gbc.gridx++;
-        firstPanel.add(cancel, gbc);
+        loginPanel.add(cancelButton, gbc);
 
         gbc.gridx = 1;
         gbc.gridy++;
@@ -176,33 +176,33 @@ public class FrontEnd extends JPanel implements ActionListener {
         gbc.gridwidth = 1;
         gbc.insets = new Insets(30, 0, 10, 20);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        firstPanel.add(new JLabel("Don't have an account?"), gbc);
+        loginPanel.add(new JLabel("Don't have an account?"), gbc);
         gbc.gridx++;
         gbc.insets = new Insets(30, 0, 10, 20);
-        firstPanel.add(register, gbc);
+        loginPanel.add(registerButton, gbc);
     }
 
     /**
      * Sets up the registration panel with all its components.
      */
     private void setupRegistrationPanel() {
-        secondPanel.setLayout(new GridBagLayout());
-        secondPanel.setBorder(new TitledBorder("Register"));
+        registrationPanel.setLayout(new GridBagLayout());
+        registrationPanel.setBorder(new TitledBorder("Register"));
 
         // Set fonts
-        uname1.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
-        eml1.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
-        ph1.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
-        pwd1.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
-        cpwd1.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
+        regUsernameLabel.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
+        emailLabel.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
+        phoneLabel.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
+        regPasswordLabel.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
+        confirmPasswordLabel.setFont(new Font(FONT_NAME, Font.BOLD, FONT_SIZE));
 
         // Add components to panel
         GridBagConstraints gbc = createRegistrationConstraints();
         addRegistrationComponents(gbc);
 
         // Add action listeners
-        reg1.addActionListener(this);
-        cancel1.addActionListener(this);
+        registerSubmitButton.addActionListener(this);
+        regCancelButton.addActionListener(this);
     }
 
     /**
@@ -221,16 +221,16 @@ public class FrontEnd extends JPanel implements ActionListener {
      * Adds components to the registration panel.
      */
     private void addRegistrationComponents(GridBagConstraints gbc) {
-        secondPanel.add(uname1, gbc);
+        registrationPanel.add(regUsernameLabel, gbc);
         gbc.gridy++;
         gbc.insets = new Insets(20, 20, 0, 0);
-        secondPanel.add(eml1, gbc);
+        registrationPanel.add(emailLabel, gbc);
         gbc.gridy++;
-        secondPanel.add(ph1, gbc);
+        registrationPanel.add(phoneLabel, gbc);
         gbc.gridy++;
-        secondPanel.add(pwd1, gbc);
+        registrationPanel.add(regPasswordLabel, gbc);
         gbc.gridy++;
-        secondPanel.add(cpwd1, gbc);
+        registrationPanel.add(confirmPasswordLabel, gbc);
 
         gbc.gridx++;
         gbc.gridy = 0;
@@ -238,16 +238,16 @@ public class FrontEnd extends JPanel implements ActionListener {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1;
         gbc.insets = new Insets(10, 10, 0, 20);
-        secondPanel.add(un1, gbc);
+        registrationPanel.add(regUsernameField, gbc);
         gbc.gridy++;
         gbc.insets = new Insets(20, 10, 0, 20);
-        secondPanel.add(email1, gbc);
+        registrationPanel.add(emailField, gbc);
         gbc.gridy++;
-        secondPanel.add(pn1, gbc);
+        registrationPanel.add(phoneField, gbc);
         gbc.gridy++;
-        secondPanel.add(pd1, gbc);
+        registrationPanel.add(regPasswordField, gbc);
         gbc.gridy++;
-        secondPanel.add(cpd1, gbc);
+        registrationPanel.add(confirmPasswordField, gbc);
 
         gbc.gridx = 1;
         gbc.gridy = 6;
@@ -255,23 +255,23 @@ public class FrontEnd extends JPanel implements ActionListener {
         gbc.gridwidth = 1;
         gbc.insets = new Insets(20, 35, 10, 20);
         gbc.fill = GridBagConstraints.NONE;
-        secondPanel.add(reg1, gbc);
+        registrationPanel.add(registerSubmitButton, gbc);
         gbc.gridx++;
-        secondPanel.add(cancel1, gbc);
+        registrationPanel.add(regCancelButton, gbc);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         Object source = e.getSource();
-        if (source == login) {
+        if (source == loginButton) {
             handleLogin();
-        } else if (source == cancel) {
+        } else if (source == cancelButton) {
             System.exit(0);
-        } else if (source == register) {
+        } else if (source == registerButton) {
             switchToRegistration();
-        } else if (source == reg1) {
+        } else if (source == registerSubmitButton) {
             handleRegistration();
-        } else if (source == cancel1) {
+        } else if (source == regCancelButton) {
             switchToLogin();
         }
     }
@@ -284,8 +284,8 @@ public class FrontEnd extends JPanel implements ActionListener {
             return;
         }
 
-        String username = un.getText();
-        String password = new String(pd.getPassword());
+        String username = usernameField.getText();
+        String password = new String(passwordField.getPassword());
         
         try {
             if (tryDatabaseLogin(username, password)) {
@@ -301,11 +301,11 @@ public class FrontEnd extends JPanel implements ActionListener {
      * Validates login input fields.
      */
     private boolean validateLoginInput() {
-        if (un.getText().isEmpty()) {
+        if (usernameField.getText().isEmpty()) {
             JOptionPane.showMessageDialog(frame, "Please enter Username!");
             return false;
         }
-        if (pd.getPassword().length == 0) {
+        if (passwordField.getPassword().length == 0) {
             JOptionPane.showMessageDialog(frame, "Please enter Password!");
             return false;
         }
@@ -382,8 +382,8 @@ public class FrontEnd extends JPanel implements ActionListener {
      * Switches to the registration panel.
      */
     private void switchToRegistration() {
-        remove(firstPanel);
-        add(secondPanel);
+        remove(loginPanel);
+        add(registrationPanel);
         repaint();
         revalidate();
     }
@@ -392,8 +392,8 @@ public class FrontEnd extends JPanel implements ActionListener {
      * Switches to the login panel.
      */
     private void switchToLogin() {
-        remove(secondPanel);
-        add(firstPanel);
+        remove(registrationPanel);
+        add(loginPanel);
         repaint();
         revalidate();
     }
@@ -406,10 +406,10 @@ public class FrontEnd extends JPanel implements ActionListener {
             return;
         }
 
-        String username = un1.getText();
-        String email = email1.getText();
-        String phone = pn1.getText();
-        String password = new String(pd1.getPassword());
+        String username = regUsernameField.getText();
+        String email = emailField.getText();
+        String phone = phoneField.getText();
+        String password = new String(regPasswordField.getPassword());
 
         try {
             if (tryDatabaseRegistration(username, email, phone, password)) {
@@ -425,44 +425,44 @@ public class FrontEnd extends JPanel implements ActionListener {
      * Validates registration input fields.
      */
     private boolean validateRegistrationInput() {
-        if (un1.getText().isEmpty()) {
+        if (regUsernameField.getText().isEmpty()) {
             JOptionPane.showMessageDialog(frame, "Please enter Username!");
             return false;
         }
-        if (un1.getText().length() > 30) {
+        if (regUsernameField.getText().length() > 30) {
             JOptionPane.showMessageDialog(frame, "Maximum 30 characters allowed for Username!");
             return false;
         }
-        if (email1.getText().isEmpty()) {
+        if (emailField.getText().isEmpty()) {
             JOptionPane.showMessageDialog(frame, "Please enter Email!");
             return false;
         }
-        if (!isValidEmail(email1.getText())) {
+        if (!isValidEmail(emailField.getText())) {
             JOptionPane.showMessageDialog(frame, "Invalid Email!");
             return false;
         }
-        if (pn1.getText().isEmpty()) {
+        if (phoneField.getText().isEmpty()) {
             JOptionPane.showMessageDialog(frame, "Please enter Phone!");
             return false;
         }
-        if (!isValidPhone(pn1.getText())) {
+        if (!isValidPhone(phoneField.getText())) {
             JOptionPane.showMessageDialog(frame, "Invalid Phone!");
             return false;
         }
-        if (pd1.getPassword().length == 0) {
+        if (regPasswordField.getPassword().length == 0) {
             JOptionPane.showMessageDialog(frame, "Please enter Password!");
             return false;
         }
-        if (pd1.getPassword().length < 3 || pd1.getPassword().length > 15) {
+        if (regPasswordField.getPassword().length < 3 || regPasswordField.getPassword().length > 15) {
             JOptionPane.showMessageDialog(frame, 
                 "Password should be minimum 3 characters and maximum 15 characters!");
             return false;
         }
-        if (cpd1.getPassword().length == 0) {
+        if (confirmPasswordField.getPassword().length == 0) {
             JOptionPane.showMessageDialog(frame, "Please confirm password!");
             return false;
         }
-        if (!new String(pd1.getPassword()).equals(new String(cpd1.getPassword()))) {
+        if (!new String(regPasswordField.getPassword()).equals(new String(confirmPasswordField.getPassword()))) {
             JOptionPane.showMessageDialog(frame, "Password Mismatch: Check again!");
             return false;
         }

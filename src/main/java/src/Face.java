@@ -27,7 +27,7 @@ import javax.swing.ImageIcon;
  * @since 1.0
  */
 public class Face {
-    private static final int GLOBAL_WINDOW_SIZE = 5;
+    private static final int WINDOW_SIZE = 5;
     private static final double SKIN_COLOR_INTENSITY_THRESHOLD = 6.0;
     private static final double SKIN_COLOR_HUE_MIN = 70.0;
     private static final double SKIN_COLOR_HUE_MAX = 150.0;
@@ -37,10 +37,10 @@ public class Face {
     private static final Dimension IDEAL_IMAGE_SIZE = new Dimension(48, 64);
     private static final long serialVersionUID = 1L;
 
-    public File file;
-    public Picture picture;
-    public String classification;
-    public String description;
+    private File file;
+    private Picture picture;
+    private String classification;
+    private String description;
 
     /**
      * Creates a new Face instance from a file.

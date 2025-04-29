@@ -30,41 +30,43 @@ import javax.swing.border.TitledBorder;
 public class FaceBrowser extends JPanel {
 
     private static final long serialVersionUID = 1L;
-    private ArrayList<FaceItem> m_faces;
-    private int height = 0;
-    private HashMap<FaceItem, Face> mapItem2Face = new HashMap<FaceItem, Face>();
-    private HashMap<Face, FaceItem> mapFace2Item = new HashMap<Face, FaceItem>();
+    private ArrayList<FaceItem> faceItems;
+    private int totalHeight = 0;
+    private HashMap<FaceItem, Face> itemToFaceMap;
+    private HashMap<Face, FaceItem> faceToItemMap;
 
     public FaceBrowser() {
-        m_faces = new ArrayList<FaceItem>();
+        faceItems = new ArrayList<>();
+        itemToFaceMap = new HashMap<>();
+        faceToItemMap = new HashMap<>();
         this.setPreferredSize(new Dimension(200, 500));
         this.setBackground(this.getBackground().brighter());
     }
 
     public void refresh() {
-        for (FaceItem fi : mapItem2Face.keySet()) {
-            fi.refresh();
+        for (FaceItem item : itemToFaceMap.keySet()) {
+            item.refresh();
         }
     }
 
-    public void addFace(Face f) {
-        FaceItem fi = new FaceItem(f);
-        this.add(fi);
-        mapItem2Face.put(fi, f);
-        mapFace2Item.put(f, fi);
+    public void addFace(Face face) {
+        FaceItem item = new FaceItem(face);
+        this.add(item);
+        itemToFaceMap.put(item, face);
+        faceToItemMap.put(face, item);
     }
 
     public void empty() {
         this.removeAll();
-        m_faces.clear();
-        mapItem2Face.clear();
-        mapFace2Item.clear();
+        faceItems.clear();
+        itemToFaceMap.clear();
+        faceToItemMap.clear();
         doLayout();
     }
 
     @Override
     public Dimension getMinimumSize() {
-        return new Dimension(256, height);
+        return new Dimension(256, totalHeight);
     }
 
     @Override
@@ -73,7 +75,7 @@ public class FaceBrowser extends JPanel {
     }
 
     public void highlightClassifiedAs(String classification) {
-        for (FaceItem item : m_faces) {
+        for (FaceItem item : faceItems) {
             if (item.getFace().getClassification().equals(classification)) {
                 item.setBorder(BorderFactory.createLineBorder(Color.RED, 2));
             } else {
@@ -82,10 +84,10 @@ public class FaceBrowser extends JPanel {
         }
     }
 
-    public void orderAs(FeatureSpace.fd_pair[] faceDistances) {
+    public void orderAs(FeatureSpace.FaceDistancePair[] faceDistances) {
         removeAll();
-        for (FeatureSpace.fd_pair fd : faceDistances) {
-            add(new FaceItem(fd.face));
+        for (FeatureSpace.FaceDistancePair pair : faceDistances) {
+            add(new FaceItem(pair.getFace()));
         }
         revalidate();
         repaint();
@@ -93,19 +95,17 @@ public class FaceBrowser extends JPanel {
 
     @Override
     public void doLayout() {
-        // TODO Auto-generated method stub
         super.doLayout();
 
         Component[] components = this.getComponents();
-        int cury = 0;
-        for (Component c : components) {
-            c.setLocation(0, cury);
-            c.setSize(this.getWidth(), c.getHeight());
-            cury += c.getHeight();
+        int currentY = 0;
+        for (Component component : components) {
+            component.setLocation(0, currentY);
+            component.setSize(this.getWidth(), component.getHeight());
+            currentY += component.getHeight();
         }
 
-        height = cury;
-
+        totalHeight = currentY;
         this.revalidate();
     }
 }
@@ -119,21 +119,21 @@ public class FaceBrowser extends JPanel {
 class FaceItem extends JPanel {
 
     private static final long serialVersionUID = 1L;
-    Face face;
-    ImageIcon image;
-    JLabel jlImage;
-    JLabel jlText;
-    TitledBorder border;
-    ImageIcon imageEigen;
-    JLabel jlEigenface;
-    double dist = -1;
+    private Face face;
+    private ImageIcon image;
+    private JLabel imageLabel;
+    private JLabel textLabel;
+    private TitledBorder border;
+    private ImageIcon eigenfaceImage;
+    private JLabel eigenfaceLabel;
+    private double distance = -1;
 
     public FaceItem() {
         init();
     }
 
     public void setDistance(double dist) {
-        this.dist = dist;
+        this.distance = dist;
 
         updateLabel();
 
@@ -158,14 +158,14 @@ class FaceItem extends JPanel {
         }
         text += "</b></font>";
 
-        if (this.dist >= 0) {
-            text += ("<br><b>" + "Distance: " + this.dist + "</b>");
+        if (this.distance >= 0) {
+            text += ("<br><b>" + "Distance: " + this.distance + "</b>");
         }
 
         text += "<br>" + this.face.getDescription() + "";
         text += "<br><font size=-2 color=#7f7f7f>" + this.face.getFile().getAbsolutePath() + "</font>";
         text += "</html>";
-        jlText.setText(text);
+        textLabel.setText(text);
     }
 
     public void setHighlighted(boolean b) {
@@ -181,7 +181,7 @@ class FaceItem extends JPanel {
 
     public void refresh() {
         this.image = new ImageIcon(this.face.getPicture().getImage());
-        jlImage.setIcon(this.image);
+        imageLabel.setIcon(this.image);
     }
 
     public void setFace(Face f) {
@@ -189,8 +189,8 @@ class FaceItem extends JPanel {
         refresh();
         border.setTitle(f.getFile().getName());
         updateLabel();
-        Insets i = jlImage.getInsets();
-        jlImage.setPreferredSize(
+        Insets i = imageLabel.getInsets();
+        imageLabel.setPreferredSize(
                 new Dimension(
                 image.getIconWidth() + i.left + i.right,
                 image.getIconHeight() + i.top + i.bottom));
@@ -206,15 +206,15 @@ class FaceItem extends JPanel {
 
         this.setOpaque(false);
 
-        jlImage = new JLabel();
-        jlImage.setBorder(BorderFactory.createBevelBorder(1));
-        jlText = new JLabel("");
-        jlText.setVerticalAlignment(JLabel.TOP);
-        jlEigenface = new JLabel();
-        jlEigenface.setBorder(BorderFactory.createBevelBorder(1));
+        imageLabel = new JLabel();
+        imageLabel.setBorder(BorderFactory.createBevelBorder(1));
+        textLabel = new JLabel("");
+        textLabel.setVerticalAlignment(JLabel.TOP);
+        eigenfaceLabel = new JLabel();
+        eigenfaceLabel.setBorder(BorderFactory.createBevelBorder(1));
 
-        this.add(jlImage, BorderLayout.WEST);
-        this.add(jlText, BorderLayout.CENTER);
+        this.add(imageLabel, BorderLayout.WEST);
+        this.add(textLabel, BorderLayout.CENTER);
     }
 
     public FaceItem(Face f) {
