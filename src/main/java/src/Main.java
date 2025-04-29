@@ -231,16 +231,14 @@ public class Main extends JApplet implements ActionListener {
             fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
             if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
                 long startTime = System.currentTimeMillis();
-
                 updateStatus("Loading Files");
                 File file = fc.getSelectedFile();
                 Face f = new Face(file);
                 f.load(true);
-
                 processFaceRecognition(f);
                 displayResults(startTime);
             }
-        } catch (MalformedURLException | IOException e) {
+        } catch (Exception e) {
             System.err.println("There was a problem opening a file : " + e.getMessage());
         }
     }
@@ -274,7 +272,7 @@ public class Main extends JApplet implements ActionListener {
                 setupFaceBrowser();
                 enableTrainingButtons();
             }
-        } catch (MalformedURLException | IOException e) {
+        } catch (Exception e) {
             System.err.println("There was a problem opening a file : " + e.getMessage());
         }
     }
@@ -373,7 +371,7 @@ public class Main extends JApplet implements ActionListener {
     }
 
     public BufferedImage getAverageFaceImage() {
-        return CreateImageFromMatrix(eigenFaces.averageFace.getRowPackedCopy(), IDEAL_IMAGE_SIZE.width);
+        return CreateImageFromMatrix(eigenFaces.getAverageFace().getRowPackedCopy(), IDEAL_IMAGE_SIZE.width);
     }
 
     public static BufferedImage CreateImageFromMatrix(double[] img, int width) {
@@ -420,7 +418,7 @@ public class Main extends JApplet implements ActionListener {
             bFinished = false;
             sProgress = "Starting...";
 
-            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
                 @Override
                 protected Void doInBackground() {
                     calc.run();

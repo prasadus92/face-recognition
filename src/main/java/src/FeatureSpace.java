@@ -11,15 +11,14 @@ import java.util.Comparator;
 public class FeatureSpace {
 
     public static final DistanceMeasure EUCLIDEAN_DISTANCE = new DistanceMeasure() {
-        public double DistanceBetween(FeatureVector obj1, FeatureVector obj2) {
-            int num = obj1.getFeatureVector().length;
-            num = (obj2.getFeatureVector().length > num ? obj2.getFeatureVector().length : num);
-            double dist = 0;
-            for (int i = 0; i < num; i++) {
-                dist += ((obj1.getFeatureVector()[i] - obj2.getFeatureVector()[i])
-                        * (obj1.getFeatureVector()[i] - obj2.getFeatureVector()[i]));
+        @Override
+        public double calculateDistance(FeatureVector fv1, FeatureVector fv2) {
+            double sum = 0;
+            for (int i = 0; i < fv1.getFeatureVector().length; i++) {
+                double diff = fv1.getFeatureVector()[i] - fv2.getFeatureVector()[i];
+                sum += diff * diff;
             }
-            return Math.sqrt(dist);
+            return Math.sqrt(sum);
         }
     };
     private ArrayList<FeatureVector> featureSpace;
@@ -50,9 +49,9 @@ public class FeatureSpace {
         }
 
         String ret = classifications.get(featureSpace.get(0).getClassification());
-        double dist = measure.DistanceBetween(obj, featureSpace.get(0));
+        double dist = measure.calculateDistance(obj, featureSpace.get(0));
         for (int i = 1; i < featureSpace.size(); i++) {
-            double d = measure.DistanceBetween(obj, featureSpace.get(i));
+            double d = measure.calculateDistance(obj, featureSpace.get(i));
             if (d < dist) {
                 dist = d;
                 ret = classifications.get(featureSpace.get(i).getClassification());
@@ -61,99 +60,29 @@ public class FeatureSpace {
         return ret;
     }
 
-    public String knn(DistanceMeasure measure, FeatureVector obj, int nn) {
-        if (getFeatureSpaceSize() < 1) {
+    public String knn(DistanceMeasure measure, FeatureVector fv, int k) {
+        FeatureSpace.fd_pair[] distances = orderByDistance(measure, fv);
+        if (distances.length == 0) {
             return null;
         }
-        String ret = "";
-        class di_pair {
+        return distances[0].face.getClassification();
+    }
 
-            double dist;
-            FeatureVector obj;
-        };
-        di_pair[] dp = new di_pair[featureSpace.size()];
-
+    public FeatureSpace.fd_pair[] orderByDistance(DistanceMeasure measure, FeatureVector fv) {
+        FeatureSpace.fd_pair[] distances = new FeatureSpace.fd_pair[featureSpace.size()];
         for (int i = 0; i < featureSpace.size(); i++) {
-            dp[i] = new di_pair();
-            dp[i].obj = featureSpace.get(i);
-            dp[i].dist = measure.DistanceBetween(obj, featureSpace.get(i));
+            distances[i] = new FeatureSpace.fd_pair();
+            distances[i].face = featureSpace.get(i).getFace();
+            distances[i].dist = measure.calculateDistance(fv, featureSpace.get(i));
         }
-
-        Comparator diCompare = new Comparator() {
-            public int compare(Object arg0, Object arg1) {
-                di_pair a = (di_pair) arg0;
-                di_pair b = (di_pair) arg1;
-
-                return (int) a.dist - (int) b.dist;
-            }
-        };
-
-        Arrays.sort(dp, diCompare);
-
-        int[] accm = new int[classifications.size()];
-        for (int i = 0; i < classifications.size(); i++) {
-            accm[i] = 0;
-        }
-
-        int max = 0;
-        int ind = 0;
-
-        // find the most common neighbouring classification
-        for (int i = 0; i < nn; i++) {
-            int c = dp[i].obj.getClassification();
-            accm[c]++;
-            if (accm[c] > max) {
-                max = accm[c];
-                ind = c;
-            }
-        }
-        return classifications.get(dp[ind].obj.getClassification());
+        Arrays.sort(distances, (a, b) -> Double.compare(a.dist, b.dist));
+        return distances;
     }
 
     public class fd_pair {
 
         public Face face;
         public double dist;
-    }
-
-    public fd_pair[] orderByDistance(DistanceMeasure measure, FeatureVector obj) {
-        ArrayList<fd_pair> orderedList = new ArrayList<fd_pair>();
-        if (getFeatureSpaceSize() < 1) {
-            return null;
-        }
-
-        class di_pair {
-
-            double dist;
-            FeatureVector obj;
-        };
-        di_pair[] dp = new di_pair[featureSpace.size()];
-
-        for (int i = 0; i < featureSpace.size(); i++) {
-            dp[i] = new di_pair();
-            dp[i].obj = featureSpace.get(i);
-            dp[i].dist = measure.DistanceBetween(obj, featureSpace.get(i));
-        }
-
-        Comparator diCompare = new Comparator() {
-            public int compare(Object arg0, Object arg1) {
-                di_pair a = (di_pair) arg0;
-                di_pair b = (di_pair) arg1;
-
-                return (int) a.dist - (int) b.dist;
-            }
-        };
-
-        Arrays.sort(dp, diCompare);
-
-        for (di_pair dfp : dp) {
-            fd_pair fd = new fd_pair();
-            fd.face = dfp.obj.getFace();
-            fd.dist = dfp.dist;
-            orderedList.add(fd);
-        }
-
-        return orderedList.toArray(new fd_pair[0]);
     }
 
     public double[][] get3dFeatureSpace() {

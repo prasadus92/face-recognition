@@ -254,6 +254,15 @@ public class TSCD {
     }
 
     /**
+     * Gets the average face matrix.
+     *
+     * @return The average face matrix
+     */
+    public Matrix getAverageFace() {
+        return averageFace;
+    }
+
+    /**
      * Helper class for sorting eigenvalues and eigenvectors.
      */
     private static class di_pair {

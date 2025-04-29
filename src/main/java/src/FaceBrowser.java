@@ -72,28 +72,23 @@ public class FaceBrowser extends JPanel {
         return getMinimumSize();
     }
 
-    public void highlightClassifiedAs(String s) {
-        for (FaceItem fi : mapItem2Face.keySet()) {
-            Face face = fi.face;
-            if (face != null && face.classification != null) {
-                boolean sameGroup = face.classification.equals(s);
-                fi.setHighlighted(sameGroup);
+    public void highlightClassifiedAs(String classification) {
+        for (FaceItem item : m_faces) {
+            if (item.getFace().getClassification().equals(classification)) {
+                item.setBorder(BorderFactory.createLineBorder(Color.RED, 2));
+            } else {
+                item.setBorder(BorderFactory.createRaisedBevelBorder());
             }
         }
     }
 
-    public void orderAs(FeatureSpace.fd_pair[] facePairs) {
-        this.removeAll();
-
-        for (FeatureSpace.fd_pair fd : facePairs) {
-            if (fd.face.classification.equals(Main.classification)) {
-                FaceItem fi = mapFace2Item.get(fd.face);
-                fi.setFace(fd.face);
-                fi.setDistance(fd.dist);
-                this.add(fi);
-            }
+    public void orderAs(FeatureSpace.fd_pair[] faceDistances) {
+        removeAll();
+        for (FeatureSpace.fd_pair fd : faceDistances) {
+            add(new FaceItem(fd.face));
         }
-
+        revalidate();
+        repaint();
     }
 
     @Override
@@ -155,26 +150,20 @@ class FaceItem extends JPanel {
 
     private void updateLabel() {
         String text = "<html>";
-
         text += "<font size=+1><font color=#7f7f7f>Classification:</font> ";
-        if (this.face.classification == null) {
+        if (this.face.getClassification() == null) {
             text += "<font color=#7f0000>[unclassified]</font>";
         } else {
-            text += "<font color=#00007f>" + this.face.classification + "</font>";
+            text += "<font color=#00007f>" + this.face.getClassification() + "</font>";
         }
         text += "</b></font>";
 
         if (this.dist >= 0) {
             text += ("<br><b>" + "Distance: " + this.dist + "</b>");
-
         }
 
-        text += "<br>" + this.face.description + "";
-
-        text += "<br><font size=-2 color=#7f7f7f>" + this.face.file.getAbsolutePath() + "</font>";
-
-
-
+        text += "<br>" + this.face.getDescription() + "";
+        text += "<br><font size=-2 color=#7f7f7f>" + this.face.getFile().getAbsolutePath() + "</font>";
         text += "</html>";
         jlText.setText(text);
     }
@@ -191,29 +180,20 @@ class FaceItem extends JPanel {
     }
 
     public void refresh() {
-        this.image = new ImageIcon(this.face.picture.img);
+        this.image = new ImageIcon(this.face.getPicture().getImage());
         jlImage.setIcon(this.image);
     }
 
     public void setFace(Face f) {
         this.face = f;
-
         refresh();
-
-        border.setTitle(f.file.getName());
-
-
+        border.setTitle(f.getFile().getName());
         updateLabel();
-
-
-
         Insets i = jlImage.getInsets();
         jlImage.setPreferredSize(
                 new Dimension(
                 image.getIconWidth() + i.left + i.right,
                 image.getIconHeight() + i.top + i.bottom));
-
-
     }
 
     private void init() {
@@ -245,5 +225,9 @@ class FaceItem extends JPanel {
     @Override
     public Dimension getPreferredSize() {
         return getMinimumSize();
+    }
+
+    public Face getFace() {
+        return face;
     }
 }

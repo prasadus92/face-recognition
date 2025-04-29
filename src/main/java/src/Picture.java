@@ -36,7 +36,7 @@ public class Picture extends JComponent {
 	/**
 	 * Gets the current image.
 	 *
-	 * @return the current image
+	 * @return The current image
 	 */
 	public BufferedImage getImage() {
 		return image;
@@ -45,7 +45,7 @@ public class Picture extends JComponent {
 	/**
 	 * Sets the image to display.
 	 *
-	 * @param image the new image to display
+	 * @param image The new image to display
 	 */
 	public void setImage(BufferedImage image) {
 		this.image = image;

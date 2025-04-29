@@ -16,8 +16,6 @@ import java.io.PrintWriter;
 import java.sql.*;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
@@ -36,20 +34,6 @@ public class FrontEnd extends JPanel implements ActionListener {
     private static final String DB_URL = "jdbc:mysql://localhost/3dface";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "";
-    private static final int MAX_POOL_SIZE = 10;
-    private static final HikariDataSource dataSource;
-
-    static {
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(DB_URL);
-        config.setUsername(DB_USER);
-        config.setPassword(DB_PASSWORD);
-        config.setMaximumPoolSize(MAX_POOL_SIZE);
-        config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        dataSource = new HikariDataSource(config);
-    }
 
     public static final JFrame frame = new JFrame("3D Face Recognition under Expressions, Occlusions and Pose Variations");
     
@@ -603,14 +587,5 @@ public class FrontEnd extends JPanel implements ActionListener {
             }
             createAndShowGUI();
         });
-    }
-
-    /**
-     * Closes the database connection pool.
-     */
-    public static void closeDataSource() {
-        if (dataSource != null && !dataSource.isClosed()) {
-            dataSource.close();
-        }
     }
 }
