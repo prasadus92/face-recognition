@@ -152,13 +152,13 @@ public class Face {
         
         picture = new Picture(image);
         
-        double[] originalPixels = picture.getImageColourPixels().clone();
+        double[] originalPixels = picture.getImageColorPixels().clone();
         int[] originalPixelsInt = new int[originalPixels.length];
         for (int i = 0; i < originalPixels.length; i++) {
             originalPixelsInt[i] = (int) originalPixels[i];
         }
 
-        double[] pixels = picture.getImageColourPixels().clone();
+        double[] pixels = picture.getImageColorPixels().clone();
         double[] processedPixels = pixels.clone();
         
         processSkinColorDetection(width, height, pixels, processedPixels);
