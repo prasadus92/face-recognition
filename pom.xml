@@ -15,8 +15,8 @@
     <developers>
         <developer>
             <name>Prasad Subrahmanya</name>
-            <email>prasad@example.com</email>
-            <url>https://github.com/prasad</url>
+            <email>prasadus92@gmail.com</email>
+            <url>https://github.com/prasadus92</url>
         </developer>
     </developers>
 
@@ -87,13 +87,6 @@
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <version>${mysql.version}</version>
-        </dependency>
-
-        <!-- HikariCP Connection Pool -->
-        <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-            <version>5.0.1</version>
         </dependency>
 
         <!-- Jama Matrix Library -->
