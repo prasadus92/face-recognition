@@ -843,39 +843,32 @@ public class BenchmarkRunner {
      * Prints help message.
      */
     private static void printHelp() {
-        System.out.println("""
-            Face Recognition Benchmark Runner
-            ==================================
-
-            Usage: java -cp ... com.facerecognition.benchmark.BenchmarkRunner [options]
-
-            Required:
-              --dataset PATH       Path to the dataset directory
-
-            Options:
-              --format FORMAT      Dataset format: orl, yale, lfw, custom (default: custom)
-              --output DIR         Output directory for reports (default: ./benchmark_results)
-              --algorithms NAMES   Comma-separated list: eigenfaces,fisherfaces,lbph (default: all)
-              --type TYPE          Benchmark type: accuracy, performance, cross_validation, all (default: all)
-              --folds N            Number of folds for cross-validation (default: 5)
-              --train-ratio R      Training ratio for train/test split (default: 0.7)
-              --threshold T        Recognition threshold (default: 0.6)
-              --warmup N           Warmup iterations for performance benchmark (default: 10)
-              --runs N             Measurement runs for performance benchmark (default: 100)
-              --components N       Number of components for PCA/LDA (default: 10)
-              --verbose            Enable verbose output (default)
-              --quiet              Disable verbose output
-              --help, -h           Show this help message
-
-            Examples:
-              # Run all benchmarks on ORL dataset
-              java -cp ... BenchmarkRunner --dataset /path/to/orl_faces --format orl
-
-              # Run only accuracy benchmark with specific algorithms
-              java -cp ... BenchmarkRunner --dataset /data/faces --type accuracy --algorithms eigenfaces,lbph
-
-              # Run cross-validation with 10 folds
-              java -cp ... BenchmarkRunner --dataset /data/faces --type cross_validation --folds 10
-            """);
+        System.out.println(
+            "Face Recognition Benchmark Runner\n" +
+            "==================================\n\n" +
+            "Usage: java -cp ... com.facerecognition.benchmark.BenchmarkRunner [options]\n\n" +
+            "Required:\n" +
+            "  --dataset PATH       Path to the dataset directory\n\n" +
+            "Options:\n" +
+            "  --format FORMAT      Dataset format: orl, yale, lfw, custom (default: custom)\n" +
+            "  --output DIR         Output directory for reports (default: ./benchmark_results)\n" +
+            "  --algorithms NAMES   Comma-separated list: eigenfaces,fisherfaces,lbph (default: all)\n" +
+            "  --type TYPE          Benchmark type: accuracy, performance, cross_validation, all (default: all)\n" +
+            "  --folds N            Number of folds for cross-validation (default: 5)\n" +
+            "  --train-ratio R      Training ratio for train/test split (default: 0.7)\n" +
+            "  --threshold T        Recognition threshold (default: 0.6)\n" +
+            "  --warmup N           Warmup iterations for performance benchmark (default: 10)\n" +
+            "  --runs N             Measurement runs for performance benchmark (default: 100)\n" +
+            "  --components N       Number of components for PCA/LDA (default: 10)\n" +
+            "  --verbose            Enable verbose output (default)\n" +
+            "  --quiet              Disable verbose output\n" +
+            "  --help, -h           Show this help message\n\n" +
+            "Examples:\n" +
+            "  # Run all benchmarks on ORL dataset\n" +
+            "  java -cp ... BenchmarkRunner --dataset /path/to/orl_faces --format orl\n\n" +
+            "  # Run only accuracy benchmark with specific algorithms\n" +
+            "  java -cp ... BenchmarkRunner --dataset /data/faces --type accuracy --algorithms eigenfaces,lbph\n\n" +
+            "  # Run cross-validation with 10 folds\n" +
+            "  java -cp ... BenchmarkRunner --dataset /data/faces --type cross_validation --folds 10");
     }
 }

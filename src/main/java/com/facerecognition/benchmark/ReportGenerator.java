@@ -522,88 +522,86 @@ public class ReportGenerator {
     }
 
     private String generateHtmlStyles() {
-        return """
-            <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                background: #f5f5f5;
-                margin: 0;
-                padding: 0;
-              }
-              .container {
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 20px;
-                background: white;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-              }
-              h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-              h2 { color: #34495e; margin-top: 30px; }
-              h3 { color: #7f8c8d; }
-              .timestamp { color: #7f8c8d; font-style: italic; }
-              .summary-table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 20px 0;
-              }
-              .summary-table th, .summary-table td {
-                padding: 12px;
-                text-align: left;
-                border-bottom: 1px solid #ddd;
-              }
-              .summary-table th {
-                background: #3498db;
-                color: white;
-              }
-              .summary-table tr:hover { background: #f5f5f5; }
-              .chart-container {
-                margin: 30px 0;
-                padding: 20px;
-                background: #fafafa;
-                border-radius: 8px;
-              }
-              .chart-container canvas {
-                max-height: 400px;
-              }
-              .result-section {
-                margin: 20px 0;
-                padding: 20px;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                background: #fafafa;
-              }
-              .metrics-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 15px;
-                margin: 15px 0;
-              }
-              .metric-card {
-                padding: 15px;
-                background: white;
-                border-radius: 5px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-              }
-              .metric-card .label { font-size: 0.85em; color: #7f8c8d; }
-              .metric-card .value { font-size: 1.5em; font-weight: bold; color: #2c3e50; }
-              .confusion-matrix {
-                overflow-x: auto;
-                margin: 15px 0;
-              }
-              .confusion-matrix table {
-                border-collapse: collapse;
-                font-size: 0.9em;
-              }
-              .confusion-matrix th, .confusion-matrix td {
-                padding: 8px;
-                border: 1px solid #ddd;
-                text-align: center;
-              }
-              .confusion-matrix th { background: #ecf0f1; }
-            </style>
-            """;
+        return "<style>\n" +
+            "  body {\n" +
+            "    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;\n" +
+            "    line-height: 1.6;\n" +
+            "    color: #333;\n" +
+            "    background: #f5f5f5;\n" +
+            "    margin: 0;\n" +
+            "    padding: 0;\n" +
+            "  }\n" +
+            "  .container {\n" +
+            "    max-width: 1200px;\n" +
+            "    margin: 0 auto;\n" +
+            "    padding: 20px;\n" +
+            "    background: white;\n" +
+            "    box-shadow: 0 2px 5px rgba(0,0,0,0.1);\n" +
+            "  }\n" +
+            "  h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }\n" +
+            "  h2 { color: #34495e; margin-top: 30px; }\n" +
+            "  h3 { color: #7f8c8d; }\n" +
+            "  .timestamp { color: #7f8c8d; font-style: italic; }\n" +
+            "  .summary-table {\n" +
+            "    width: 100%;\n" +
+            "    border-collapse: collapse;\n" +
+            "    margin: 20px 0;\n" +
+            "  }\n" +
+            "  .summary-table th, .summary-table td {\n" +
+            "    padding: 12px;\n" +
+            "    text-align: left;\n" +
+            "    border-bottom: 1px solid #ddd;\n" +
+            "  }\n" +
+            "  .summary-table th {\n" +
+            "    background: #3498db;\n" +
+            "    color: white;\n" +
+            "  }\n" +
+            "  .summary-table tr:hover { background: #f5f5f5; }\n" +
+            "  .chart-container {\n" +
+            "    margin: 30px 0;\n" +
+            "    padding: 20px;\n" +
+            "    background: #fafafa;\n" +
+            "    border-radius: 8px;\n" +
+            "  }\n" +
+            "  .chart-container canvas {\n" +
+            "    max-height: 400px;\n" +
+            "  }\n" +
+            "  .result-section {\n" +
+            "    margin: 20px 0;\n" +
+            "    padding: 20px;\n" +
+            "    border: 1px solid #ddd;\n" +
+            "    border-radius: 8px;\n" +
+            "    background: #fafafa;\n" +
+            "  }\n" +
+            "  .metrics-grid {\n" +
+            "    display: grid;\n" +
+            "    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));\n" +
+            "    gap: 15px;\n" +
+            "    margin: 15px 0;\n" +
+            "  }\n" +
+            "  .metric-card {\n" +
+            "    padding: 15px;\n" +
+            "    background: white;\n" +
+            "    border-radius: 5px;\n" +
+            "    box-shadow: 0 1px 3px rgba(0,0,0,0.1);\n" +
+            "  }\n" +
+            "  .metric-card .label { font-size: 0.85em; color: #7f8c8d; }\n" +
+            "  .metric-card .value { font-size: 1.5em; font-weight: bold; color: #2c3e50; }\n" +
+            "  .confusion-matrix {\n" +
+            "    overflow-x: auto;\n" +
+            "    margin: 15px 0;\n" +
+            "  }\n" +
+            "  .confusion-matrix table {\n" +
+            "    border-collapse: collapse;\n" +
+            "    font-size: 0.9em;\n" +
+            "  }\n" +
+            "  .confusion-matrix th, .confusion-matrix td {\n" +
+            "    padding: 8px;\n" +
+            "    border: 1px solid #ddd;\n" +
+            "    text-align: center;\n" +
+            "  }\n" +
+            "  .confusion-matrix th { background: #ecf0f1; }\n" +
+            "</style>\n";
     }
 
     private String generateHtmlResultSection(String name, BenchmarkResult result) {
@@ -664,12 +662,11 @@ public class ReportGenerator {
     }
 
     private String generateMetricCard(String label, String value) {
-        return String.format("""
-                  <div class="metric-card">
-                    <div class="label">%s</div>
-                    <div class="value">%s</div>
-                  </div>
-            """, label, value);
+        return String.format(
+            "      <div class=\"metric-card\">\n" +
+            "        <div class=\"label\">%s</div>\n" +
+            "        <div class=\"value\">%s</div>\n" +
+            "      </div>\n", label, value);
     }
 
     private String generateChartScript(Map<String, BenchmarkResult> results) {

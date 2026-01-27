@@ -83,56 +83,24 @@ public class OpenApiConfig {
      * Builds the API description with markdown formatting.
      */
     private String buildApiDescription() {
-        return """
-            ## Overview
-
-            The Face Recognition API provides a comprehensive set of endpoints for face recognition
-            operations including enrollment, recognition, training, and identity management.
-
-            ## Features
-
-            - **Face Recognition**: Identify faces in uploaded images
-            - **Face Enrollment**: Register new faces with identities
-            - **Identity Management**: Create, update, list, and delete identities
-            - **Model Training**: Train and manage the face recognition model
-            - **Model Import/Export**: Save and restore trained models
-
-            ## Algorithms
-
-            The API supports multiple face recognition algorithms:
-            - **Eigenfaces**: PCA-based feature extraction
-            - **Fisherfaces**: LDA-based feature extraction
-            - **LBPH**: Local Binary Pattern Histograms
-
-            ## Getting Started
-
-            1. **Enroll faces**: Use `POST /api/v1/enroll` to register face images with identities
-            2. **Train the model**: Call `POST /api/v1/train` to train the recognition model
-            3. **Recognize faces**: Use `POST /api/v1/recognize` to identify faces in images
-
-            ## Response Codes
-
-            | Code | Description |
-            |------|-------------|
-            | 200 | Success |
-            | 201 | Created |
-            | 204 | No Content |
-            | 400 | Bad Request - Invalid input |
-            | 404 | Not Found - Resource not found |
-            | 409 | Conflict - Resource conflict |
-            | 500 | Internal Server Error |
-
-            ## Error Codes
-
-            | Code | Description |
-            |------|-------------|
-            | FACE_NOT_DETECTED | No face found in image |
-            | MULTIPLE_FACES | Multiple faces detected |
-            | POOR_QUALITY | Image quality too low |
-            | IDENTITY_NOT_FOUND | Identity does not exist |
-            | MODEL_NOT_TRAINED | Model requires training |
-            | VALIDATION_ERROR | Request validation failed |
-            """;
+        return "## Overview\n\n" +
+            "The Face Recognition API provides a comprehensive set of endpoints for face recognition " +
+            "operations including enrollment, recognition, training, and identity management.\n\n" +
+            "## Features\n\n" +
+            "- **Face Recognition**: Identify faces in uploaded images\n" +
+            "- **Face Enrollment**: Register new faces with identities\n" +
+            "- **Identity Management**: Create, update, list, and delete identities\n" +
+            "- **Model Training**: Train and manage the face recognition model\n" +
+            "- **Model Import/Export**: Save and restore trained models\n\n" +
+            "## Algorithms\n\n" +
+            "The API supports multiple face recognition algorithms:\n" +
+            "- **Eigenfaces**: PCA-based feature extraction\n" +
+            "- **Fisherfaces**: LDA-based feature extraction\n" +
+            "- **LBPH**: Local Binary Pattern Histograms\n\n" +
+            "## Getting Started\n\n" +
+            "1. **Enroll faces**: Use `POST /api/v1/enroll` to register face images with identities\n" +
+            "2. **Train the model**: Call `POST /api/v1/train` to train the recognition model\n" +
+            "3. **Recognize faces**: Use `POST /api/v1/recognize` to identify faces in images";
     }
 
     /**
