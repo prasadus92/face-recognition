@@ -28,7 +28,7 @@ import java.util.Objects;
  * double angle = landmarks.getFaceRotationAngle();
  * }</pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

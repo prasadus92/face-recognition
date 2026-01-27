@@ -62,7 +62,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * curl http://localhost:8080/identities
  * </pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

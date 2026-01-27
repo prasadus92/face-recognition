@@ -15,7 +15,7 @@ import java.util.Map;
  * <p>This DTO represents the full details of an enrolled identity
  * including all samples and metadata.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

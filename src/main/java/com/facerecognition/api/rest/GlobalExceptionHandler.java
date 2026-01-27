@@ -30,7 +30,7 @@ import java.util.UUID;
  * <p>This class provides centralized exception handling for all REST controllers,
  * converting exceptions into standardized {@link ErrorResponse} objects.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

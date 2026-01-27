@@ -33,7 +33,7 @@ import java.util.List;
  * <p>Access the Swagger UI at: {@code /swagger-ui.html}</p>
  * <p>Access the OpenAPI spec at: {@code /v3/api-docs}</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */
@@ -70,8 +70,8 @@ public class OpenApiConfig {
                 .version("2.0.0")
                 .description(buildApiDescription())
                 .contact(new Contact()
-                        .name("Face Recognition Team")
-                        .email("support@facerecognition.com")
+                        .name("Prasad Subrahmanya")
+                        .email("prasadus92@gmail.com")
                         .url("https://github.com/prasadus92/face-recognition"))
                 .license(new License()
                         .name("GNU General Public License v3.0")

@@ -60,7 +60,7 @@ import java.util.stream.Collectors;
  * <p>This class is thread-safe when using parallel detection. Individual
  * detector implementations must also be thread-safe for parallel mode.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see FaceDetector

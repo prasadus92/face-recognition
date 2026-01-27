@@ -12,7 +12,7 @@ import java.util.*;
  * <p>Identities are the core unit of recognition - the system
  * classifies unknown faces by matching them to enrolled identities.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

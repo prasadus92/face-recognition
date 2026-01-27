@@ -65,7 +65,7 @@ import java.util.stream.Stream;
  * models.forEach(System.out::println);
  * }</pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see ModelRepository

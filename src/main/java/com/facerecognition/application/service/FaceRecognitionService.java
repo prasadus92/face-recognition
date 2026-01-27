@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * System.out.println("Recognized: " + result.getIdentity().map(Identity::getName).orElse("Unknown"));
  * }</pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

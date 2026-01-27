@@ -35,7 +35,7 @@ import java.util.stream.Stream;
  * DatasetSplit split = dataset.split(0.8, 42); // 80% train, seed 42
  * }</pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see LoadedDataset

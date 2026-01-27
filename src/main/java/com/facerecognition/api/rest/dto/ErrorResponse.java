@@ -12,7 +12,7 @@ import java.util.List;
  * <p>This class provides a consistent error response format across
  * all API endpoints, including error codes, messages, and details.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

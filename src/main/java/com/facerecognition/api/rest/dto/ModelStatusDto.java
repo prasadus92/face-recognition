@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * <p>This DTO provides comprehensive information about the current
  * state of the face recognition model.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

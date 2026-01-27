@@ -14,7 +14,7 @@ import java.util.Map;
  * in the recognition system. The actual image data is sent as a
  * multipart file separately.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

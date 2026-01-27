@@ -18,7 +18,7 @@ import java.util.Objects;
  *   <li>Deep learning: typically 128-512 dimensions</li>
  * </ul>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see com.facerecognition.domain.service.FeatureExtractor

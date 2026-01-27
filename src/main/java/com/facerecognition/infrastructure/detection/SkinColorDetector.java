@@ -56,7 +56,7 @@ import java.util.*;
  *   <li>Best used as a fallback or in conjunction with other detectors</li>
  * </ul>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see FaceDetector

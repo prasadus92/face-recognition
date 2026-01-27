@@ -63,7 +63,7 @@ import java.util.stream.Stream;
  * face-recognition train -d dataset/ --validation-split 0.2 -o model.dat
  * </pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
  *   <li>Identity management - List, view, and delete identities</li>
  * </ul>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

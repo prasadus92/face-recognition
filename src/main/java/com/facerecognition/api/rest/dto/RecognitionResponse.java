@@ -13,7 +13,7 @@ import java.util.List;
  * <p>Contains the recognition result including the matched identity,
  * confidence score, alternative matches, and processing metrics.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

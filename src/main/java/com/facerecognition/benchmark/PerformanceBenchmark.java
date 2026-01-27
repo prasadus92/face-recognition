@@ -41,7 +41,7 @@ import java.util.function.Supplier;
  * System.out.println("Throughput: " + result.getPerformanceMetrics().get().getThroughput() + " fps");
  * }</pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see BenchmarkResult

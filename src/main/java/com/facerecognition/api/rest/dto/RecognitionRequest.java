@@ -13,7 +13,7 @@ import javax.validation.constraints.Min;
  * <p>This class encapsulates the parameters for a recognition request.
  * The actual image data is sent as a multipart file separately.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

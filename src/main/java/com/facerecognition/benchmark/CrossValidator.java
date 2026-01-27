@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  * System.out.println("Standard deviation: " + result.getStdAccuracy());
  * }</pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see DatasetLoader

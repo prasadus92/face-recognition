@@ -62,7 +62,7 @@ import java.util.function.Supplier;
  * System.out.println(results.getSummary());
  * }</pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see AccuracyBenchmark

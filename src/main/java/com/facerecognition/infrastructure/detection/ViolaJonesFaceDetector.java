@@ -63,7 +63,7 @@ import java.util.*;
  * For production use, consider using trained cascade classifiers from OpenCV
  * or dedicated machine learning libraries.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see FaceDetector

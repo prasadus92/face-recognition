@@ -54,7 +54,7 @@ import java.util.zip.GZIPOutputStream;
  * boolean valid = ModelSerializer.validateChecksum(Paths.get("model.frm"));
  * }</pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see TrainedModel

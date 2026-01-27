@@ -54,7 +54,7 @@ import java.util.stream.Stream;
  * face-recognition enroll -i photos/ --from-filenames --pattern "(.+)_\d+\.jpg"
  * </pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

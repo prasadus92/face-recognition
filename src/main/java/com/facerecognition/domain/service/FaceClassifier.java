@@ -22,7 +22,7 @@ import java.util.List;
  *   <li><b>NeuralNetClassifier</b>: Neural network classifier</li>
  * </ul>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see FeatureVector

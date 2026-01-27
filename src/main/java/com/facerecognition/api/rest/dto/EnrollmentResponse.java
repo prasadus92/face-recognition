@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * <p>Contains the result of an enrollment operation including
  * the created/updated identity and quality metrics.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

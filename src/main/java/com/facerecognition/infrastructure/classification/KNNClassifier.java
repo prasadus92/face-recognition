@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li><b>Weighted</b>: Distance-weighted voting</li>
  * </ul>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 1.0
  * @see FaceClassifier

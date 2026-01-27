@@ -27,7 +27,7 @@ import org.springframework.context.annotation.Bean;
  * <p>The API is documented using OpenAPI 3.0 and can be accessed via Swagger UI
  * at {@code /swagger-ui.html}.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */
@@ -40,8 +40,8 @@ import org.springframework.context.annotation.Bean;
         description = "A comprehensive REST API for face recognition operations including " +
                       "enrollment, recognition, training, and identity management.",
         contact = @Contact(
-            name = "Face Recognition Team",
-            email = "support@facerecognition.com",
+            name = "Prasad Subrahmanya",
+            email = "prasadus92@gmail.com",
             url = "https://github.com/prasadus92/face-recognition"
         ),
         license = @License(

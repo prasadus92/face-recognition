@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  *   <li>Processing time and quality metrics</li>
  * </ul>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

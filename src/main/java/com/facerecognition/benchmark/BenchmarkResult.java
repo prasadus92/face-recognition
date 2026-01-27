@@ -32,7 +32,7 @@ import java.util.*;
  * System.out.println("EER: " + result.getEqualErrorRate());
  * }</pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see AccuracyBenchmark

@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * learns the projection matrices or model parameters needed for
  * feature extraction.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see FeatureVector

@@ -26,7 +26,7 @@ import javax.imageio.ImageIO;
  * System.out.println("Quality score: " + face.getQualityScore());
  * }</pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see FaceRegion

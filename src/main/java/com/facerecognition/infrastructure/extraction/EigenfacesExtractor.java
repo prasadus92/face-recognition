@@ -46,7 +46,7 @@ import java.util.*;
  * FeatureVector features = extractor.extract(probeFace);
  * }</pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 1.0
  * @see FeatureExtractor

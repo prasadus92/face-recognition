@@ -35,7 +35,7 @@ import java.util.stream.Stream;
  * TrainTestSplit split = dataset.split(0.8);
  * }</pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

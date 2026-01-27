@@ -43,7 +43,7 @@ import java.util.*;
  * <p>This class is effectively immutable after construction. The builder
  * pattern ensures all fields are set before the model is used.</p>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  * @see ModelRepository

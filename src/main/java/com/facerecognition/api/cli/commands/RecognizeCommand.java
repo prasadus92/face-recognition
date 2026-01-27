@@ -48,7 +48,7 @@ import java.util.stream.Stream;
  * face-recognition recognize -i photo.jpg --model model.dat --threshold 0.8
  * </pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */

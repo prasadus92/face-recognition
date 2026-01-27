@@ -40,7 +40,7 @@ import java.util.concurrent.Callable;
  * face-recognition serve --port 8080 --model model.dat
  * </pre>
  *
- * @author Face Recognition Team
+ * @author Prasad Subrahmanya
  * @version 2.0
  * @since 2.0
  */
