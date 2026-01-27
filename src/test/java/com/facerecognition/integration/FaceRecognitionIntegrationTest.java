@@ -119,7 +119,8 @@ class FaceRecognitionIntegrationTest {
 
             assertThat(result.getConfidence()).isBetween(0.0, 1.0);
             assertThat(result.getMetrics()).isPresent();
-            assertThat(result.getMetrics().get().getTotalTimeMs()).isGreaterThan(0);
+            // Use >= 0 since fast operations may complete in sub-millisecond time
+            assertThat(result.getMetrics().get().getTotalTimeMs()).isGreaterThanOrEqualTo(0);
         }
 
         @Test
