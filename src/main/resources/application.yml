@@ -1,0 +1,171 @@
+# Face Recognition API - Application Configuration
+# =================================================
+
+spring:
+  application:
+    name: Face Recognition API
+
+  # Servlet configuration
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 20MB
+      file-size-threshold: 2KB
+
+  # Jackson JSON configuration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: true
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+    date-format: yyyy-MM-dd'T'HH:mm:ss
+
+# Server configuration
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: false
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+    min-response-size: 1024
+
+# Face Recognition configuration
+facerecognition:
+  # Detection settings
+  detection:
+    min-face-size: 30
+    min-confidence: 0.5
+    max-faces: 10
+
+  # Feature extraction settings
+  extraction:
+    algorithm: eigenfaces  # eigenfaces, fisherfaces, lbph
+    num-components: 10
+
+  # Classification settings
+  classification:
+    algorithm: knn
+    k-neighbors: 3
+
+  # Recognition settings
+  recognition:
+    threshold: 0.6
+    max-alternatives: 5
+
+  # Quality settings
+  quality:
+    min-score: 0.3
+    validate-on-enroll: true
+
+  # Image processing settings
+  image:
+    target-width: 48
+    target-height: 64
+    min-dimension: 20
+    max-dimension: 4096
+    histogram-equalization: true
+    face-alignment: true
+
+  # Model persistence settings
+  model:
+    auto-save: true
+    save-path: data/models/
+    auto-load: true
+    default-model: default.frm
+
+# Actuator endpoints for monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+      show-components: when_authorized
+  info:
+    env:
+      enabled: true
+
+# Application info for actuator
+info:
+  app:
+    name: Face Recognition API
+    description: A comprehensive REST API for face recognition operations
+    version: 2.0.0
+  java:
+    version: ${java.version}
+  build:
+    artifact: face-recognition
+    group: com.facerecognition
+
+# OpenAPI/Swagger configuration
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+    try-it-out-enabled: true
+    filter: true
+    disable-swagger-default-url: true
+  show-actuator: true
+
+# Logging configuration
+logging:
+  level:
+    root: INFO
+    com.facerecognition: DEBUG
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/face-recognition.log
+    max-size: 10MB
+    max-history: 30
+
+---
+# Development profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+logging:
+  level:
+    com.facerecognition: TRACE
+    org.springframework.web: DEBUG
+
+---
+# Production profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+logging:
+  level:
+    root: WARN
+    com.facerecognition: INFO
+    org.springframework.web: WARN
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
