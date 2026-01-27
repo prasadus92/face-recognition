@@ -33,7 +33,7 @@ class FeatureVectorTest {
             FeatureVector fv = new FeatureVector(features, "Eigenfaces", 2);
 
             assertEquals("Eigenfaces", fv.getAlgorithmName());
-            assertEquals(2, fv.getVersion());
+            assertEquals(2, fv.getAlgorithmVersion());
         }
 
         @Test
