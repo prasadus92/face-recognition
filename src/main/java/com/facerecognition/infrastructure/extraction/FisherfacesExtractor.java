@@ -134,7 +134,24 @@ public class FisherfacesExtractor implements FeatureExtractor, Serializable {
 
         // Step 6: Regularize Sw and compute LDA
         Matrix SwReg = regularize(Sw);
-        Matrix SwInv = SwReg.inverse();
+        Matrix SwInv;
+        try {
+            SwInv = SwReg.inverse();
+        } catch (RuntimeException e) {
+            // Matrix may still be singular despite regularization (degenerate data)
+            // Apply stronger regularization as fallback
+            double strongerReg = REGULARIZATION * 1000;
+            Matrix identity = Matrix.identity(SwReg.getRowDimension(), SwReg.getColumnDimension());
+            SwReg = Sw.plus(identity.times(strongerReg));
+            try {
+                SwInv = SwReg.inverse();
+            } catch (RuntimeException e2) {
+                throw new IllegalStateException(
+                    "Cannot compute Fisherfaces: within-class scatter matrix is singular. " +
+                    "This may occur with degenerate training data (identical faces or too few samples). " +
+                    "Try adding more diverse training samples or use Eigenfaces instead.", e2);
+            }
+        }
         Matrix ldaMatrix = SwInv.times(Sb);
 
         // Step 7: Compute eigenvectors
