@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/images/logo.png" alt="Face Recognition System" width="180"/>
-</p>
-
 <h1 align="center">Face Recognition System</h1>
 
 <p align="center">
