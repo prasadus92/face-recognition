@@ -343,26 +343,32 @@ class FaceImageTest {
         @Test
         @DisplayName("Should maintain pixel ordering row by row")
         void shouldMaintainPixelOrderingRowByRow() {
-            BufferedImage image = new BufferedImage(3, 2, BufferedImage.TYPE_INT_RGB);
-            // Set specific pixels
+            // Use minimum valid size (20x20) while testing row-by-row ordering
+            BufferedImage image = new BufferedImage(20, 20, BufferedImage.TYPE_INT_RGB);
+            // Fill with black first
+            Graphics2D g = image.createGraphics();
+            g.setColor(Color.BLACK);
+            g.fillRect(0, 0, 20, 20);
+            g.dispose();
+
+            // Set specific pixels in first two rows to test ordering
             image.setRGB(0, 0, Color.RED.getRGB());
             image.setRGB(1, 0, Color.GREEN.getRGB());
             image.setRGB(2, 0, Color.BLUE.getRGB());
             image.setRGB(0, 1, Color.WHITE.getRGB());
             image.setRGB(1, 1, Color.BLACK.getRGB());
-            image.setRGB(2, 1, Color.GRAY.getRGB());
 
             FaceImage faceImage = FaceImage.fromBufferedImage(image);
             double[] grayscale = faceImage.toGrayscaleArray();
 
-            assertThat(grayscale).hasSize(6);
-            // First row
+            assertThat(grayscale).hasSize(400); // 20x20
+            // First row - check first 3 pixels
             assertThat(grayscale[0]).isEqualTo(85.0); // Red
             assertThat(grayscale[1]).isEqualTo(85.0); // Green
             assertThat(grayscale[2]).isEqualTo(85.0); // Blue
-            // Second row
-            assertThat(grayscale[3]).isEqualTo(255.0); // White
-            assertThat(grayscale[4]).isEqualTo(0.0); // Black
+            // Second row starts at index 20 (width of image)
+            assertThat(grayscale[20]).isEqualTo(255.0); // White at (0,1)
+            assertThat(grayscale[21]).isEqualTo(0.0); // Black at (1,1)
         }
     }
 

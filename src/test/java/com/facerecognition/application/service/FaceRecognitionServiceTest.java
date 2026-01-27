@@ -486,8 +486,8 @@ class FaceRecognitionServiceTest {
             service.enroll(face, "Test Person");
 
             FeatureVector mockFeatures = createMockFeatureVector();
-            when(mockExtractor.extract(any())).thenReturn(mockFeatures);
-            when(mockDetector.detectLargestFace(any())).thenReturn(Optional.empty());
+            lenient().when(mockExtractor.extract(any())).thenReturn(mockFeatures);
+            lenient().when(mockDetector.detectLargestFace(any())).thenReturn(Optional.empty());
 
             // Note: Training may fail if detector returns empty, so we mock training behavior
             try {

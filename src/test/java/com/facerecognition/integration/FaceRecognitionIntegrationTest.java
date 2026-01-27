@@ -197,14 +197,14 @@ class FaceRecognitionIntegrationTest {
             String testIdentity = "person_1";
             List<FaceImage> personImages = testData.get(testIdentity);
 
-            // First: train with only 1 sample
+            // First: train with 2 samples (minimum for PCA to compute variance)
             service.enroll(personImages.get(0), testIdentity);
+            service.enroll(personImages.get(1), testIdentity);
             service.train();
 
             RecognitionResult result1 = service.recognize(personImages.get(3));
-            double distance1 = result1.getDistance();
 
-            // Reset and train with multiple samples
+            // Reset and train with more samples (3)
             service = FaceRecognitionService.builder()
                 .extractor(new EigenfacesExtractor(10))
                 .classifier(new KNNClassifier())
