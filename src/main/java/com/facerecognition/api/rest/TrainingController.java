@@ -206,7 +206,7 @@ public class TrainingController {
             ModelExportData exportData = new ModelExportData();
             exportData.setExportedAt(LocalDateTime.now());
             exportData.setAlgorithmName(faceRecognitionService.getExtractor().getAlgorithmName());
-            exportData.setAlgorithmVersion(faceRecognitionService.getExtractor().getAlgorithmVersion());
+            exportData.setAlgorithmVersion(faceRecognitionService.getExtractor().getVersion());
             exportData.setIdentities(faceRecognitionService.getIdentities());
 
             oos.writeObject(exportData);
@@ -335,7 +335,7 @@ public class TrainingController {
         // Get algorithm info
         FeatureExtractor extractor = faceRecognitionService.getExtractor();
         status.setAlgorithmName(extractor.getAlgorithmName());
-        status.setAlgorithmVersion(extractor.getAlgorithmVersion());
+        status.setAlgorithmVersion(extractor.getVersion());
         status.setFeatureDimension(extractor.getFeatureDimension());
 
         // Get classifier info

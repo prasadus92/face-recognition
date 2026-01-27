@@ -3,6 +3,7 @@ package com.facerecognition.infrastructure.extraction;
 import com.facerecognition.domain.model.FaceImage;
 import com.facerecognition.domain.model.FeatureVector;
 import com.facerecognition.domain.service.FeatureExtractor;
+import com.facerecognition.domain.service.FeatureExtractor.ExtractorConfig;
 
 import java.io.Serializable;
 import java.util.List;
