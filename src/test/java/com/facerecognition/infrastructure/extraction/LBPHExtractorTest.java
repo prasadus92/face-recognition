@@ -151,7 +151,7 @@ class LBPHExtractorTest {
 
             FeatureVector features = extractor.extract(image);
 
-            assertThat(features.getFeatures()).allMatch(v -> v >= 0);
+            assertThat(java.util.Arrays.stream(features.getFeatures()).allMatch(v -> v >= 0)).isTrue();
         }
     }
 

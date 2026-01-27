@@ -314,7 +314,7 @@ class FaceImageTest {
 
             double[] grayscale = faceImage.toGrayscaleArray();
 
-            assertThat(grayscale).allMatch(v -> v == 255.0);
+            assertThat(java.util.Arrays.stream(grayscale).allMatch(v -> v == 255.0)).isTrue();
         }
 
         @Test
@@ -325,7 +325,7 @@ class FaceImageTest {
 
             double[] grayscale = faceImage.toGrayscaleArray();
 
-            assertThat(grayscale).allMatch(v -> v == 0.0);
+            assertThat(java.util.Arrays.stream(grayscale).allMatch(v -> v == 0.0)).isTrue();
         }
 
         @Test
