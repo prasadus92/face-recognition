@@ -345,11 +345,14 @@ class FaceImageTest {
         void shouldMaintainPixelOrderingRowByRow() {
             // Use minimum valid size (20x20) while testing row-by-row ordering
             BufferedImage image = new BufferedImage(20, 20, BufferedImage.TYPE_INT_RGB);
-            // Fill with black first
-            Graphics2D g = image.createGraphics();
-            g.setColor(Color.BLACK);
-            g.fillRect(0, 0, 20, 20);
-            g.dispose();
+
+            // Initialize all pixels to black explicitly (avoid Graphics2D for Java 11 compatibility)
+            int black = Color.BLACK.getRGB();
+            for (int y = 0; y < 20; y++) {
+                for (int x = 0; x < 20; x++) {
+                    image.setRGB(x, y, black);
+                }
+            }
 
             // Set specific pixels in first two rows to test ordering
             image.setRGB(0, 0, Color.RED.getRGB());
