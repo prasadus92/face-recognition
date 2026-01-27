@@ -23,6 +23,7 @@ import javax.imageio.ImageIO;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 /**
  * Comprehensive unit tests for FaceRecognitionService.
@@ -179,7 +180,7 @@ class FaceRecognitionServiceTest {
 
         @BeforeEach
         void setUp() {
-            when(mockExtractor.getConfig()).thenReturn(new FeatureExtractor.ExtractorConfig());
+            lenient().when(mockExtractor.getConfig()).thenReturn(new FeatureExtractor.ExtractorConfig());
             service = FaceRecognitionService.builder()
                 .extractor(mockExtractor)
                 .classifier(mockClassifier)
@@ -297,7 +298,7 @@ class FaceRecognitionServiceTest {
 
         @BeforeEach
         void setUp() {
-            when(mockExtractor.getConfig()).thenReturn(
+            lenient().when(mockExtractor.getConfig()).thenReturn(
                 new FeatureExtractor.ExtractorConfig()
                     .setImageWidth(48)
                     .setImageHeight(64));
@@ -365,7 +366,7 @@ class FaceRecognitionServiceTest {
 
         @BeforeEach
         void setUp() {
-            when(mockExtractor.getConfig()).thenReturn(
+            lenient().when(mockExtractor.getConfig()).thenReturn(
                 new FeatureExtractor.ExtractorConfig()
                     .setImageWidth(48)
                     .setImageHeight(64));
@@ -466,7 +467,7 @@ class FaceRecognitionServiceTest {
 
         @BeforeEach
         void setUp() {
-            when(mockExtractor.getConfig()).thenReturn(
+            lenient().when(mockExtractor.getConfig()).thenReturn(
                 new FeatureExtractor.ExtractorConfig()
                     .setImageWidth(48)
                     .setImageHeight(64));
@@ -533,7 +534,7 @@ class FaceRecognitionServiceTest {
             FaceRecognitionService.Config config = new FaceRecognitionService.Config()
                 .setRecognitionThreshold(0.75);
 
-            when(mockExtractor.getConfig()).thenReturn(
+            lenient().when(mockExtractor.getConfig()).thenReturn(
                 new FeatureExtractor.ExtractorConfig()
                     .setImageWidth(48)
                     .setImageHeight(64));
@@ -546,8 +547,8 @@ class FaceRecognitionServiceTest {
 
             // Enroll and train
             service.enroll(createTestFaceImage(48, 64, Color.GRAY), "Test");
-            when(mockExtractor.extract(any())).thenReturn(createMockFeatureVector());
-            when(mockClassifier.classify(any(), anyDouble())).thenReturn(RecognitionResult.unknown());
+            lenient().when(mockExtractor.extract(any())).thenReturn(createMockFeatureVector());
+            lenient().when(mockClassifier.classify(any(), anyDouble())).thenReturn(RecognitionResult.unknown());
 
             service.train();
 
@@ -585,8 +586,8 @@ class FaceRecognitionServiceTest {
         @Test
         @DisplayName("Should format toString correctly")
         void shouldFormatToStringCorrectly() {
-            when(mockExtractor.getConfig()).thenReturn(new FeatureExtractor.ExtractorConfig());
-            when(mockExtractor.getAlgorithmName()).thenReturn("MockExtractor");
+            lenient().when(mockExtractor.getConfig()).thenReturn(new FeatureExtractor.ExtractorConfig());
+            lenient().when(mockExtractor.getAlgorithmName()).thenReturn("MockExtractor");
 
             service = FaceRecognitionService.builder()
                 .extractor(mockExtractor)
@@ -609,7 +610,7 @@ class FaceRecognitionServiceTest {
 
         @BeforeEach
         void setUp() {
-            when(mockExtractor.getConfig()).thenReturn(
+            lenient().when(mockExtractor.getConfig()).thenReturn(
                 new FeatureExtractor.ExtractorConfig()
                     .setImageWidth(48)
                     .setImageHeight(64));

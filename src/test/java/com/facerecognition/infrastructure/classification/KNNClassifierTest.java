@@ -163,11 +163,14 @@ class KNNClassifierTest {
         @DisplayName("Should return unknown when below threshold")
         void shouldReturnUnknownWhenBelowThreshold() {
             // Create identity with features very different from probe
-            Identity identity = createIdentityWithFeatures("John Doe", new double[]{1.0, 0.0, 0.0, 0.0});
+            // Use larger values to ensure Euclidean distance is large enough
+            // that confidence (exp(-distance/5000)) falls below threshold
+            Identity identity = createIdentityWithFeatures("John Doe", new double[]{1000.0, 0.0, 0.0, 0.0});
             classifier.enroll(identity);
 
-            // Create very different probe
-            FeatureVector probe = new FeatureVector(new double[]{0.0, 1.0, 1.0, 1.0}, "test", 1);
+            // Create very different probe - distance will be ~2000
+            // confidence = exp(-2000/5000) ≈ 0.67, well below 0.999
+            FeatureVector probe = new FeatureVector(new double[]{0.0, 1000.0, 1000.0, 1000.0}, "test", 1);
 
             RecognitionResult result = classifier.classify(probe, 0.999);
 
