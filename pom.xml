@@ -53,13 +53,6 @@
         <jacoco.version>0.8.11</jacoco.version>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>jogamp</id>
-            <url>https://jogamp.org/deployment/maven/</url>
-        </repository>
-    </repositories>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -121,58 +114,6 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
-        </dependency>
-
-        <!-- Java 3D API (for legacy GUI) -->
-        <dependency>
-            <groupId>java3d</groupId>
-            <artifactId>j3d-core</artifactId>
-            <version>1.5.2</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/j3d-core.jar</systemPath>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>java3d</groupId>
-            <artifactId>j3d-utils</artifactId>
-            <version>1.5.2</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/j3d-utils.jar</systemPath>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>java3d</groupId>
-            <artifactId>vecmath</artifactId>
-            <version>1.5.2</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/vecmath.jar</systemPath>
-            <optional>true</optional>
-        </dependency>
-
-        <!-- Java Advanced Imaging (for legacy GUI) -->
-        <dependency>
-            <groupId>javax.media</groupId>
-            <artifactId>jai_core</artifactId>
-            <version>1.1.3</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/jai_core.jar</systemPath>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>javax.media</groupId>
-            <artifactId>jai_codec</artifactId>
-            <version>1.1.3</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/jai_codec.jar</systemPath>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>javax.media</groupId>
-            <artifactId>mlibwrapper_jai</artifactId>
-            <version>1.1.3</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/mlibwrapper_jai.jar</systemPath>
-            <optional>true</optional>
         </dependency>
 
         <!-- MySQL Connector -->
@@ -418,21 +359,5 @@
             </build>
         </profile>
 
-        <!-- Profile for legacy GUI -->
-        <profile>
-            <id>gui</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <version>3.1.1</version>
-                        <configuration>
-                            <mainClass>src.FrontEnd</mainClass>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
 </project>
