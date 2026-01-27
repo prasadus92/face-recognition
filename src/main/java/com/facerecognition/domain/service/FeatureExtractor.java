@@ -4,6 +4,7 @@ import com.facerecognition.domain.model.FaceImage;
 import com.facerecognition.domain.model.FeatureVector;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Interface for face feature extraction services.
@@ -65,7 +66,7 @@ public interface FeatureExtractor {
     default List<FeatureVector> extractBatch(List<FaceImage> faces) {
         return faces.stream()
             .map(this::extract)
-            .toList();
+            .collect(Collectors.toList());
     }
 
     /**

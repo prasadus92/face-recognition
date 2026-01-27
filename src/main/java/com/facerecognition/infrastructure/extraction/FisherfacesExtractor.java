@@ -74,6 +74,15 @@ public class FisherfacesExtractor implements FeatureExtractor, Serializable {
     }
 
     /**
+     * Creates a Fisherfaces extractor with specified number of components.
+     *
+     * @param numComponents the number of fisherface components to use
+     */
+    public FisherfacesExtractor(int numComponents) {
+        this(new ExtractorConfig().setNumComponents(numComponents));
+    }
+
+    /**
      * Creates a Fisherfaces extractor with custom configuration.
      *
      * @param config the extractor configuration

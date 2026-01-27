@@ -3,6 +3,7 @@ package com.facerecognition.domain.model;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Represents the result of a face recognition operation.
@@ -339,7 +340,7 @@ public class RecognitionResult implements Serializable {
         return alternatives.stream()
             .sorted()
             .limit(n)
-            .toList();
+            .collect(Collectors.toList());
     }
 
     /**
