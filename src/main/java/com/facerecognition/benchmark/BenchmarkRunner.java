@@ -479,7 +479,7 @@ public class BenchmarkRunner {
                 break;
             case "custom":
             default:
-                dataset = loader.loadCustomDirectory(datasetPath);
+                dataset = loader.loadCustomDirectory(datasetPath.toString());
                 break;
         }
 
