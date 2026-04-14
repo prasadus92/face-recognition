@@ -12,9 +12,6 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 @DisplayName("RequestIdFilter")
 class RequestIdFilterTest {
 
@@ -93,10 +90,5 @@ class RequestIdFilterTest {
                 observed.set(MDC.get(RequestIdFilter.MDC_KEY));
             }
         };
-    }
-
-    @SuppressWarnings("unused")
-    private void silenceServletTypes(HttpServletRequest req, HttpServletResponse res) {
-        // Keeps the Jakarta servlet imports referenced for IDE tooling.
     }
 }

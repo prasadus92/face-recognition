@@ -35,7 +35,7 @@ public class ModelAutoLoadListener {
     }
 
     @EventListener(ApplicationReadyEvent.class)
-    public void onReady(ApplicationReadyEvent event) {
+    public void onReady() {
         boolean restored = service.tryLoadSavedModel();
         if (restored) {
             log.info("Auto-loaded {} identities from '{}'",
