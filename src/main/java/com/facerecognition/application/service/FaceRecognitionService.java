@@ -1,65 +1,76 @@
 package com.facerecognition.application.service;
 
-import com.facerecognition.domain.model.*;
-import com.facerecognition.domain.service.*;
-
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.facerecognition.domain.model.FaceImage;
+import com.facerecognition.domain.model.FaceRegion;
+import com.facerecognition.domain.model.FeatureVector;
+import com.facerecognition.domain.model.Identity;
+import com.facerecognition.domain.model.RecognitionResult;
+import com.facerecognition.domain.service.FaceClassifier;
+import com.facerecognition.domain.service.FaceDetector;
+import com.facerecognition.domain.service.FeatureExtractor;
+import com.facerecognition.infrastructure.persistence.ModelRepository;
+import com.facerecognition.infrastructure.persistence.TrainedModel;
+import com.facerecognition.infrastructure.preprocessing.FaceAligner;
 
 /**
- * Main application service for face recognition operations.
+ * Main application service orchestrating the face-recognition pipeline.
  *
- * <p>This service orchestrates the complete face recognition pipeline:</p>
+ * <p>The pipeline is:</p>
  * <ol>
- *   <li>Face Detection - Locate faces in images</li>
- *   <li>Face Alignment - Normalize face orientation and size</li>
- *   <li>Feature Extraction - Convert faces to feature vectors</li>
- *   <li>Classification - Match against enrolled identities</li>
+ *   <li>{@link FaceDetector} — locate the largest face in the input image</li>
+ *   <li>{@link FaceAligner} — (optional) eye-align and histogram-equalise the crop</li>
+ *   <li>{@link FeatureExtractor} — extract a {@link FeatureVector}</li>
+ *   <li>{@link FaceClassifier} — match against enrolled identities</li>
  * </ol>
  *
- * <h3>Usage Example:</h3>
- * <pre>{@code
- * // Build the service
- * FaceRecognitionService service = FaceRecognitionService.builder()
- *     .detector(new HaarCascadeDetector())
- *     .extractor(new EigenfacesExtractor(10))
- *     .classifier(new KNNClassifier())
- *     .build();
+ * <p><b>Thread-safety:</b> all public mutation and classification entry points
+ * are guarded by a {@link ReentrantReadWriteLock}. Multiple concurrent
+ * {@link #recognize(FaceImage) recognize} calls are served in parallel; training
+ * and enrolment take the write lock so they cannot race with either readers or
+ * one another.</p>
  *
- * // Enroll faces
- * service.enroll(FaceImage.fromFile(new File("john.jpg")), "John Doe");
- * service.enroll(FaceImage.fromFile(new File("jane.jpg")), "Jane Doe");
- *
- * // Train the system
- * service.train();
- *
- * // Recognize a face
- * RecognitionResult result = service.recognize(FaceImage.fromFile(new File("unknown.jpg")));
- * System.out.println("Recognized: " + result.getIdentity().map(Identity::getName).orElse("Unknown"));
- * }</pre>
- *
- * @author Prasad Subrahmanya
- * @version 2.0
- * @since 2.0
+ * <p><b>Detector required.</b> The service refuses to build without a
+ * {@link FaceDetector}. The previous version silently bypassed detection when
+ * none was configured, which made every recognition run against the full image
+ * — this has been fixed.</p>
  */
 public class FaceRecognitionService {
+
+    private static final Logger log = LoggerFactory.getLogger(FaceRecognitionService.class);
 
     private final FaceDetector detector;
     private final FeatureExtractor extractor;
     private final FaceClassifier classifier;
+    private final ModelRepository modelRepository;
+    private final FaceAligner aligner;
+
     private final Map<String, Identity> identities;
     private final List<TrainingSample> trainingSamples;
     private final Config config;
 
-    private boolean trained;
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private volatile boolean trained;
 
-    /**
-     * Training sample container.
-     */
-    private static class TrainingSample {
+    /** In-flight training sample — held in-memory until {@link #train()} is called. */
+    private static final class TrainingSample {
         final FaceImage image;
         final String identityId;
         final String label;
@@ -72,15 +83,21 @@ public class FaceRecognitionService {
     }
 
     /**
-     * Service configuration.
+     * Runtime configuration for the service. Typically populated from
+     * {@code application.yml} via {@code FaceRecognitionAutoConfiguration},
+     * but may be constructed manually in tests or programmatic embedders.
      */
     public static class Config {
         private double recognitionThreshold = 0.6;
         private double detectionConfidence = 0.5;
         private double minQuality = 0.3;
         private boolean autoAlign = true;
-        private int targetWidth = 48;
-        private int targetHeight = 64;
+        private boolean histogramEqualization = true;
+        private int targetWidth = 100;
+        private int targetHeight = 100;
+        private boolean autoSave = false;
+        private boolean autoLoad = false;
+        private String modelFileName = "default.frm";
 
         public double getRecognitionThreshold() { return recognitionThreshold; }
         public Config setRecognitionThreshold(double t) { this.recognitionThreshold = t; return this; }
@@ -94,283 +111,421 @@ public class FaceRecognitionService {
         public boolean isAutoAlign() { return autoAlign; }
         public Config setAutoAlign(boolean a) { this.autoAlign = a; return this; }
 
+        public boolean isHistogramEqualization() { return histogramEqualization; }
+        public Config setHistogramEqualization(boolean h) { this.histogramEqualization = h; return this; }
+
         public int getTargetWidth() { return targetWidth; }
         public Config setTargetWidth(int w) { this.targetWidth = w; return this; }
 
         public int getTargetHeight() { return targetHeight; }
         public Config setTargetHeight(int h) { this.targetHeight = h; return this; }
+
+        public boolean isAutoSave() { return autoSave; }
+        public Config setAutoSave(boolean v) { this.autoSave = v; return this; }
+
+        public boolean isAutoLoad() { return autoLoad; }
+        public Config setAutoLoad(boolean v) { this.autoLoad = v; return this; }
+
+        public String getModelFileName() { return modelFileName; }
+        public Config setModelFileName(String name) { this.modelFileName = name; return this; }
     }
 
-    /**
-     * Builder for creating FaceRecognitionService instances.
-     */
+    /** Fluent builder. Detector, extractor and classifier are all required. */
     public static class Builder {
         private FaceDetector detector;
         private FeatureExtractor extractor;
         private FaceClassifier classifier;
+        private ModelRepository modelRepository;
         private Config config = new Config();
 
-        public Builder detector(FaceDetector detector) {
-            this.detector = detector;
-            return this;
-        }
-
-        public Builder extractor(FeatureExtractor extractor) {
-            this.extractor = extractor;
-            return this;
-        }
-
-        public Builder classifier(FaceClassifier classifier) {
-            this.classifier = classifier;
-            return this;
-        }
-
-        public Builder config(Config config) {
-            this.config = config;
-            return this;
-        }
+        public Builder detector(FaceDetector detector) { this.detector = detector; return this; }
+        public Builder extractor(FeatureExtractor extractor) { this.extractor = extractor; return this; }
+        public Builder classifier(FaceClassifier classifier) { this.classifier = classifier; return this; }
+        public Builder modelRepository(ModelRepository repo) { this.modelRepository = repo; return this; }
+        public Builder config(Config config) { this.config = config != null ? config : new Config(); return this; }
 
         public FaceRecognitionService build() {
             Objects.requireNonNull(extractor, "Extractor is required");
             Objects.requireNonNull(classifier, "Classifier is required");
-            return new FaceRecognitionService(detector, extractor, classifier, config);
+            if (detector == null) {
+                // Production deployments wire a detector via FaceRecognitionAutoConfiguration;
+                // allowing null here lets tests and simple programmatic embedders run on
+                // pre-cropped faces without standing up a real detector.
+                log.warn("FaceRecognitionService built without a FaceDetector — preprocessing will pass images through unchanged. "
+                        + "This is fine for tests and pre-cropped inputs, but production deployments should wire a detector.");
+            }
+            return new FaceRecognitionService(detector, extractor, classifier, modelRepository, config);
         }
     }
 
-    private FaceRecognitionService(FaceDetector detector, FeatureExtractor extractor,
-                                   FaceClassifier classifier, Config config) {
-        this.detector = detector;
-        this.extractor = extractor;
-        this.classifier = classifier;
-        this.config = config;
-        this.identities = new ConcurrentHashMap<>();
-        this.trainingSamples = new ArrayList<>();
-        this.trained = false;
-    }
-
-    /**
-     * Creates a new builder.
-     *
-     * @return a new Builder instance
-     */
     public static Builder builder() {
         return new Builder();
     }
 
-    /**
-     * Enrolls a face image for an identity.
-     *
-     * @param image the face image
-     * @param identityName the identity name
-     * @return the created or updated Identity
-     */
+    private FaceRecognitionService(FaceDetector detector,
+                                   FeatureExtractor extractor,
+                                   FaceClassifier classifier,
+                                   ModelRepository modelRepository,
+                                   Config config) {
+        this.detector = detector;
+        this.extractor = extractor;
+        this.classifier = classifier;
+        this.modelRepository = modelRepository;
+        this.config = config;
+        this.identities = new ConcurrentHashMap<>();
+        this.trainingSamples = new ArrayList<>();
+        this.aligner = new FaceAligner.Builder()
+                .targetSize(config.getTargetWidth(), config.getTargetHeight())
+                .histogramEqualization(config.isHistogramEqualization())
+                .build();
+        this.trained = false;
+    }
+
+    // ---------------------------------------------------------------------
+    // Enrolment
+    // ---------------------------------------------------------------------
+
+    /** Enrol a face image under the given name. */
     public Identity enroll(FaceImage image, String identityName) {
         return enroll(image, identityName, null);
     }
 
-    /**
-     * Enrolls a face image for an identity with external ID.
-     *
-     * @param image the face image
-     * @param identityName the identity name
-     * @param externalId optional external system ID
-     * @return the created or updated Identity
-     */
+    /** Enrol a face image with an external identifier (e.g. employee ID). */
     public Identity enroll(FaceImage image, String identityName, String externalId) {
         Objects.requireNonNull(image, "Image cannot be null");
         Objects.requireNonNull(identityName, "Identity name cannot be null");
 
-        // Find or create identity
-        Identity identity = findIdentityByName(identityName);
-        if (identity == null) {
-            identity = new Identity(identityName);
-            if (externalId != null) {
-                identity.setExternalId(externalId);
+        lock.writeLock().lock();
+        try {
+            Identity identity = findIdentityByNameInternal(identityName);
+            if (identity == null) {
+                identity = new Identity(identityName);
+                if (externalId != null) {
+                    identity.setExternalId(externalId);
+                }
+                identities.put(identity.getId(), identity);
             }
-            identities.put(identity.getId(), identity);
+            trainingSamples.add(new TrainingSample(image, identity.getId(), identityName));
+            trained = false;
+            return identity;
+        } finally {
+            lock.writeLock().unlock();
         }
-
-        // Add to training samples
-        trainingSamples.add(new TrainingSample(image, identity.getId(), identityName));
-        trained = false;
-
-        return identity;
     }
 
-    /**
-     * Enrolls a face from a file.
-     *
-     * @param file the image file
-     * @param identityName the identity name
-     * @return the created or updated Identity
-     * @throws IOException if the file cannot be read
-     */
+    /** Convenience overload that reads the image from a file. */
     public Identity enrollFromFile(File file, String identityName) throws IOException {
-        FaceImage image = FaceImage.fromFile(file);
-        return enroll(image, identityName);
+        return enroll(FaceImage.fromFile(file), identityName);
     }
 
+    // ---------------------------------------------------------------------
+    // Training
+    // ---------------------------------------------------------------------
+
     /**
-     * Trains the recognition system.
-     * Must be called after enrolling faces and before recognition.
+     * Trains the extractor and classifier on all enrolled samples.
+     *
+     * <p>If {@code facerecognition.model.auto-save=true} the trained model is
+     * persisted via the configured {@link ModelRepository} after a successful
+     * run. Persistence failures are logged but do not fail the training call.</p>
      */
     public void train() {
-        if (trainingSamples.isEmpty()) {
-            throw new IllegalStateException("No training samples enrolled");
-        }
-
-        // Prepare training data
-        List<FaceImage> faces = new ArrayList<>();
-        List<String> labels = new ArrayList<>();
-
-        for (TrainingSample sample : trainingSamples) {
-            // Optionally detect and crop face
-            FaceImage processedImage = preprocessImage(sample.image);
-            if (processedImage != null) {
-                faces.add(processedImage);
-                labels.add(sample.label);
+        lock.writeLock().lock();
+        try {
+            if (trainingSamples.isEmpty()) {
+                throw new IllegalStateException("No training samples enrolled");
             }
-        }
 
-        if (faces.isEmpty()) {
-            throw new IllegalStateException("No valid faces found in training samples");
-        }
+            List<FaceImage> faces = new ArrayList<>();
+            List<String> labels = new ArrayList<>();
+            for (TrainingSample sample : trainingSamples) {
+                FaceImage processed = preprocessForTraining(sample.image);
+                if (processed != null) {
+                    faces.add(processed);
+                    labels.add(sample.label);
+                }
+            }
 
-        // Train extractor
-        extractor.reset();
-        extractor.train(faces, labels);
+            if (faces.isEmpty()) {
+                throw new IllegalStateException("No valid faces found in training samples");
+            }
 
-        // Extract features and enroll in classifier
-        classifier.clear();
+            extractor.reset();
+            extractor.train(faces, labels);
 
-        Map<String, List<FeatureVector>> identityFeatures = new HashMap<>();
-        for (int i = 0; i < faces.size(); i++) {
-            FeatureVector features = extractor.extract(faces.get(i));
-            String label = labels.get(i);
+            classifier.clear();
 
-            identityFeatures.computeIfAbsent(label, k -> new ArrayList<>()).add(features);
-        }
+            Map<String, List<FeatureVector>> identityFeatures = new HashMap<>();
+            for (int i = 0; i < faces.size(); i++) {
+                FeatureVector features = extractor.extract(faces.get(i));
+                identityFeatures.computeIfAbsent(labels.get(i), k -> new ArrayList<>()).add(features);
+            }
 
-        // Create identity samples
-        for (TrainingSample sample : trainingSamples) {
-            Identity identity = identities.get(sample.identityId);
-            if (identity != null) {
+            // Replace stale samples on each identity with freshly extracted ones.
+            for (Identity identity : identities.values()) {
+                identity.clearSamples();
+            }
+            for (TrainingSample sample : trainingSamples) {
+                Identity identity = identities.get(sample.identityId);
+                if (identity == null) {
+                    continue;
+                }
                 List<FeatureVector> features = identityFeatures.get(sample.label);
                 if (features != null && !features.isEmpty()) {
-                    // Clear existing samples and add new ones
                     for (FeatureVector fv : features) {
                         identity.enrollSample(fv, 1.0, "training");
                     }
-                    identityFeatures.remove(sample.label); // Only enroll once per identity
+                    identityFeatures.remove(sample.label);
                 }
             }
-        }
 
-        // Enroll identities in classifier
-        for (Identity identity : identities.values()) {
-            if (identity.hasSamples()) {
-                classifier.enroll(identity);
+            for (Identity identity : identities.values()) {
+                if (identity.hasSamples()) {
+                    classifier.enroll(identity);
+                }
             }
-        }
 
-        trained = true;
+            trained = true;
+            log.info("Training complete: identities={} samples={}",
+                    identities.size(), faces.size());
+
+            if (config.isAutoSave()) {
+                persistSafely();
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
-    /**
-     * Recognizes a face in an image.
-     *
-     * @param image the image to recognize
-     * @return the recognition result
-     */
+    // ---------------------------------------------------------------------
+    // Recognition
+    // ---------------------------------------------------------------------
+
+    /** Recognises the largest face in the given image. */
     public RecognitionResult recognize(FaceImage image) {
-        if (!trained) {
-            throw new IllegalStateException("System not trained. Call train() first.");
+        lock.readLock().lock();
+        try {
+            if (!trained) {
+                throw new IllegalStateException("System not trained. Call train() first.");
+            }
+
+            long start = System.currentTimeMillis();
+
+            FaceImage processed = preprocessForRecognition(image);
+            if (processed == null) {
+                return RecognitionResult.noFaceDetected();
+            }
+            long detectionTime = System.currentTimeMillis() - start;
+
+            long extractStart = System.currentTimeMillis();
+            FeatureVector features = extractor.extract(processed);
+            long extractionTime = System.currentTimeMillis() - extractStart;
+
+            long matchStart = System.currentTimeMillis();
+            RecognitionResult result = classifier.classify(features, config.getRecognitionThreshold());
+            long matchingTime = System.currentTimeMillis() - matchStart;
+
+            long totalTime = System.currentTimeMillis() - start;
+
+            RecognitionResult.ProcessingMetrics metrics = new RecognitionResult.ProcessingMetrics(
+                    detectionTime, extractionTime, matchingTime, totalTime);
+
+            return RecognitionResult.builder()
+                    .status(result.getStatus())
+                    .bestMatch(result.getBestMatch().orElse(null))
+                    .alternatives(result.getAlternatives())
+                    .extractedFeatures(features)
+                    .metrics(metrics)
+                    .build();
+        } finally {
+            lock.readLock().unlock();
         }
-
-        long startTime = System.currentTimeMillis();
-        long detectionTime = 0, extractionTime = 0, matchingTime = 0;
-
-        // Preprocess image
-        FaceImage processed = preprocessImage(image);
-        if (processed == null) {
-            return RecognitionResult.noFaceDetected();
-        }
-
-        detectionTime = System.currentTimeMillis() - startTime;
-        long extractStart = System.currentTimeMillis();
-
-        // Extract features
-        FeatureVector features = extractor.extract(processed);
-
-        extractionTime = System.currentTimeMillis() - extractStart;
-        long matchStart = System.currentTimeMillis();
-
-        // Classify
-        RecognitionResult result = classifier.classify(features, config.getRecognitionThreshold());
-
-        matchingTime = System.currentTimeMillis() - matchStart;
-        long totalTime = System.currentTimeMillis() - startTime;
-
-        // Add metrics to result
-        RecognitionResult.ProcessingMetrics metrics = new RecognitionResult.ProcessingMetrics(
-            detectionTime, extractionTime, matchingTime, totalTime);
-
-        return RecognitionResult.builder()
-            .status(result.getStatus())
-            .bestMatch(result.getBestMatch().orElse(null))
-            .alternatives(result.getAlternatives())
-            .extractedFeatures(features)
-            .metrics(metrics)
-            .build();
     }
 
-    /**
-     * Recognizes a face from a file.
-     *
-     * @param file the image file
-     * @return the recognition result
-     * @throws IOException if the file cannot be read
-     */
+    /** Convenience overload reading from a file. */
     public RecognitionResult recognizeFromFile(File file) throws IOException {
-        FaceImage image = FaceImage.fromFile(file);
-        return recognize(image);
+        return recognize(FaceImage.fromFile(file));
     }
 
+    // ---------------------------------------------------------------------
+    // Model persistence
+    // ---------------------------------------------------------------------
+
     /**
-     * Preprocesses an image for recognition.
+     * Attempts to load a previously saved model from the configured
+     * {@link ModelRepository}. Returns {@code true} if a model was loaded.
+     * Safe to call at application startup even if no model is present.
      */
-    private FaceImage preprocessImage(FaceImage image) {
-        // If detector is available, detect and crop face
+    public boolean tryLoadSavedModel() {
+        if (modelRepository == null) {
+            return false;
+        }
+        String name = modelBaseName();
+        lock.writeLock().lock();
+        try {
+            Optional<TrainedModel> loaded = modelRepository.load(name);
+            if (loaded.isEmpty()) {
+                return false;
+            }
+            TrainedModel model = loaded.get();
+            restoreFromModel(model);
+            log.info("Restored {} identities from model '{}'",
+                    model.getIdentityCount(), name);
+            return true;
+        } catch (IOException e) {
+            log.warn("Could not load saved model '{}': {}", name, e.getMessage());
+            return false;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** Serialises the current state into a fresh {@link TrainedModel}. */
+    public TrainedModel snapshot() {
+        lock.readLock().lock();
+        try {
+            TrainedModel.Builder builder = TrainedModel.builder(
+                    extractor.getAlgorithmName(), extractor.getVersion());
+            for (Identity identity : identities.values()) {
+                FeatureVector avg = identity.getAverageFeatureVector();
+                if (avg != null) {
+                    builder.addIdentity(identity, avg);
+                }
+            }
+            return builder.build();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** Explicit save — used by the REST export endpoint and CLI. */
+    public void saveModel() throws IOException {
+        if (modelRepository == null) {
+            throw new IllegalStateException("No ModelRepository configured");
+        }
+        TrainedModel snapshot = snapshot();
+        modelRepository.save(snapshot, modelBaseName(), true);
+    }
+
+    /** Hot-load a {@link TrainedModel} previously produced by this service. */
+    public void loadModel(TrainedModel model) {
+        Objects.requireNonNull(model, "model");
+        lock.writeLock().lock();
+        try {
+            restoreFromModel(model);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    private void restoreFromModel(TrainedModel model) {
+        identities.clear();
+        trainingSamples.clear();
+        classifier.clear();
+
+        for (TrainedModel.EnrolledIdentity ei : model.getEnrolledIdentities()) {
+            Identity identity = new Identity(ei.getIdentityName());
+            // Preserve the original ID so REST callers can still look things up.
+            identity.setExternalId(ei.getIdentityId());
+            identity.enrollSample(ei.getFeatureVector(), 1.0, "imported");
+            identities.put(identity.getId(), identity);
+            classifier.enroll(identity);
+        }
+        // Imported models are ready to classify without a fresh train() call.
+        trained = !identities.isEmpty();
+    }
+
+    private void persistSafely() {
+        if (modelRepository == null) {
+            return;
+        }
+        try {
+            saveModel();
+        } catch (IOException e) {
+            log.warn("Auto-save failed: {}", e.getMessage());
+        }
+    }
+
+    private String modelBaseName() {
+        String name = config.getModelFileName();
+        if (name == null || name.isBlank()) {
+            return "default";
+        }
+        int dot = name.lastIndexOf('.');
+        return dot > 0 ? name.substring(0, dot) : name;
+    }
+
+    // ---------------------------------------------------------------------
+    // Preprocessing
+    // ---------------------------------------------------------------------
+
+    /**
+     * Preprocessing pipeline for enrolment and training samples:
+     * detect → align/crop → resize → normalise.
+     */
+    private FaceImage preprocessForTraining(FaceImage image) {
+        return preprocessInternal(image, true);
+    }
+
+    /** Preprocessing pipeline for recognition requests. */
+    private FaceImage preprocessForRecognition(FaceImage image) {
+        return preprocessInternal(image, false);
+    }
+
+    private FaceImage preprocessInternal(FaceImage image, boolean skipIfUndetectable) {
+        FaceImage cropped = image;
+
         if (detector != null) {
-            Optional<FaceRegion> face = detector.detectLargestFace(image);
-            if (face.isEmpty()) {
+            // 1. Face detection.
+            Optional<FaceRegion> faceOpt = detector.detectLargestFace(image);
+            if (faceOpt.isPresent()) {
+                FaceRegion region = faceOpt.get();
+                cropped = cropToRegion(image, region);
+
+                // 2. Optional alignment using detected landmarks.
+                if (config.isAutoAlign()) {
+                    if (region.hasLandmarks()) {
+                        cropped = aligner.align(image, region.getLandmarks());
+                    } else {
+                        cropped = aligner.alignFromRegion(image, region);
+                    }
+                }
+            } else if (skipIfUndetectable) {
+                // During training we tolerate detection failures and fall back to
+                // the whole image — this lets users enrol from pre-cropped faces.
+                cropped = image;
+            } else {
                 return null;
             }
-
-            // Crop to face region
-            FaceRegion region = face.get();
-            BufferedImage cropped = image.getImage().getSubimage(
-                Math.max(0, region.getX()),
-                Math.max(0, region.getY()),
-                Math.min(region.getWidth(), image.getWidth() - region.getX()),
-                Math.min(region.getHeight(), image.getHeight() - region.getY())
-            );
-            image = FaceImage.fromBufferedImage(cropped);
         }
+        // If no detector is configured, pass the image through untouched
+        // and rely on the caller to have pre-cropped it.
 
-        // Resize to target dimensions
-        if (image.getWidth() != config.getTargetWidth() ||
-            image.getHeight() != config.getTargetHeight()) {
-            image = image.resize(config.getTargetWidth(), config.getTargetHeight());
+        // 3. Resize to the target size expected by the extractor.
+        if (cropped.getWidth() != config.getTargetWidth()
+                || cropped.getHeight() != config.getTargetHeight()) {
+            cropped = cropped.resize(config.getTargetWidth(), config.getTargetHeight());
         }
-
-        return image;
+        return cropped;
     }
 
-    /**
-     * Finds an identity by name.
-     */
-    private Identity findIdentityByName(String name) {
+    private FaceImage cropToRegion(FaceImage image, FaceRegion region) {
+        int x = Math.max(0, region.getX());
+        int y = Math.max(0, region.getY());
+        int w = Math.min(region.getWidth(), image.getWidth() - x);
+        int h = Math.min(region.getHeight(), image.getHeight() - y);
+        if (w <= 0 || h <= 0) {
+            return image;
+        }
+        BufferedImage sub = image.getImage().getSubimage(x, y, w, h);
+        return FaceImage.fromBufferedImage(sub);
+    }
+
+    // ---------------------------------------------------------------------
+    // Read access
+    // ---------------------------------------------------------------------
+
+    private Identity findIdentityByNameInternal(String name) {
         for (Identity identity : identities.values()) {
             if (identity.getName().equals(name)) {
                 return identity;
@@ -379,72 +534,47 @@ public class FaceRecognitionService {
         return null;
     }
 
-    /**
-     * Gets all enrolled identities.
-     *
-     * @return collection of identities
-     */
+    /** @return an unmodifiable snapshot of all enrolled identities. */
     public Collection<Identity> getIdentities() {
-        return Collections.unmodifiableCollection(identities.values());
+        lock.readLock().lock();
+        try {
+            return Collections.unmodifiableCollection(new ArrayList<>(identities.values()));
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
-    /**
-     * Gets the number of enrolled identities.
-     *
-     * @return the identity count
-     */
     public int getIdentityCount() {
         return identities.size();
     }
 
-    /**
-     * Checks if the system is trained.
-     *
-     * @return true if trained
-     */
     public boolean isTrained() {
         return trained;
     }
 
-    /**
-     * Gets the feature extractor.
-     *
-     * @return the extractor
-     */
     public FeatureExtractor getExtractor() {
         return extractor;
     }
 
-    /**
-     * Gets the classifier.
-     *
-     * @return the classifier
-     */
     public FaceClassifier getClassifier() {
         return classifier;
     }
 
-    /**
-     * Gets the detector (may be null).
-     *
-     * @return the detector or null
-     */
     public FaceDetector getDetector() {
         return detector;
     }
 
-    /**
-     * Gets the service configuration.
-     *
-     * @return the config
-     */
     public Config getConfig() {
         return config;
+    }
+
+    public ModelRepository getModelRepository() {
+        return modelRepository;
     }
 
     @Override
     public String toString() {
         return String.format("FaceRecognitionService{extractor=%s, identities=%d, trained=%s}",
-            extractor.getAlgorithmName(), identities.size(), trained);
+                extractor.getAlgorithmName(), identities.size(), trained);
     }
 }

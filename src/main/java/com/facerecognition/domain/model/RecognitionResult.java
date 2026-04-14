@@ -315,10 +315,24 @@ public class RecognitionResult implements Serializable {
     /**
      * Gets the distance to the best match.
      *
-     * @return the distance, or Double.MAX_VALUE if no match
+     * @return the distance, or {@link Double#MAX_VALUE} if no match. Prefer
+     *         {@link #getDistanceOpt()} for new code — the sentinel is kept
+     *         only for backwards compatibility with earlier callers.
      */
     public double getDistance() {
         return bestMatch != null ? bestMatch.getDistance() : Double.MAX_VALUE;
+    }
+
+    /**
+     * Gets the distance to the best match as an {@link Optional}. Empty when
+     * there is no best match, avoiding the {@link Double#MAX_VALUE} sentinel
+     * returned by {@link #getDistance()} that can silently corrupt ranking
+     * and threshold logic.
+     *
+     * @return Optional distance to the best match
+     */
+    public Optional<Double> getDistanceOpt() {
+        return bestMatch != null ? Optional.of(bestMatch.getDistance()) : Optional.empty();
     }
 
     /**

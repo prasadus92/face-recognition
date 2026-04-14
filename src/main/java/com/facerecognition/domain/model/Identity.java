@@ -210,6 +210,18 @@ public class Identity implements Serializable {
     }
 
     /**
+     * Removes every enrolled sample from this identity. The identity itself
+     * (name, external ID, metadata) is preserved so that re-enrolling samples
+     * keeps the caller-visible ID stable across a retrain.
+     */
+    public void clearSamples() {
+        if (!samples.isEmpty()) {
+            samples.clear();
+            this.updatedAt = LocalDateTime.now();
+        }
+    }
+
+    /**
      * Gets all enrolled samples.
      *
      * @return unmodifiable list of samples
