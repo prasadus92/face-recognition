@@ -21,9 +21,8 @@ import com.facerecognition.domain.service.FaceDetector;
 import com.facerecognition.domain.service.FeatureExtractor;
 import com.facerecognition.domain.service.FeatureExtractor.ExtractorConfig;
 import com.facerecognition.infrastructure.classification.KNNClassifier;
-import com.facerecognition.infrastructure.detection.CompositeFaceDetector;
+import com.facerecognition.infrastructure.detection.HaarCascadeFaceDetector;
 import com.facerecognition.infrastructure.detection.SkinColorDetector;
-import com.facerecognition.infrastructure.detection.ViolaJonesFaceDetector;
 import com.facerecognition.infrastructure.extraction.EigenfacesExtractor;
 import com.facerecognition.infrastructure.extraction.FisherfacesExtractor;
 import com.facerecognition.infrastructure.extraction.LBPHExtractor;
@@ -54,18 +53,16 @@ public class FaceRecognitionAutoConfiguration {
         log.info("Initializing face detector: type={}, minFaceSize={}", type, minFaceSize);
         FaceDetector detector;
         switch (type) {
-            case VIOLA_JONES:
-                detector = new ViolaJonesFaceDetector();
-                break;
             case SKIN_COLOR:
                 detector = new SkinColorDetector();
                 break;
-            case COMPOSITE:
+            case HAAR_CASCADE:
             default:
-                CompositeFaceDetector composite = new CompositeFaceDetector();
-                composite.addDetector(new ViolaJonesFaceDetector(), 1.0);
-                composite.addDetector(new SkinColorDetector(), 0.7);
-                detector = composite;
+                detector = new HaarCascadeFaceDetector(
+                        HaarCascadeFaceDetector.loadDefaultCascade(),
+                        Math.max(minFaceSize, HaarCascadeFaceDetector.DEFAULT_MIN_FACE_SIZE),
+                        props.getDetection().getScaleFactor(),
+                        props.getDetection().getMinNeighbours());
                 break;
         }
         detector.setMinFaceSize(minFaceSize);
