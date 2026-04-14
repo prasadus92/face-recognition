@@ -67,7 +67,7 @@
         <maven-enforcer-plugin.version>3.4.1</maven-enforcer-plugin.version>
         <jacoco.version>0.8.12</jacoco.version>
         <checkstyle-plugin.version>3.3.1</checkstyle-plugin.version>
-        <checkstyle.version>10.14.2</checkstyle.version>
+        <checkstyle.version>13.4.0</checkstyle.version>
         <spotbugs-plugin.version>4.8.3.1</spotbugs-plugin.version>
         <cyclonedx-plugin.version>2.7.11</cyclonedx-plugin.version>
 
