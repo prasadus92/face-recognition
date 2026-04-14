@@ -50,7 +50,7 @@
         <maven.compiler.release>17</maven.compiler.release>
 
         <!-- Dependency versions -->
-        <spring-boot.version>3.2.5</spring-boot.version>
+        <spring-boot.version>4.0.5</spring-boot.version>
         <picocli.version>4.7.5</picocli.version>
         <springdoc.version>2.3.0</springdoc.version>
         <jama.version>1.0.3</jama.version>
