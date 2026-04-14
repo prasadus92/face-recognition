@@ -1,6 +1,7 @@
 package com.facerecognition.api.rest;
 
 import com.facerecognition.api.rest.dto.*;
+import com.facerecognition.api.rest.metrics.RecognitionMetrics;
 import com.facerecognition.application.service.FaceRecognitionService;
 import com.facerecognition.domain.model.FaceImage;
 import com.facerecognition.domain.model.Identity;
@@ -24,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Collection;
@@ -54,14 +55,18 @@ public class FaceRecognitionController {
     private static final Logger logger = LoggerFactory.getLogger(FaceRecognitionController.class);
 
     private final FaceRecognitionService faceRecognitionService;
+    private final RecognitionMetrics metrics;
 
     /**
      * Constructs the controller with required dependencies.
      *
      * @param faceRecognitionService the face recognition service
+     * @param metrics Micrometer metrics facade
      */
-    public FaceRecognitionController(FaceRecognitionService faceRecognitionService) {
+    public FaceRecognitionController(FaceRecognitionService faceRecognitionService,
+                                     RecognitionMetrics metrics) {
         this.faceRecognitionService = faceRecognitionService;
+        this.metrics = metrics;
     }
 
     /**
@@ -119,18 +124,24 @@ public class FaceRecognitionController {
             throw new IllegalArgumentException("Could not read image file");
         }
 
+        long startNanos = System.nanoTime();
         FaceImage faceImage = FaceImage.fromBufferedImage(bufferedImage);
-        RecognitionResult result = faceRecognitionService.recognize(faceImage);
+        RecognitionResult result;
+        try {
+            result = faceRecognitionService.recognize(faceImage);
+        } catch (RuntimeException e) {
+            metrics.recordError();
+            throw e;
+        }
+        metrics.recordRecognize(System.nanoTime() - startNanos, result.isRecognized());
 
         RecognitionResponse response = RecognitionResponse.fromDomain(result);
-
         if (!Boolean.TRUE.equals(includeFeatures)) {
             response.setFeatures(null);
         }
 
         logger.info("Recognition completed: status={}, recognized={}",
                 result.getStatus(), result.isRecognized());
-
         return ResponseEntity.ok(response);
     }
 
@@ -204,10 +215,10 @@ public class FaceRecognitionController {
                 identity.getSamples().get(identity.getSamples().size() - 1).getSampleId();
 
         EnrollmentResponse response = EnrollmentResponse.success(identity, sampleId, qualityScore);
+        metrics.recordEnrollment();
 
         logger.info("Enrollment completed: identityId={}, name={}, sampleCount={}",
                 identity.getId(), identity.getName(), identity.getSampleCount());
-
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

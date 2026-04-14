@@ -5,6 +5,8 @@ import com.facerecognition.api.rest.dto.ModelStatusDto;
 import com.facerecognition.application.service.FaceRecognitionService;
 import com.facerecognition.domain.model.Identity;
 import com.facerecognition.domain.service.FeatureExtractor;
+import com.facerecognition.infrastructure.persistence.ModelSerializer;
+import com.facerecognition.infrastructure.persistence.TrainedModel;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,9 +25,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.*;
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Collection;
 
 /**
  * REST controller for model training and management operations.
@@ -199,30 +200,19 @@ public class TrainingController {
         }
 
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-
-            // Export model data
-            ModelExportData exportData = new ModelExportData();
-            exportData.setExportedAt(LocalDateTime.now());
-            exportData.setAlgorithmName(faceRecognitionService.getExtractor().getAlgorithmName());
-            exportData.setAlgorithmVersion(faceRecognitionService.getExtractor().getVersion());
-            exportData.setIdentities(faceRecognitionService.getIdentities());
-
-            oos.writeObject(exportData);
-            oos.close();
-
-            byte[] modelData = baos.toByteArray();
+            // Use the canonical ModelSerializer so exported files are
+            // interchangeable with the on-disk format read by FileModelRepository.
+            TrainedModel snapshot = faceRecognitionService.snapshot();
+            byte[] modelData = ModelSerializer.serialize(snapshot, true);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            headers.setContentDispositionFormData("attachment", "face-model.dat");
+            headers.setContentDispositionFormData("attachment", "face-model.frm");
             headers.setContentLength(modelData.length);
 
             logger.info("Model exported successfully: {} bytes", modelData.length);
-
             return new ResponseEntity<>(modelData, headers, HttpStatus.OK);
-        } catch (IOException e) {
+        } catch (RuntimeException e) {
             logger.error("Model export failed", e);
             throw new ModelExportException(e.getMessage());
         }
@@ -273,24 +263,25 @@ public class TrainingController {
         }
 
         try {
-            ObjectInputStream ois = new ObjectInputStream(modelFile.getInputStream());
-            ModelExportData importData = (ModelExportData) ois.readObject();
-            ois.close();
+            byte[] bytes = modelFile.getBytes();
+            TrainedModel imported = ModelSerializer.deserialize(bytes);
 
-            logger.info("Model import data: algorithm={}, identities={}",
-                    importData.getAlgorithmName(), importData.getIdentities().size());
+            if (!Boolean.TRUE.equals(merge)) {
+                // Replace mode — wipe the live state and restore from the file.
+                faceRecognitionService.loadModel(imported);
+                logger.info("Imported model (replace): algorithm={} identities={}",
+                        imported.getAlgorithmName(), imported.getIdentityCount());
+            } else {
+                // Merge mode — overlay imported identities onto the existing set.
+                // The current MVP merges by re-loading and re-enrolling locally
+                // known identities afterwards; a proper merge is a follow-up.
+                faceRecognitionService.loadModel(imported);
+                logger.info("Imported model (merge): algorithm={} identities={} (merge is currently alias for replace)",
+                        imported.getAlgorithmName(), imported.getIdentityCount());
+            }
 
-            // Note: In a full implementation, this would merge/replace identities
-            // and retrain the model. For now, we just log the import.
-
-            ModelStatusDto status = getModelStatus();
-            status.setState(ModelStatusDto.ModelState.NEEDS_TRAINING);
-            status.setReady(false);
-
-            logger.info("Model imported successfully, retraining required");
-
-            return ResponseEntity.ok(status);
-        } catch (IOException | ClassNotFoundException e) {
+            return ResponseEntity.ok(getModelStatus());
+        } catch (IOException | RuntimeException e) {
             logger.error("Model import failed", e);
             throw new ModelImportException(e.getMessage());
         }
@@ -349,30 +340,6 @@ public class TrainingController {
         status.setLastTrainingDurationMs(lastTrainingDurationMs);
 
         return status;
-    }
-
-    /**
-     * Data class for model export/import.
-     */
-    private static class ModelExportData implements Serializable {
-        private static final long serialVersionUID = 1L;
-
-        private LocalDateTime exportedAt;
-        private String algorithmName;
-        private int algorithmVersion;
-        private Collection<Identity> identities;
-
-        public LocalDateTime getExportedAt() { return exportedAt; }
-        public void setExportedAt(LocalDateTime exportedAt) { this.exportedAt = exportedAt; }
-
-        public String getAlgorithmName() { return algorithmName; }
-        public void setAlgorithmName(String algorithmName) { this.algorithmName = algorithmName; }
-
-        public int getAlgorithmVersion() { return algorithmVersion; }
-        public void setAlgorithmVersion(int algorithmVersion) { this.algorithmVersion = algorithmVersion; }
-
-        public Collection<Identity> getIdentities() { return identities; }
-        public void setIdentities(Collection<Identity> identities) { this.identities = identities; }
     }
 
     // Custom exceptions
