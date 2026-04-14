@@ -13,14 +13,11 @@ spring:
       max-file-size: 10MB
       max-request-size: 20MB
       file-size-threshold: 2KB
+  # Jackson 3 (shipped in Spring Boot 4) defaults are sensible:
+  # ISO-8601 dates, compact output, tolerant deserialisation.
+  # Override here only if you need something different.
   jackson:
-    serialization:
-      write-dates-as-timestamps: false
-      indent-output: true
-    deserialization:
-      fail-on-unknown-properties: false
     default-property-inclusion: non_null
-    date-format: yyyy-MM-dd'T'HH:mm:ss
 
 server:
   port: 8080
