@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+  "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+  "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+    <!-- Generated sources (if any) -->
+    <suppress checks=".*" files="[\\/]target[\\/]"/>
+
+    <!-- DTOs are verbose by design; relax member-name rules -->
+    <suppress checks="LineLength" files="[\\/]dto[\\/]"/>
+</suppressions>

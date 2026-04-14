@@ -1,60 +1,59 @@
-# Face Recognition API - Docker Image
-# ====================================
-# Multi-stage build for optimized image size
+# syntax=docker/dockerfile:1.6
+#
+# face-recognition — multi-stage image.
+#
+# - builder stage: JDK 17 + Maven 3.9, does a clean package and drops tests.
+# - runtime stage: JRE 17 (alpine), non-root, container-aware JVM flags,
+#   Actuator-backed HEALTHCHECK against /actuator/health.
+# Build: docker build -t face-recognition:latest .
+# Run:   docker run --rm -p 8080:8080 -v "$PWD/data:/app/data" face-recognition:latest
 
-# Stage 1: Build
-FROM maven:3.9-eclipse-temurin-11 AS builder
-
+FROM maven:3.9-eclipse-temurin-17 AS builder
 WORKDIR /app
 
-# Copy pom.xml first for dependency caching
-COPY pom.xml .
+# Pre-fetch dependencies on pom changes so code-only rebuilds are fast.
+COPY pom.xml ./
+RUN --mount=type=cache,target=/root/.m2 mvn -B -ntp dependency:go-offline || true
 
-# Download dependencies (cached if pom.xml unchanged)
-RUN mvn dependency:go-offline -B || true
-
-# Copy source code
 COPY src ./src
+COPY config ./config
+RUN --mount=type=cache,target=/root/.m2 mvn -B -ntp -DskipTests package
 
-# Build the application
-RUN mvn clean package -DskipTests -B
+# Extract the executable jar (Spring Boot -exec classifier) so the runtime
+# stage copies exactly one well-known artifact instead of globbing *.jar.
+RUN cp target/face-recognition-*-exec.jar /app/app.jar
 
-# Stage 2: Runtime
-FROM eclipse-temurin:11-jre-alpine
+# ---------------------------------------------------------------------------
 
-LABEL maintainer="Prasad Subrahmanya <prasadus92@gmail.com>"
-LABEL description="Face Recognition API - Production-ready face recognition service"
-LABEL version="2.0.0"
+FROM eclipse-temurin:17-jre-alpine
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S facerecognition && \
-    adduser -u 1001 -S facerecognition -G facerecognition
+LABEL org.opencontainers.image.title="face-recognition"
+LABEL org.opencontainers.image.description="Classical face-recognition library for the JVM — Eigenfaces, Fisherfaces, LBPH — exposed as a Spring Boot REST API."
+LABEL org.opencontainers.image.source="https://github.com/prasadus92/face-recognition"
+LABEL org.opencontainers.image.licenses="GPL-3.0-only"
+LABEL org.opencontainers.image.vendor="Prasad Subrahmanya"
 
+RUN apk add --no-cache wget tini \
+ && addgroup -g 1001 -S facerecognition \
+ && adduser -u 1001 -S facerecognition -G facerecognition
 WORKDIR /app
+RUN mkdir -p /app/data/models /app/logs && chown -R facerecognition:facerecognition /app
 
-# Create directories for data and logs
-RUN mkdir -p /app/data/models /app/logs && \
-    chown -R facerecognition:facerecognition /app
+COPY --from=builder --chown=facerecognition:facerecognition /app/app.jar ./app.jar
 
-# Copy JAR from builder stage
-COPY --from=builder /app/target/*.jar app.jar
-
-# Switch to non-root user
-USER facerecognition
-
-# Expose API port
+USER facerecognition:facerecognition
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
-
-# JVM options for containers
 ENV JAVA_OPTS="-XX:+UseContainerSupport \
     -XX:MaxRAMPercentage=75.0 \
     -XX:+UseG1GC \
     -XX:+HeapDumpOnOutOfMemoryError \
-    -Djava.security.egd=file:/dev/./urandom"
+    -Djava.security.egd=file:/dev/./urandom \
+    -Djava.awt.headless=true"
+ENV SPRING_PROFILES_ACTIVE=prod
 
-# Run the application
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
