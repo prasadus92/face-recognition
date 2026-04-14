@@ -25,7 +25,7 @@ RUN cp target/face-recognition-*-exec.jar /app/app.jar
 
 # ---------------------------------------------------------------------------
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 LABEL org.opencontainers.image.title="face-recognition"
 LABEL org.opencontainers.image.description="Classical face-recognition library for the JVM — Eigenfaces, Fisherfaces, LBPH — exposed as a Spring Boot REST API."
