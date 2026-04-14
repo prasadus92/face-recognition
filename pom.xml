@@ -54,7 +54,7 @@
         <picocli.version>4.7.5</picocli.version>
         <springdoc.version>2.3.0</springdoc.version>
         <jama.version>1.0.3</jama.version>
-        <commons-lang3.version>3.14.0</commons-lang3.version>
+        <commons-lang3.version>3.20.0</commons-lang3.version>
         <commons-io.version>2.15.1</commons-io.version>
         <bucket4j.version>8.10.1</bucket4j.version>
 
