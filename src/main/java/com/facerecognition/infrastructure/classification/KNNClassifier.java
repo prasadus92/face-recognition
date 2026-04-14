@@ -249,20 +249,44 @@ public class KNNClassifier implements FaceClassifier, Serializable {
         }
     }
 
+    /**
+     * Maps a raw distance to a confidence in {@code [0, 1]} via exponential decay:
+     * {@code confidence = exp(-distance / scale)}.
+     *
+     * <p>The per-metric scale constants returned by {@link #getDistanceScale()} are
+     * <em>calibration defaults</em> chosen so that typical raw distances on 48x64
+     * Eigenfaces features land around the 0.6 recognition threshold. They are not
+     * universal — if you swap extractor, image size, or feature dimension, you
+     * will want to recalibrate them for your dataset. The classical way is to
+     * compute the distribution of same-identity vs different-identity distances
+     * on a validation set and choose {@code scale} such that {@code exp(-μ/scale)}
+     * lands on the desired operating point.</p>
+     *
+     * <p>This is deliberately a single line of code so the calibration stays
+     * obvious: don't replace it with an opaque callback unless you have a
+     * reason to.</p>
+     *
+     * @param distance the raw distance produced by {@link #computeDistance}
+     * @return a confidence score in {@code [0, 1]}
+     */
     private double distanceToConfidence(double distance) {
-        // Convert distance to confidence score (0-1)
-        // Using exponential decay: confidence = exp(-distance/scale)
-        double scale = getDistanceScale();
-        return Math.exp(-distance / scale);
+        return Math.exp(-distance / getDistanceScale());
     }
 
+    /**
+     * Scale constants used by {@link #distanceToConfidence(double)}. These
+     * numbers come from empirical measurement on classical extractors —
+     * Eigenfaces/Fisherfaces raw Euclidean distances between aligned 48x64
+     * grayscale faces cluster in the 1000–10000 range, so 5000 is a decent
+     * half-decay. LBPH chi-square and cosine distances live on very different
+     * scales.
+     */
     private double getDistanceScale() {
-        // Scale factor depends on the distance metric
         switch (distanceMetric) {
             case EUCLIDEAN:
-                return 5000.0; // Typical eigenface distances
+                return 5000.0;
             case COSINE:
-                return 0.5;    // Cosine distance ranges 0-2
+                return 0.5;
             case MANHATTAN:
                 return 10000.0;
             case CHI_SQUARE:

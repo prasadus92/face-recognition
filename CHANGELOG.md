@@ -2,90 +2,64 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
 ### Added
-- Clean architecture restructure with domain/application/infrastructure layers
-- New domain models: FaceImage, FaceRegion, FaceLandmarks, FeatureVector, Identity, RecognitionResult
-- Fisherfaces (LDA) feature extractor
-- LBPH (Local Binary Pattern Histogram) feature extractor
-- KNN classifier with multiple distance metrics
-- FaceRecognitionService for orchestrating the recognition pipeline
-- Comprehensive unit tests for domain models and extractors
-- Quality metrics for face images (brightness, contrast, sharpness)
-- Service configuration options
-- Processing metrics for recognition results
-- Multiple distance metric support (Euclidean, Cosine, Manhattan, Chi-Square)
+- **Java 17 / Spring Boot 3.2** baseline. `javax.*` → `jakarta.*` across validation and servlet APIs.
+- **Central `FaceRecognitionProperties`** bound from `application.yml` via `@ConfigurationProperties`, plus a `FaceRecognitionAutoConfiguration` that wires the `FaceDetector`, `FeatureExtractor`, `FaceClassifier`, `ModelRepository`, and `FaceRecognitionService` beans from configuration. No more hardcoded defaults drifting from the YAML.
+- **Experimental ONNX deep-learning backend** — `OnnxDeepFeatureExtractor` scaffold implementing `FeatureExtractor` for FaceNet/ArcFace-style embeddings. Bring-your-own-weights.
+- **Request correlation** — `RequestIdFilter` stamps `X-Request-ID` / MDC `traceId` on every request and every log line.
+- **Rate limiting** — per-IP Bucket4j token bucket filter, configurable via `facerecognition.ratelimit.*`.
+- **Custom Micrometer metrics** — `facerecognition.detect`, `facerecognition.extract`, `facerecognition.match`, `facerecognition.recognize.total`, counters for `enrollments`, `recognitions`, `errors`.
+- **`ModelReadyHealthIndicator`** reporting `UP` only when `FaceRecognitionService#isTrained()` is true.
+- **Model persistence wiring** — auto-load at startup / auto-save after training, driven by `facerecognition.model.*`.
+- **Thread-safe `FaceRecognitionService`** — enrolment and training now guarded by a `ReadWriteLock`; detector is required (fail-loud instead of silently bypassing detection).
+- **REST integration tests** (MockMvc) for enrolment, recognition, training, and identity CRUD endpoints, including error-path coverage.
+- **Quality gates** — enforcing Checkstyle + SpotBugs + JaCoCo coverage floor in CI (no more `continue-on-error`). Added CodeQL, Dependabot, CycloneDX SBOM generation, and a release workflow.
+- **Community files** — `SECURITY.md`, `CODE_OF_CONDUCT.md`, `SUPPORT.md`, `CODEOWNERS`, `.editorconfig`, GitHub issue forms.
+- Truthful `README`, `ROADMAP`, and benchmark documentation.
 
 ### Changed
-- Restructured project to follow clean architecture principles
-- Improved Eigenfaces implementation with better documentation
-- Enhanced README with comprehensive documentation
-- Updated project documentation structure
+- **REST API** responses now always flow through `GlobalExceptionHandler` (no inline `IllegalArgumentException` in controllers). Validation annotations moved onto DTOs. `/identities` endpoint is paginated.
+- **`FaceRegion#equals/hashCode`** now include `confidence` to preserve `Set`/`Map` semantics.
+- **`RecognitionResult#getDistance`** now returns `Optional<Double>` instead of a `Double.MAX_VALUE` sentinel.
+- **Eigenfaces / Fisherfaces** — deterministic eigenvector ordering and improved numerical stability around the `numSamples < numPixels` projection path.
+- **KNN confidence** — replaced magic per-metric scale factors with a calibrated normalizer whose parameters are derived at enrolment time.
 
-### Improved
-- Code documentation with comprehensive Javadoc
-- Error handling and validation
-- Feature vector operations and comparisons
+### Removed
+- Dead `platform-specific/windows/*.dll` artefacts and the `scripts/setup-libs.sh` Java 3D / JAI downloader.
+- Legacy `TSCD` / `FrontEnd` references from docs.
+- Duplicate `DatasetLoader` in `benchmark/` (benchmark now depends on the `infrastructure.dataset` one).
+- Incorrect "90% test coverage" / "99% LFW accuracy" / "Maven Central install" claims from the README.
 
-## [1.0.0] - 2024-01-15
+### Security
+- Bumped all transitive dependencies via Spring Boot 3.2.5 and Jackson 2.17.
+- Added `SECURITY.md` with a private disclosure channel.
+- CodeQL + secret-scanning workflows enabled.
+
+## [2.0.0] - 2024-01
 
 ### Added
-- Initial release
-- Eigenfaces (PCA) algorithm implementation
-- Two-Stage Classification and Detection (TSCD)
-- Swing-based GUI interface
-- Face detection using skin color segmentation
-- k-Nearest Neighbors classification
-- MySQL user authentication
-- 3D feature space visualization
-- Basic face browser interface
-- Image loading and preprocessing
+- Initial clean-architecture restructure under `com.facerecognition` (`domain` / `application` / `infrastructure` / `api`).
+- Domain model: `FaceImage`, `FaceRegion`, `FaceLandmarks`, `FeatureVector`, `Identity`, `RecognitionResult`.
+- `Fisherfaces` and `LBPH` feature extractors.
+- `KNNClassifier` with Euclidean / Cosine / Manhattan / Chi-square metrics.
+- `FaceRecognitionService` orchestrator with builder API.
+- Spring Boot REST API + Swagger UI.
+- Picocli CLI with `enroll`, `train`, `recognize`, `benchmark`, `serve` commands.
+- Multi-stage `Dockerfile`.
+- Quality metrics (brightness, contrast, sharpness) on `FaceImage`.
 
-### Features
-- Face recognition under expressions, occlusions, and pose variations
-- Interactive training and testing
-- Batch image processing
-- Progress tracking for long operations
+### Changed
+- Rewrote the Eigenfaces implementation with proper Javadoc and the high-dim PCA trick.
 
----
+## [1.0.0] - 2014
 
-## Version History
-
-| Version | Date | Highlights |
-|---------|------|------------|
-| 2.0.0 | TBD | Clean architecture, multiple algorithms |
-| 1.0.0 | 2024-01-15 | Initial release with Eigenfaces |
-
----
-
-## Migration Guide
-
-### 1.x to 2.x
-
-The 2.x version introduces a new clean architecture. Existing code using the legacy API will continue to work, but new development should use the new architecture.
-
-**Legacy (1.x):**
-```java
-TSCD eigenFaces = new TSCD();
-eigenFaces.processTrainingSet(faces, progress);
-double[] features = eigenFaces.getEigenFaces(picture, numVectors);
-```
-
-**New (2.x):**
-```java
-FaceRecognitionService service = FaceRecognitionService.builder()
-    .extractor(new EigenfacesExtractor(10))
-    .classifier(new KNNClassifier())
-    .build();
-
-service.enroll(faceImage, "Identity Name");
-service.train();
-RecognitionResult result = service.recognize(probeImage);
-```
+### Added
+- Initial release: Eigenfaces (PCA) + Two-Stage Classification and Detection (TSCD), Swing GUI, skin-colour detection, k-NN, MySQL user auth.
 
 ---
 
@@ -93,4 +67,4 @@ RecognitionResult result = service.recognize(probeImage);
 
 - [GitHub Repository](https://github.com/prasadus92/face-recognition)
 - [Issue Tracker](https://github.com/prasadus92/face-recognition/issues)
-- [Documentation](https://github.com/prasadus92/face-recognition/wiki)
+- [Discussions](https://github.com/prasadus92/face-recognition/discussions)

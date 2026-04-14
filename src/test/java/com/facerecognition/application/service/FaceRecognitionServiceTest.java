@@ -479,25 +479,28 @@ class FaceRecognitionServiceTest {
         }
 
         @Test
-        @DisplayName("Should return no face detected when detector finds nothing")
+        @DisplayName("Should return no face detected when detector finds nothing at recognition time")
         void shouldReturnNoFaceDetectedWhenDetectorFindsNothing() {
-            // Setup
-            FaceImage face = createTestFaceImage(100, 100, Color.GRAY);
-            service.enroll(face, "Test Person");
+            // Train successfully first — detector is expected to find a face during training.
+            FaceRegion detectedRegion = new FaceRegion(10, 10, 80, 80, 0.95);
+            lenient().when(mockDetector.detectLargestFace(any()))
+                .thenReturn(Optional.of(detectedRegion));
+            lenient().when(mockExtractor.extract(any()))
+                .thenReturn(createMockFeatureVector());
+            lenient().when(mockClassifier.classify(any(), anyDouble()))
+                .thenReturn(RecognitionResult.unknown());
 
-            FeatureVector mockFeatures = createMockFeatureVector();
-            lenient().when(mockExtractor.extract(any())).thenReturn(mockFeatures);
-            lenient().when(mockDetector.detectLargestFace(any())).thenReturn(Optional.empty());
+            service.enroll(createTestFaceImage(100, 100, Color.GRAY), "Test Person");
+            service.train();
 
-            // Note: Training may fail if detector returns empty, so we mock training behavior
-            try {
-                service.train();
-            } catch (IllegalStateException e) {
-                // Expected if no valid faces after detection
-            }
+            // Now simulate a probe that the detector rejects entirely.
+            when(mockDetector.detectLargestFace(any())).thenReturn(Optional.empty());
+            RecognitionResult result = service.recognize(createTestFaceImage(100, 100, Color.GRAY));
 
-            // For recognition test, we need to manually set trained state
-            // Since detector returns empty, it will return no face detected
+            assertThat(result.getStatus()).isEqualTo(RecognitionResult.Status.NO_FACE_DETECTED);
+            assertThat(result.isFaceDetected()).isFalse();
+            assertThat(result.isRecognized()).isFalse();
+            assertThat(result.getBestMatch()).isEmpty();
         }
 
         @Test
@@ -679,10 +682,15 @@ class FaceRecognitionServiceTest {
         return image;
     }
 
+    /**
+     * Deterministic feature vector so test runs are reproducible. The previous
+     * implementation used Math.random() which made debugging flaky failures
+     * impossible.
+     */
     private FeatureVector createMockFeatureVector() {
         double[] features = new double[128];
         for (int i = 0; i < features.length; i++) {
-            features[i] = Math.random();
+            features[i] = Math.sin(i * 0.1);
         }
         return new FeatureVector(features, "test", 1);
     }

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SpotBugs exclude filter.
+
+  We run SpotBugs at effort=Max but threshold=HIGH, so only confident defects
+  fail the build. The entries below suppress patterns that are either false
+  positives for this codebase or too noisy relative to their actionable value.
+
+  Reference: https://spotbugs.readthedocs.io/en/latest/filter.html
+-->
+<FindBugsFilter>
+    <!-- Generated protobuf / picocli / mapstruct files, if any. -->
+    <Match>
+        <Source name="~.*Generated.*"/>
+    </Match>
+
+    <!-- DTOs expose mutable arrays by design (JSON serialisation). -->
+    <Match>
+        <Package name="~com\.facerecognition\.api\.rest\.dto.*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- Domain value objects intentionally expose internal arrays/vectors. -->
+    <Match>
+        <Class name="~com\.facerecognition\.domain\.model\..*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- Classical extractors operate on double[][] directly for performance. -->
+    <Match>
+        <Class name="~com\.facerecognition\.infrastructure\.extraction\..*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- Serialization is explicitly versioned via serialVersionUID. -->
+    <Match>
+        <Bug pattern="SE_BAD_FIELD,SE_NO_SERIALVERSIONID"/>
+    </Match>
+
+    <!-- Spring @Configuration/@Component beans use field injection in a
+         handful of places and are instantiated via reflection. -->
+    <Match>
+        <Bug pattern="DM_DEFAULT_ENCODING"/>
+    </Match>
+</FindBugsFilter>

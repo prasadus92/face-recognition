@@ -1,19 +1,18 @@
-# Face Recognition API - Application Configuration
-# =================================================
+# Face Recognition API — runtime configuration
+# =============================================
+# Override any of these at runtime via environment variables
+# (e.g. FACERECOGNITION_EXTRACTION_ALGORITHM=lbph) or via
+# --spring.config.location=file:/path/to/application.yml.
 
 spring:
   application:
-    name: Face Recognition API
-
-  # Servlet configuration
+    name: face-recognition
   servlet:
     multipart:
       enabled: true
       max-file-size: 10MB
       max-request-size: 20MB
       file-size-threshold: 2KB
-
-  # Jackson JSON configuration
   jackson:
     serialization:
       write-dates-as-timestamps: false
@@ -23,11 +22,9 @@ spring:
     default-property-inclusion: non_null
     date-format: yyyy-MM-dd'T'HH:mm:ss
 
-# Server configuration
 server:
   port: 8080
-  servlet:
-    context-path: /
+  forward-headers-strategy: framework
   error:
     include-message: always
     include-binding-errors: always
@@ -38,51 +35,64 @@ server:
     mime-types: application/json,application/xml,text/html,text/plain
     min-response-size: 1024
 
-# Face Recognition configuration
+# ---------------------------------------------------------------
+# Core face-recognition configuration (bound to FaceRecognitionProperties)
+# ---------------------------------------------------------------
 facerecognition:
-  # Detection settings
   detection:
+    type: COMPOSITE             # VIOLA_JONES | SKIN_COLOR | COMPOSITE
     min-face-size: 30
     min-confidence: 0.5
     max-faces: 10
-
-  # Feature extraction settings
   extraction:
-    algorithm: eigenfaces  # eigenfaces, fisherfaces, lbph
+    algorithm: EIGENFACES       # EIGENFACES | FISHERFACES | LBPH | ONNX
     num-components: 10
-
-  # Classification settings
+    lbph:
+      grid-x: 8
+      grid-y: 8
+      radius: 1
+      neighbors: 8
+    onnx:
+      model-path: ""            # .onnx path (empty disables the backend)
+      provider: cpu             # cpu | cuda | coreml | directml
+      embedding-dimension: 128
+      input-size: 160
   classification:
-    algorithm: knn
+    algorithm: KNN
     k-neighbors: 3
-
-  # Recognition settings
+    distance-metric: EUCLIDEAN  # EUCLIDEAN | COSINE | MANHATTAN | CHI_SQUARE
+    use-average-features: false
   recognition:
     threshold: 0.6
     max-alternatives: 5
-
-  # Quality settings
   quality:
     min-score: 0.3
     validate-on-enroll: true
-
-  # Image processing settings
   image:
-    target-width: 48
-    target-height: 64
-    min-dimension: 20
-    max-dimension: 4096
+    target-width: 100
+    target-height: 100
     histogram-equalization: true
     face-alignment: true
-
-  # Model persistence settings
   model:
     auto-save: true
-    save-path: data/models/
     auto-load: true
-    default-model: default.frm
+    save-path: data/models/default.frm
+  ratelimit:
+    enabled: true
+    requests-per-minute: 60
+  cors:
+    enabled: false
+    allowed-origins: "*"
+    allowed-methods: "GET,POST,PATCH,DELETE,OPTIONS"
+    allowed-headers: "*"
+    max-age-seconds: 3600
+  security:
+    api-key: ""                 # non-blank enables the ApiKeyAuthFilter
+    api-key-header: X-API-Key
 
-# Actuator endpoints for monitoring
+# ---------------------------------------------------------------
+# Spring Boot Actuator + Micrometer
+# ---------------------------------------------------------------
 management:
   endpoints:
     web:
@@ -91,25 +101,26 @@ management:
       base-path: /actuator
   endpoint:
     health:
-      show-details: when_authorized
-      show-components: when_authorized
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
   info:
     env:
       enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
-# Application info for actuator
 info:
   app:
     name: Face Recognition API
-    description: A comprehensive REST API for face recognition operations
-    version: 2.0.0
-  java:
-    version: ${java.version}
-  build:
-    artifact: face-recognition
-    group: com.facerecognition
+    description: Classical face-recognition library for the JVM — Eigenfaces, Fisherfaces, LBPH.
+    version: 2.1.0
 
-# OpenAPI/Swagger configuration
+# ---------------------------------------------------------------
+# OpenAPI / Swagger UI
+# ---------------------------------------------------------------
 springdoc:
   api-docs:
     enabled: true
@@ -122,50 +133,60 @@ springdoc:
     display-request-duration: true
     try-it-out-enabled: true
     filter: true
-    disable-swagger-default-url: true
   show-actuator: true
 
-# Logging configuration
+# ---------------------------------------------------------------
+# Logging — log pattern picks up MDC(traceId) injected by RequestIdFilter
+# ---------------------------------------------------------------
 logging:
   level:
     root: INFO
-    com.facerecognition: DEBUG
-    org.springframework.web: INFO
-    org.springframework.security: INFO
+    com.facerecognition: INFO
+    org.springframework.web: WARN
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{traceId:-}] %logger{40} - %msg%n"
+    file:    "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{traceId:-}] %logger{40} - %msg%n"
   file:
     name: logs/face-recognition.log
-    max-size: 10MB
-    max-history: 30
 
 ---
-# Development profile
+# Development profile: verbose + nicer errors.
 spring:
   config:
     activate:
       on-profile: dev
-
 logging:
   level:
-    com.facerecognition: TRACE
-    org.springframework.web: DEBUG
+    com.facerecognition: DEBUG
+    org.springframework.web: INFO
 
 ---
-# Production profile
+# Production profile: quieter logs, no stack traces in responses.
 spring:
   config:
     activate:
       on-profile: prod
-
 logging:
   level:
     root: WARN
     com.facerecognition: INFO
-    org.springframework.web: WARN
-
 server:
   error:
     include-message: never
     include-stacktrace: never
+
+---
+# Test profile: disable auto-load/save, small in-memory models, loud logs.
+spring:
+  config:
+    activate:
+      on-profile: test
+facerecognition:
+  model:
+    auto-save: false
+    auto-load: false
+  ratelimit:
+    enabled: false
+logging:
+  level:
+    com.facerecognition: DEBUG

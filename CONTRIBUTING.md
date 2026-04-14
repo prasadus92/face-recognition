@@ -1,403 +1,138 @@
-# Contributing to Face Recognition System
+# Contributing
 
-Thank you for your interest in contributing to the Face Recognition System! This document provides guidelines and information for contributors.
+Thanks for your interest — contributions of all shapes (bug fixes, extractors, distance metrics, docs, benchmark datasets, deep-learning adapters) are very welcome.
 
-## Table of Contents
+By participating in this project you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Making Changes](#making-changes)
-- [Coding Standards](#coding-standards)
-- [Testing Guidelines](#testing-guidelines)
-- [Submitting Changes](#submitting-changes)
-- [Review Process](#review-process)
+## Table of contents
 
----
+- [Ground rules](#ground-rules)
+- [Development setup](#development-setup)
+- [Branching and commits](#branching-and-commits)
+- [Coding standards](#coding-standards)
+- [Testing](#testing)
+- [Quality gates](#quality-gates)
+- [Submitting a pull request](#submitting-a-pull-request)
+- [Where to start](#where-to-start)
+- [Security issues](#security-issues)
 
-## Code of Conduct
+## Ground rules
 
-We are committed to providing a welcoming and inclusive experience for everyone. Please:
+1. Open an issue before large changes. A 10-line comment on an issue is cheaper than a 500-line rejected PR.
+2. **One logical change per PR.** Keep diffs reviewable.
+3. **Don't break the build.** CI runs the same gates locally and in GitHub Actions; if they go red, please fix or mark the PR draft.
+4. **Tests or it didn't happen.** New behaviour needs unit tests; new REST endpoints need integration tests.
+5. **No bundled model weights, no bundled cascade XML** unless they have an explicit compatible licence and you document its source.
 
-- Be respectful and considerate in all interactions
-- Welcome newcomers and help them get started
-- Focus on what is best for the community
-- Accept constructive criticism gracefully
-- Show empathy towards other community members
-
----
-
-## Getting Started
+## Development setup
 
 ### Prerequisites
 
-- Java Development Kit (JDK) 8 or higher
-- Maven 3.6 or higher
-- Git
-- IDE (IntelliJ IDEA, Eclipse, or VS Code recommended)
+- **JDK 17 or newer** (Temurin recommended).
+- **Maven 3.9+**.
+- Optional: Docker if you want to test the image, `pre-commit` if you want the local hooks.
 
-### Fork and Clone
-
-1. Fork the repository on GitHub
-2. Clone your fork locally:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/face-recognition.git
-   cd face-recognition
-   ```
-3. Add the upstream remote:
-   ```bash
-   git remote add upstream https://github.com/prasadus92/face-recognition.git
-   ```
-
----
-
-## Development Setup
-
-### Building the Project
+### Clone and build
 
 ```bash
-# Install dependencies and build
-mvn clean install
-
-# Build without running tests
-mvn clean install -DskipTests
+git clone https://github.com/prasadus92/face-recognition.git
+cd face-recognition
+mvn verify                       # runs the full quality gate (tests + checkstyle + spotbugs + jacoco)
 ```
 
-### Running Tests
+### Run the server locally
 
 ```bash
-# Run all tests
-mvn test
-
-# Run specific test class
-mvn test -Dtest=EigenfacesExtractorTest
-
-# Run tests with coverage report
-mvn clean test jacoco:report
-# View report at target/site/jacoco/index.html
+mvn spring-boot:run
+# or
+java -jar target/face-recognition-*-exec.jar
 ```
 
-### IDE Setup
-
-**IntelliJ IDEA:**
-1. Open the project folder
-2. Import as Maven project
-3. Enable annotation processing if prompted
-
-**Eclipse:**
-1. File -> Import -> Maven -> Existing Maven Projects
-2. Select the project folder
-3. Import
-
----
-
-## Making Changes
-
-### Branching Strategy
-
-We use a simplified Git Flow:
-
-- `main` - Production-ready code
-- `develop` - Integration branch for features
-- `feature/*` - New features
-- `bugfix/*` - Bug fixes
-- `hotfix/*` - Critical production fixes
-
-### Creating a Feature Branch
+### Run the CLI
 
 ```bash
-# Sync with upstream
-git fetch upstream
-git checkout develop
-git merge upstream/develop
-
-# Create feature branch
-git checkout -b feature/your-feature-name
+java -jar target/face-recognition-*-exec.jar --help
 ```
 
-### Commit Messages
+### IDE setup
 
-Follow the conventional commits format:
+- **IntelliJ IDEA** — `File → Open` the project root; Maven is auto-detected. Enable annotation processing (Picocli + Spring Boot configuration metadata rely on it).
+- **VS Code** — install the `Extension Pack for Java` and open the project folder.
+- **Eclipse** — `File → Import → Maven → Existing Maven Projects`.
 
+## Branching and commits
+
+- Base all work on `master`.
+- Use short, descriptive branch names: `feat/fisherfaces-lda`, `fix/knn-confidence`, `docs/onnx-setup`.
+- Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) in commit subjects:
+  ```
+  feat(extraction): add calibrated KNN confidence normalizer
+  fix(persistence): guard against truncated model files
+  docs(readme): correct quick-start command
+  ```
+- Keep commits atomic — one reviewable idea each. Squash WIP commits before opening the PR.
+
+## Coding standards
+
+- **Java 17** source and target. Prefer records, pattern matching, `switch` expressions, `var` where it aids readability.
+- **4-space indent**, LF line endings, UTF-8, 120 char soft limit — enforced by Checkstyle and `.editorconfig`.
+- **K&R braces** on classes, methods and control structures (same-line opening brace).
+- Public types and methods in `domain` / `application` / `api` layers have Javadoc with `@param`, `@return`, `@throws` as appropriate.
+- **Clean-architecture dependency rule** — `domain` depends on nothing; `application` depends only on `domain`; `infrastructure` depends on `domain` (+ external libs); `api` composes the three. Don't introduce cycles.
+- Keep methods small and cohesive; prefer immutable data where practical.
+- **No `System.out.println`** — use SLF4J (`LoggerFactory.getLogger(MyClass.class)`).
+- **No swallowed exceptions.** Wrap, rethrow, or handle meaningfully.
+
+## Testing
+
+- Unit tests live next to the code they cover under `src/test/java/...`.
+- Use **JUnit 5** + **AssertJ** + **Mockito** (all provided by `spring-boot-starter-test`).
+- REST changes must include a **MockMvc integration test** (`@SpringBootTest` / `@AutoConfigureMockMvc`) for happy and error paths.
+- Algorithm changes should include a regression test on a small, deterministic dataset; put fixtures under `src/test/resources/datasets/`.
+- Tag slow tests with `@Tag("slow")` so they can be filtered in CI.
+
+Run targeted subsets:
+
+```bash
+mvn test                          # unit + integration
+mvn -Dtest=EigenfacesExtractorTest test
+mvn -P benchmarks exec:java       # run the benchmark harness
 ```
-type(scope): subject
 
-[optional body]
+## Quality gates
 
-[optional footer]
-```
+`mvn verify` runs, and CI enforces:
 
-**Types:**
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style (formatting, semicolons, etc.)
-- `refactor`: Code refactoring
-- `test`: Adding or modifying tests
-- `chore`: Build process, dependencies, etc.
+- **JUnit** — all tests pass
+- **JaCoCo** — line coverage must not drop below the configured floor (see `pom.xml`)
+- **Checkstyle** — style rules in `config/checkstyle/checkstyle.xml`
+- **SpotBugs** — static analysis, SpotBugs `HIGH` findings fail the build
+- **CycloneDX** — SBOM generation as a side-effect of `verify`
+- **CodeQL** — runs on every PR via GitHub Actions
 
-**Examples:**
-```
-feat(extractor): add Fisherfaces algorithm implementation
+Please run `mvn verify` locally before pushing.
 
-fix(classifier): correct distance calculation in KNN
+## Submitting a pull request
 
-docs(readme): update installation instructions
-```
+1. Fork the repo and create your branch.
+2. Make your change, add tests, run `mvn verify`.
+3. Fill out the PR template — what changed, why, how it was tested.
+4. Link the related issue (`Fixes #123`).
+5. Keep the PR scope focused; split unrelated changes into separate PRs.
+6. A maintainer will review. Please respond to feedback promptly and keep the thread civil — see the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Where to start
+
+- Issues tagged `good first issue` — small, focused tickets.
+- Issues tagged `help wanted` — larger items where guidance is available.
+- Docs improvements: everything under `docs/`, `README.md`, `ROADMAP.md`.
+- Add a new **distance metric** — implement `DistanceMetric`, add a test, wire it through `application.yml`.
+- Add a new **benchmark dataset** adapter under `benchmark/`.
+
+## Security issues
+
+Do **not** file public issues for security vulnerabilities. See [SECURITY.md](SECURITY.md) for the private disclosure channel.
 
 ---
 
-## Coding Standards
-
-### Java Style Guide
-
-We follow Google Java Style Guide with these key points:
-
-#### Formatting
-- Indentation: 4 spaces (no tabs)
-- Line length: 120 characters maximum
-- Braces: K&R style (opening brace on same line)
-
-```java
-// Good
-public void doSomething() {
-    if (condition) {
-        // code
-    }
-}
-
-// Bad
-public void doSomething()
-{
-    if (condition)
-    {
-        // code
-    }
-}
-```
-
-#### Naming Conventions
-- Classes: `PascalCase` (e.g., `FaceRecognitionService`)
-- Methods: `camelCase` (e.g., `extractFeatures`)
-- Constants: `UPPER_SNAKE_CASE` (e.g., `MAX_DIMENSION`)
-- Variables: `camelCase` (e.g., `featureVector`)
-- Packages: `lowercase` (e.g., `com.facerecognition.domain`)
-
-#### Documentation
-- All public classes must have Javadoc
-- All public methods must have Javadoc
-- Use `@param`, `@return`, `@throws` tags appropriately
-
-```java
-/**
- * Extracts features from a face image.
- *
- * <p>This method normalizes the input image and projects it
- * onto the eigenface space.</p>
- *
- * @param face the face image to process
- * @return the extracted feature vector
- * @throws IllegalStateException if extractor is not trained
- */
-public FeatureVector extract(FaceImage face) {
-    // implementation
-}
-```
-
-### Architecture Guidelines
-
-Follow Clean Architecture principles:
-
-1. **Domain Layer** - Core business logic (no external dependencies)
-   - Entities, value objects
-   - Domain services (interfaces)
-   - Repository interfaces
-
-2. **Application Layer** - Application-specific logic
-   - Use cases / application services
-   - DTOs for input/output
-
-3. **Infrastructure Layer** - External implementations
-   - Algorithm implementations
-   - Database repositories
-   - External service adapters
-
-4. **API Layer** - User interfaces
-   - REST controllers
-   - CLI handlers
-   - GUI components
-
-**Dependency Rule:** Inner layers cannot depend on outer layers.
-
----
-
-## Testing Guidelines
-
-### Test Structure
-
-```
-src/test/java/
-├── com/facerecognition/
-│   ├── unit/              # Unit tests
-│   │   ├── domain/        # Domain model tests
-│   │   ├── application/   # Service tests
-│   │   └── infrastructure/# Algorithm tests
-│   ├── integration/       # Integration tests
-│   └── benchmark/         # Performance tests
-```
-
-### Writing Unit Tests
-
-Use JUnit 5 with these conventions:
-
-```java
-@DisplayName("EigenfacesExtractor Tests")
-class EigenfacesExtractorTest {
-
-    @Nested
-    @DisplayName("Training")
-    class TrainingTests {
-
-        @Test
-        @DisplayName("Trains successfully with valid data")
-        void trainsSuccessfully() {
-            // Arrange
-            List<FaceImage> faces = createTestFaces();
-
-            // Act
-            extractor.train(faces, null);
-
-            // Assert
-            assertTrue(extractor.isTrained());
-        }
-
-        @Test
-        @DisplayName("Throws on empty training set")
-        void throwsOnEmptyTrainingSet() {
-            assertThrows(IllegalArgumentException.class,
-                () -> extractor.train(new ArrayList<>(), null));
-        }
-    }
-}
-```
-
-### Test Coverage
-
-- Aim for 80%+ code coverage
-- 100% coverage for public APIs
-- Focus on meaningful tests, not just coverage numbers
-
-### Test Categories
-
-Use these annotations for test categorization:
-
-```java
-@Tag("unit")           // Unit tests (fast, isolated)
-@Tag("integration")    // Integration tests
-@Tag("slow")          // Tests that take > 1 second
-@Tag("benchmark")     // Performance benchmarks
-```
-
----
-
-## Submitting Changes
-
-### Before Submitting
-
-1. Ensure all tests pass:
-   ```bash
-   mvn clean test
-   ```
-
-2. Check code style:
-   ```bash
-   mvn checkstyle:check
-   ```
-
-3. Update documentation if needed
-
-4. Add/update tests for your changes
-
-### Creating a Pull Request
-
-1. Push your branch to your fork:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-2. Go to GitHub and create a Pull Request
-
-3. Fill out the PR template:
-   - Clear description of changes
-   - Link to related issue(s)
-   - Testing done
-   - Screenshots (if UI changes)
-
-### PR Title Format
-
-```
-type(scope): brief description
-```
-
-Example: `feat(extractor): add LBPH feature extractor`
-
----
-
-## Review Process
-
-### What We Look For
-
-- Code quality and style adherence
-- Test coverage and quality
-- Documentation completeness
-- Performance implications
-- Security considerations
-- Backward compatibility
-
-### Review Timeline
-
-- Initial review: 2-3 business days
-- Follow-up reviews: 1-2 business days
-
-### After Review
-
-- Address all comments
-- Push updates to the same branch
-- Mark resolved conversations as resolved
-- Request re-review when ready
-
----
-
-## Areas for Contribution
-
-### Good First Issues
-
-Look for issues labeled `good first issue` for starter tasks.
-
-### Wanted Features
-
-- Deep learning integration (ONNX Runtime)
-- Additional face detection methods
-- Real-time video processing
-- Web interface
-- Additional distance metrics
-- Performance optimizations
-
-### Documentation
-
-- API documentation improvements
-- Tutorial creation
-- Example projects
-- Translations
-
----
-
-## Questions?
-
-- Open a Discussion on GitHub
-- Tag maintainers in issues
-- Email: prasadus92@gmail.com
-
----
-
-Thank you for contributing to Face Recognition System!
+Thanks again — small contributions compound. If anything about the setup or process is unclear, open a Discussion and I'll fix the docs.
