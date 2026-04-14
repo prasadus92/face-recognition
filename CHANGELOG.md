@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Relicensed from GNU General Public License v3.0 to Apache License, Version 2.0.** The project was originally released under GPL-3.0 in 2014. The relicensing was legally permissible because all copyrightable contributions up to this point were made by the sole copyright holder, so no third-party consent was required. Apache 2.0 matches the ecosystem default for Java libraries (Spring Boot, Jackson, Micrometer, Bucket4j, picocli, springdoc are all Apache 2.0) and removes the copyleft adoption friction that came with GPL-3.0. See `License.txt` for the full Apache 2.0 text and the transition note.
+- **Spring Boot 3.2.5 → 4.0.5** (and springdoc 2.3.0 → 3.0.3). See the dedicated 4.0 upgrade commit for the detailed API-change list.
+
+## [2.1.0]
+
 ### Added
 - **Java 17 / Spring Boot 3.2** baseline. `javax.*` → `jakarta.*` across validation and servlet APIs.
 - **Central `FaceRecognitionProperties`** bound from `application.yml` via `@ConfigurationProperties`, plus a `FaceRecognitionAutoConfiguration` that wires the `FaceDetector`, `FeatureExtractor`, `FaceClassifier`, `ModelRepository`, and `FaceRecognitionService` beans from configuration. No more hardcoded defaults drifting from the YAML.

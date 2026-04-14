@@ -37,10 +37,13 @@ server:
 # ---------------------------------------------------------------
 facerecognition:
   detection:
-    type: COMPOSITE             # VIOLA_JONES | SKIN_COLOR | COMPOSITE
+    type: HAAR_CASCADE          # HAAR_CASCADE | SKIN_COLOR
     min-face-size: 30
     min-confidence: 0.5
     max-faces: 10
+    # Haar-cascade-only tuning (ignored by other detector types):
+    scale-factor: 1.1           # scale step between pyramid levels
+    min-neighbours: 3           # NMS support threshold
   extraction:
     algorithm: EIGENFACES       # EIGENFACES | FISHERFACES | LBPH | ONNX
     num-components: 10

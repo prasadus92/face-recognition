@@ -41,13 +41,17 @@ public class FaceRecognitionProperties {
     /** Face-detection tuning. */
     public static class Detection {
         /** Which detector implementation to use. */
-        private DetectorType type = DetectorType.COMPOSITE;
+        private DetectorType type = DetectorType.HAAR_CASCADE;
         /** Minimum face side in pixels. */
         private int minFaceSize = 30;
         /** Minimum detector confidence in [0, 1]. */
         private double minConfidence = 0.5;
         /** Maximum faces returned per image. */
         private int maxFaces = 10;
+        /** Scale step between successive pyramid levels (Haar only). */
+        private double scaleFactor = 1.1;
+        /** Minimum number of overlapping raw detections required after NMS (Haar only). */
+        private int minNeighbours = 3;
 
         public DetectorType getType() { return type; }
         public void setType(DetectorType type) { this.type = type; }
@@ -57,16 +61,18 @@ public class FaceRecognitionProperties {
         public void setMinConfidence(double minConfidence) { this.minConfidence = minConfidence; }
         public int getMaxFaces() { return maxFaces; }
         public void setMaxFaces(int maxFaces) { this.maxFaces = maxFaces; }
+        public double getScaleFactor() { return scaleFactor; }
+        public void setScaleFactor(double scaleFactor) { this.scaleFactor = scaleFactor; }
+        public int getMinNeighbours() { return minNeighbours; }
+        public void setMinNeighbours(int minNeighbours) { this.minNeighbours = minNeighbours; }
     }
 
     /** Built-in detector implementations. */
     public enum DetectorType {
-        /** Viola-Jones Haar-like detector. */
-        VIOLA_JONES,
-        /** Skin-colour heuristic detector. */
-        SKIN_COLOR,
-        /** Voting ensemble of all detectors above. */
-        COMPOSITE
+        /** Real Viola-Jones detector using an OpenCV Haar cascade (default). */
+        HAAR_CASCADE,
+        /** Skin-colour heuristic — fast fallback, not production-grade. */
+        SKIN_COLOR
     }
 
     /** Feature-extraction tuning. */
