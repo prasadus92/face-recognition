@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/java-17%2B-blue.svg" alt="Java 17+"/>
   <img src="https://img.shields.io/badge/spring--boot-3.2-brightgreen.svg" alt="Spring Boot 3.2"/>
   <a href="License.txt">
-    <img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License"/>
+    <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"/>
   </a>
   <a href="https://github.com/prasadus92/face-recognition/stargazers">
     <img src="https://img.shields.io/github/stars/prasadus92/face-recognition?style=social" alt="Stars"/>
@@ -313,7 +313,7 @@ This implementation builds on foundational papers:
 
 ## License
 
-Licensed under the **GNU General Public License v3.0** — see [License.txt](License.txt).
+Licensed under the **Apache License, Version 2.0** — see [License.txt](License.txt). The project was originally released under the GNU General Public License v3.0 in 2014 and was relicensed to Apache 2.0 in April 2026; the `License.txt` file explains the transition in full.
 
 ## Acknowledgements
 

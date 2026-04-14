@@ -74,8 +74,8 @@ public class OpenApiConfig {
                         .email("prasadus92@gmail.com")
                         .url("https://github.com/prasadus92/face-recognition"))
                 .license(new License()
-                        .name("GNU General Public License v3.0")
-                        .url("https://www.gnu.org/licenses/gpl-3.0.html"))
+                        .name("Apache License, Version 2.0")
+                        .url("https://www.apache.org/licenses/LICENSE-2.0.txt"))
                 .termsOfService("https://github.com/prasadus92/face-recognition/blob/main/TERMS.md");
     }
 

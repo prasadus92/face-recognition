@@ -32,8 +32,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
                         url = "https://github.com/prasadus92/face-recognition"
                 ),
                 license = @License(
-                        name = "GNU General Public License v3.0",
-                        url = "https://www.gnu.org/licenses/gpl-3.0.html"
+                        name = "Apache License, Version 2.0",
+                        url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
                 )
         ),
         servers = {@Server(url = "http://localhost:8080", description = "Local")},

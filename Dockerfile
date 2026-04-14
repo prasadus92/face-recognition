@@ -30,7 +30,7 @@ FROM eclipse-temurin:17-jre-alpine
 LABEL org.opencontainers.image.title="face-recognition"
 LABEL org.opencontainers.image.description="Classical face-recognition library for the JVM — Eigenfaces, Fisherfaces, LBPH — exposed as a Spring Boot REST API."
 LABEL org.opencontainers.image.source="https://github.com/prasadus92/face-recognition"
-LABEL org.opencontainers.image.licenses="GPL-3.0-only"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.vendor="Prasad Subrahmanya"
 
 RUN apk add --no-cache wget tini \
