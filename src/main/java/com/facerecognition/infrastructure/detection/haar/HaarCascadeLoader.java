@@ -91,10 +91,10 @@ public final class HaarCascadeLoader {
                 String name = reader.getLocalName();
                 switch (name) {
                     case "width":
-                        windowWidth = Integer.parseInt(readText(reader).trim());
+                        windowWidth = parseIntOrFail("width", readText(reader).trim());
                         break;
                     case "height":
-                        windowHeight = Integer.parseInt(readText(reader).trim());
+                        windowHeight = parseIntOrFail("height", readText(reader).trim());
                         break;
                     case "stages":
                         parseStages(reader, stages);
@@ -162,7 +162,7 @@ public final class HaarCascadeLoader {
             if (event == START_ELEMENT) {
                 String name = reader.getLocalName();
                 if ("stageThreshold".equals(name)) {
-                    threshold = Float.parseFloat(readText(reader).trim());
+                    threshold = parseFloatOrFail("stageThreshold", readText(reader).trim());
                 } else if ("weakClassifiers".equals(name)) {
                     parseWeakClassifiers(reader, classifiers);
                 }
@@ -203,8 +203,8 @@ public final class HaarCascadeLoader {
                         throw new XMLStreamException(
                                 "internalNodes expected 4 numbers, got " + parts.length);
                     }
-                    featureIndex = Integer.parseInt(parts[2]);
-                    nodeThreshold = Float.parseFloat(parts[3]);
+                    featureIndex = parseIntOrFail("internalNodes.featureIndex", parts[2]);
+                    nodeThreshold = parseFloatOrFail("internalNodes.nodeThreshold", parts[3]);
                 } else if ("leafValues".equals(name)) {
                     // "LEFT_LEAF RIGHT_LEAF"
                     String[] parts = splitOnWhitespace(readText(reader));
@@ -212,8 +212,8 @@ public final class HaarCascadeLoader {
                         throw new XMLStreamException(
                                 "leafValues expected 2 numbers, got " + parts.length);
                     }
-                    leftLeaf = Float.parseFloat(parts[0]);
-                    rightLeaf = Float.parseFloat(parts[1]);
+                    leftLeaf = parseFloatOrFail("leafValues.leftLeaf", parts[0]);
+                    rightLeaf = parseFloatOrFail("leafValues.rightLeaf", parts[1]);
                 }
             }
         }
@@ -265,12 +265,12 @@ public final class HaarCascadeLoader {
                     throw new XMLStreamException(
                             "rect expected 5 numbers (x y w h weight), got " + parts.length);
                 }
-                int x = Integer.parseInt(parts[0]);
-                int y = Integer.parseInt(parts[1]);
-                int w = Integer.parseInt(parts[2]);
-                int h = Integer.parseInt(parts[3]);
+                int x = parseIntOrFail("rect.x", parts[0]);
+                int y = parseIntOrFail("rect.y", parts[1]);
+                int w = parseIntOrFail("rect.w", parts[2]);
+                int h = parseIntOrFail("rect.h", parts[3]);
                 // Weight often has a trailing ".". Parse as double to be tolerant.
-                float weight = (float) Double.parseDouble(parts[4]);
+                float weight = (float) parseDoubleOrFail("rect.weight", parts[4]);
                 out.add(new HaarCascade.Rect(x, y, w, h, weight));
             }
         }
@@ -307,5 +307,38 @@ public final class HaarCascadeLoader {
         // The text nodes can contain leading / trailing newlines and runs of
         // whitespace. Use the simple whitespace split.
         return s.trim().split("\\s+");
+    }
+
+    // ---------------------------------------------------------------------
+    // Numeric-parse helpers: wrap NumberFormatException in a checked
+    // XMLStreamException so a malformed cascade surfaces as an IOException
+    // through load(), never as an unchecked NFE.
+    // ---------------------------------------------------------------------
+
+    private static int parseIntOrFail(String field, String raw) throws XMLStreamException {
+        try {
+            return Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            throw new XMLStreamException(
+                    "Cascade XML: field '" + field + "' is not a valid integer: '" + raw + "'");
+        }
+    }
+
+    private static float parseFloatOrFail(String field, String raw) throws XMLStreamException {
+        try {
+            return Float.parseFloat(raw);
+        } catch (NumberFormatException e) {
+            throw new XMLStreamException(
+                    "Cascade XML: field '" + field + "' is not a valid float: '" + raw + "'");
+        }
+    }
+
+    private static double parseDoubleOrFail(String field, String raw) throws XMLStreamException {
+        try {
+            return Double.parseDouble(raw);
+        } catch (NumberFormatException e) {
+            throw new XMLStreamException(
+                    "Cascade XML: field '" + field + "' is not a valid double: '" + raw + "'");
+        }
     }
 }
