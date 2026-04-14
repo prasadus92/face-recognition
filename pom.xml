@@ -59,17 +59,17 @@
         <bucket4j.version>8.10.1</bucket4j.version>
 
         <!-- Build plugin versions -->
-        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
-        <maven-failsafe-plugin.version>3.2.5</maven-failsafe-plugin.version>
-        <maven-javadoc-plugin.version>3.6.3</maven-javadoc-plugin.version>
-        <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
-        <maven-enforcer-plugin.version>3.4.1</maven-enforcer-plugin.version>
-        <jacoco.version>0.8.12</jacoco.version>
-        <checkstyle-plugin.version>3.3.1</checkstyle-plugin.version>
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.5.5</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.5.5</maven-failsafe-plugin.version>
+        <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
+        <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
+        <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
+        <jacoco.version>0.8.14</jacoco.version>
+        <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
         <checkstyle.version>10.14.2</checkstyle.version>
-        <spotbugs-plugin.version>4.8.3.1</spotbugs-plugin.version>
-        <cyclonedx-plugin.version>2.7.11</cyclonedx-plugin.version>
+        <spotbugs-plugin.version>4.9.8.3</spotbugs-plugin.version>
+        <cyclonedx-plugin.version>2.9.1</cyclonedx-plugin.version>
 
         <!-- Coverage floor. Starts at the current honest baseline and is
              expected to ratchet upwards over time — never downwards. -->
