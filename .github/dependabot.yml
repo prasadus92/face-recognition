@@ -1,0 +1,48 @@
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "maven"
+    groups:
+      spring:
+        patterns:
+          - "org.springframework*"
+          - "org.springframework.boot*"
+      jackson:
+        patterns:
+          - "com.fasterxml.jackson*"
+      test-tooling:
+        patterns:
+          - "org.junit*"
+          - "org.mockito*"
+          - "org.assertj*"
+      build-plugins:
+        patterns:
+          - "org.apache.maven.plugins:*"
+          - "org.jacoco:*"
+          - "com.github.spotbugs:*"
+          - "org.cyclonedx:*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "docker"

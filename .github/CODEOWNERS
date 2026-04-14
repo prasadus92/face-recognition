@@ -1,0 +1,8 @@
+# Default owner for everything in the repo.
+* @prasadus92
+
+# Keep security-sensitive files tightly owned.
+/SECURITY.md              @prasadus92
+/.github/workflows/       @prasadus92
+/pom.xml                  @prasadus92
+/Dockerfile               @prasadus92

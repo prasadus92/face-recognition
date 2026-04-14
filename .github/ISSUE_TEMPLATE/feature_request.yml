@@ -1,0 +1,46 @@
+name: Feature request
+description: Suggest a new capability or improvement.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Start with the use-case, not the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Which area does this touch?
+      multiple: true
+      options:
+        - Feature extraction (Eigenfaces / Fisherfaces / LBPH / ONNX)
+        - Face detection
+        - Classification
+        - REST API
+        - CLI
+        - Persistence
+        - Benchmark / docs
+        - Build / CI
+    validations:
+      required: true
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Are you willing to help?
+      options:
+        - label: I can send a PR.
+        - label: I can help review.
+        - label: I can help with documentation.

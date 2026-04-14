@@ -1,43 +1,38 @@
-## Description
-Briefly describe what this PR does.
+<!--
+  Thanks for contributing. Please fill in the sections below so reviewers can
+  get to the relevant bits quickly.
+-->
 
-## Related Issues
-Fixes #(issue number)
+## Summary
 
-## Type of Change
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
-- [ ] Refactoring (no functional changes)
-- [ ] Performance improvement
+<!-- One paragraph describing what this PR changes and why. -->
 
-## Changes Made
-- Change 1
-- Change 2
-- Change 3
+## Related issues
 
-## How Has This Been Tested?
-Describe the tests you ran to verify your changes.
+Fixes #<!-- issue number -->
 
-- [ ] Unit tests
-- [ ] Integration tests
-- [ ] Manual testing
+## Type of change
 
-**Test Configuration:**
-- Java version:
-- OS:
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Refactor / internal change
+- [ ] Documentation
+- [ ] Build / CI / tooling
+- [ ] Breaking change
+
+## How was this tested?
+
+- [ ] `mvn verify` passes locally
+- [ ] Added / updated unit tests
+- [ ] Added / updated integration tests (MockMvc)
+- [ ] Manually exercised the REST API / CLI (describe below)
+
+<!-- Commands you ran and what you saw. -->
 
 ## Checklist
-- [ ] My code follows the project's coding standards
-- [ ] I have added/updated Javadoc comments for public APIs
-- [ ] I have added tests that prove my fix/feature works
-- [ ] All new and existing unit tests pass
-- [ ] I have updated the documentation accordingly
-- [ ] My changes generate no new warnings
 
-## Screenshots (if applicable)
-Add screenshots to help explain your changes.
-
-## Additional Notes
-Any additional information or context about the pull request.
+- [ ] I read [CONTRIBUTING.md](../CONTRIBUTING.md)
+- [ ] No over-claims in README / docs — only describe behaviour that actually ships in this PR
+- [ ] Javadoc updated for any changed public APIs
+- [ ] No new warnings from Checkstyle / SpotBugs
+- [ ] Coverage floor still met

@@ -1,552 +1,322 @@
-<h1 align="center">Face Recognition System</h1>
+<h1 align="center">Face Recognition</h1>
 
 <p align="center">
-  <strong>Production-ready face recognition library for Java with multiple algorithms and enterprise features</strong>
+  <strong>A classical face-recognition library for the JVM — Eigenfaces, Fisherfaces, LBPH — wrapped in a Spring Boot REST API and a Picocli CLI.</strong>
 </p>
 
 <p align="center">
   <a href="https://github.com/prasadus92/face-recognition/actions/workflows/build.yml">
-    <img src="https://github.com/prasadus92/face-recognition/actions/workflows/build.yml/badge.svg" alt="Build Status"/>
+    <img src="https://github.com/prasadus92/face-recognition/actions/workflows/build.yml/badge.svg?branch=master" alt="Build Status"/>
   </a>
   <a href="https://codecov.io/gh/prasadus92/face-recognition">
-    <img src="https://codecov.io/gh/prasadus92/face-recognition/branch/main/graph/badge.svg" alt="Code Coverage"/>
+    <img src="https://codecov.io/gh/prasadus92/face-recognition/branch/master/graph/badge.svg" alt="Code Coverage"/>
   </a>
-  <a href="https://www.javadoc.io/doc/com.facerecognition/face-recognition">
-    <img src="https://javadoc.io/badge2/com.facerecognition/face-recognition/javadoc.svg" alt="Javadoc"/>
-  </a>
-  <a href="LICENSE.txt">
+  <img src="https://img.shields.io/badge/java-17%2B-blue.svg" alt="Java 17+"/>
+  <img src="https://img.shields.io/badge/spring--boot-3.2-brightgreen.svg" alt="Spring Boot 3.2"/>
+  <a href="License.txt">
     <img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License"/>
   </a>
-  <a href="https://github.com/prasadus92/face-recognition/releases">
-    <img src="https://img.shields.io/github/v/release/prasadus92/face-recognition" alt="Release"/>
+  <a href="https://github.com/prasadus92/face-recognition/stargazers">
+    <img src="https://img.shields.io/github/stars/prasadus92/face-recognition?style=social" alt="Stars"/>
   </a>
 </p>
 
 <p align="center">
-  <a href="#-quick-start">Quick Start</a> |
-  <a href="#-features">Features</a> |
-  <a href="#-algorithms">Algorithms</a> |
-  <a href="#-api-reference">API</a> |
-  <a href="#-benchmarks">Benchmarks</a> |
-  <a href="#-documentation">Docs</a>
+  <a href="#status">Status</a> ·
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#algorithms">Algorithms</a> ·
+  <a href="#rest-api">REST API</a> ·
+  <a href="#cli">CLI</a> ·
+  <a href="#benchmarks">Benchmarks</a> ·
+  <a href="#contributing">Contributing</a>
 </p>
 
 ---
 
-## Overview
+## Status
 
-A comprehensive Java-based face recognition library implementing state-of-the-art algorithms for detecting, analyzing, and recognizing human faces. Built with clean architecture principles, this library provides:
+> **Actively maintained.** Originally released in 2014 as a university project (`TSCD` + Swing GUI); fully rewritten for v2 as a service-shaped library with clean-architecture layering, a REST/CLI surface, and a classical-vision pipeline. v2 is **not yet** published to Maven Central — install from source (see below). See [ROADMAP.md](ROADMAP.md) for what is landed vs. planned and [CHANGELOG.md](CHANGELOG.md) for recent changes.
 
-- **Multiple recognition algorithms** (Eigenfaces, Fisherfaces, LBPH)
-- **Production-ready architecture** with pluggable components
-- **High performance** - 50ms average recognition time
-- **Extensive documentation** and examples
-- **Comprehensive test coverage** (90%+)
+This repository is a learning-friendly reference implementation of the classical face-recognition pipeline — not a competitor to `dlib`, OpenCV DNN, or modern CNN-based libraries. If you need state-of-the-art accuracy, bring a real model via the [Deep-learning backend](#deep-learning-backend-experimental).
 
-### Use Cases
+## Features
 
-- Access control and security systems
-- Identity verification applications
-- Photo organization and tagging
-- Attendance management systems
-- Research and academic projects
+- **Three classical feature extractors** — Eigenfaces (PCA), Fisherfaces (LDA), LBPH
+- **Pluggable** `FeatureExtractor` / `FaceClassifier` / `FaceDetector` interfaces
+- **Clean architecture** — `domain` / `application` / `infrastructure` / `api` layers
+- **REST API** with OpenAPI 3 / Swagger UI, request correlation IDs, validation, rate limiting, Prometheus metrics
+- **CLI** (Picocli) for `enroll`, `train`, `recognize`, `serve`, `benchmark`
+- **Model persistence** — auto-save/auto-load + REST export/import
+- **Docker image** — multi-stage build, non-root user, container-aware JVM
+- **Experimental ONNX backend** scaffold for FaceNet/ArcFace-style embeddings (bring your own weights)
 
----
+## Status matrix
+
+| Capability | State | Notes |
+|---|---|---|
+| Eigenfaces extractor | Stable | PCA via JAMA |
+| Fisherfaces extractor | Stable | LDA on top of PCA |
+| LBPH extractor | Stable | Uniform LBP histograms, configurable grid |
+| KNN classifier | Stable | Euclidean / Cosine / Manhattan / Chi-square |
+| Haar cascade face detector | Experimental | Vendored stub; real cascade data required for production |
+| Face aligner (eye-centered affine) | Stable (opt-in) | Enabled via `facerecognition.image.face-alignment` |
+| Model persistence | Stable | `FileModelRepository` + `TrainedModel` |
+| REST + OpenAPI | Stable | `/api/v1/*` + `/swagger-ui.html` |
+| Prometheus / health / metrics | Stable | Micrometer + custom `ModelReadyHealthIndicator` |
+| Rate limiting | Stable | Per-IP token bucket (Bucket4j) |
+| CLI (picocli) | Stable | `serve`, `recognize`, `enroll`, `train`, `benchmark` |
+| ONNX deep-learning extractor | Experimental scaffold | Bring your own model weights |
+| Published Maven artifact | Planned | Not yet on Central |
 
 ## Quick Start
 
-### Installation
+### Prerequisites
 
-**Maven:**
-```xml
-<dependency>
-    <groupId>com.facerecognition</groupId>
-    <artifactId>face-recognition</artifactId>
-    <version>2.0.0</version>
-</dependency>
+- JDK 17+
+- Maven 3.9+
+
+### Build
+
+```bash
+git clone https://github.com/prasadus92/face-recognition.git
+cd face-recognition
+mvn clean package
 ```
 
-**Gradle:**
-```groovy
-implementation 'com.facerecognition:face-recognition:2.0.0'
+The build produces two jars in `target/`:
+- `face-recognition-<version>.jar` — library jar
+- `face-recognition-<version>-exec.jar` — Spring Boot executable (REST + CLI)
+
+### Run the REST API
+
+```bash
+java -jar target/face-recognition-*-exec.jar
+# → http://localhost:8080/swagger-ui.html
+# → http://localhost:8080/actuator/health
 ```
 
-### Basic Usage
+### Run the CLI
+
+```bash
+java -jar target/face-recognition-*-exec.jar --help
+java -jar target/face-recognition-*-exec.jar enroll --image john.jpg --name "John Doe"
+java -jar target/face-recognition-*-exec.jar train
+java -jar target/face-recognition-*-exec.jar recognize --image unknown.jpg
+```
+
+### Run with Docker
+
+```bash
+docker build -t face-recognition:latest .
+docker run --rm -p 8080:8080 -v "$PWD/data:/app/data" face-recognition:latest
+```
+
+### Use as a library
 
 ```java
 import com.facerecognition.application.service.FaceRecognitionService;
 import com.facerecognition.infrastructure.extraction.EigenfacesExtractor;
 import com.facerecognition.infrastructure.classification.KNNClassifier;
-import com.facerecognition.domain.model.*;
+import com.facerecognition.domain.model.FaceImage;
+import com.facerecognition.domain.model.RecognitionResult;
 
-// 1. Build the recognition service
+import java.io.File;
+
 FaceRecognitionService service = FaceRecognitionService.builder()
     .extractor(new EigenfacesExtractor(10))
     .classifier(new KNNClassifier())
     .build();
 
-// 2. Enroll known faces
-service.enrollFromFile(new File("john_doe.jpg"), "John Doe");
-service.enrollFromFile(new File("jane_smith.jpg"), "Jane Smith");
-
-// 3. Train the system
+service.enrollFromFile(new File("john.jpg"), "John Doe");
+service.enrollFromFile(new File("jane.jpg"), "Jane Smith");
 service.train();
 
-// 4. Recognize an unknown face
 RecognitionResult result = service.recognizeFromFile(new File("unknown.jpg"));
-
-if (result.isRecognized()) {
-    System.out.println("Identified: " + result.getIdentity().get().getName());
-    System.out.println("Confidence: " + String.format("%.2f%%", result.getConfidence() * 100));
-} else {
-    System.out.println("Unknown person");
-}
+result.getBestMatch().ifPresent(match ->
+    System.out.printf("%s (conf=%.2f)%n",
+        match.getIdentity().getName(), match.getConfidence()));
 ```
-
-### Running the GUI Application
-
-```bash
-# Clone and build
-git clone https://github.com/prasadus92/face-recognition.git
-cd face-recognition
-mvn clean install
-
-# Run with GUI
-mvn exec:java -Dexec.mainClass="src.FrontEnd"
-```
-
----
-
-## Features
-
-### Core Capabilities
-
-| Feature | Description |
-|---------|-------------|
-| **Multi-Algorithm Support** | Eigenfaces (PCA), Fisherfaces (LDA), LBPH |
-| **Robust Detection** | Handles expressions, occlusions, pose variations |
-| **Pluggable Architecture** | Easy to extend with custom algorithms |
-| **Model Persistence** | Save and load trained models |
-| **Batch Processing** | Process multiple images efficiently |
-| **Quality Metrics** | Built-in image quality assessment |
-
-### Recognition Capabilities
-
-- **Pose variations**: Up to 60 degrees rotation
-- **Expressions**: Neutral, smile, anger, surprise, etc.
-- **Occlusions**: Glasses, partial face coverage
-- **Lighting**: Adaptive to various lighting conditions
-- **Scale**: Automatic face size normalization
-
-### Architecture Highlights
-
-```
-com.facerecognition/
-├── domain/           # Core business logic (framework-agnostic)
-│   ├── model/        # FaceImage, FeatureVector, Identity, etc.
-│   └── service/      # FaceDetector, FeatureExtractor, FaceClassifier
-├── application/      # Application services and orchestration
-├── infrastructure/   # Algorithm implementations
-│   ├── extraction/   # Eigenfaces, Fisherfaces, LBPH
-│   └── classification/ # KNN, SVM classifiers
-└── api/              # REST API and CLI interfaces
-```
-
----
 
 ## Algorithms
 
-### Eigenfaces (PCA)
+| Algorithm | Idea | Best for | Tradeoffs |
+|---|---|---|---|
+| **Eigenfaces (PCA)** | Project faces onto principal components of training set. | Fast, controlled environments. | Sensitive to lighting and pose. |
+| **Fisherfaces (LDA)** | Maximize between-class / within-class scatter. | Varied lighting with ≥2 samples/identity. | Requires multiple labelled samples per identity. |
+| **LBPH** | Concatenate histograms of local binary patterns over a grid. | Texture-based matching under lighting changes. | Pose-sensitive; higher memory. |
 
-Principal Component Analysis-based recognition. Projects faces onto a lower-dimensional eigenspace.
+The classical extractors live under `com.facerecognition.infrastructure.extraction` and are selected declaratively via `application.yml` (`facerecognition.extraction.algorithm = eigenfaces | fisherfaces | lbph | onnx`) or programmatically via the service builder.
 
-```java
-// Default: 10 eigenfaces
-EigenfacesExtractor extractor = new EigenfacesExtractor();
+### Deep-learning backend (experimental)
 
-// Custom configuration
-EigenfacesExtractor extractor = new EigenfacesExtractor(
-    new ExtractorConfig()
-        .setNumComponents(20)
-        .setImageWidth(64)
-        .setImageHeight(64)
-);
+An `OnnxDeepFeatureExtractor` scaffold is included for running modern embedding networks (FaceNet, ArcFace, etc.) via ONNX Runtime. **It ships without model weights** — you must supply your own (`.onnx`) and configure the model path in `application.yml`. See `docs/onnx.md` (forthcoming) for the contract.
+
+## REST API
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/api/v1/enroll` | POST multipart | Register a face sample for a name |
+| `/api/v1/recognize` | POST multipart | Identify a face in an uploaded image |
+| `/api/v1/train` | POST | Train / retrain on all enrolled samples |
+| `/api/v1/identities` | GET | List enrolled identities (paginated) |
+| `/api/v1/identities/{id}` | GET / PATCH / DELETE | Read, update, soft-delete an identity |
+| `/api/v1/model/status` | GET | Model state, algorithm, identity counts |
+| `/api/v1/model/export` | POST | Download a serialized `TrainedModel` |
+| `/api/v1/model/import` | POST multipart | Load a previously exported model |
+| `/actuator/health` | GET | Liveness + custom `model-ready` indicator |
+| `/actuator/prometheus` | GET | Micrometer metrics in Prometheus format |
+| `/swagger-ui.html` | GET | Interactive OpenAPI 3 docs |
+
+Every response that represents an error uses the [`ErrorResponse`](src/main/java/com/facerecognition/api/rest/dto/ErrorResponse.java) shape and carries a `traceId` (echoed from the `X-Request-ID` request header or generated if absent).
+
+### Security and limits
+
+- **Rate limit**: per-IP token bucket (default 60 req/min, configurable via `facerecognition.ratelimit.*`).
+- **Upload limit**: `spring.servlet.multipart.max-file-size` (10 MB default).
+- **CORS**: disabled by default; enable via `facerecognition.cors.*`.
+- **Authentication**: no auth by default. Deploy behind an API gateway / reverse proxy, or enable the optional API-key filter (`facerecognition.security.api-key`).
+
+## CLI
+
+```text
+Usage: face-recognition [COMMAND]
+Commands:
+  enroll      Enroll a face image under a name.
+  train       Train or retrain the model.
+  recognize   Recognize a face from an image or directory.
+  benchmark   Run accuracy/performance benchmarks on a dataset.
+  serve       Start the HTTP API server.
 ```
 
-**Pros:** Fast training and recognition, well-understood mathematically
-**Cons:** Sensitive to lighting changes
-
-### Fisherfaces (LDA)
-
-Linear Discriminant Analysis maximizes class separability.
-
-```java
-FisherfacesExtractor extractor = new FisherfacesExtractor();
-// Requires labeled training data
-extractor.train(faces, labels);
-```
-
-**Pros:** More robust to lighting, better class separation
-**Cons:** Requires multiple samples per identity
-
-### LBPH (Local Binary Patterns)
-
-Texture-based recognition using local binary patterns.
-
-```java
-// Default: 8x8 grid, radius=1, 8 neighbors
-LBPHExtractor extractor = new LBPHExtractor();
-
-// Custom configuration
-LBPHExtractor extractor = new LBPHExtractor(8, 8, 2, 8);
-```
-
-**Pros:** Robust to lighting, no training required
-**Cons:** Higher memory usage, sensitive to pose
-
-### Algorithm Comparison
-
-| Algorithm | LFW Accuracy | Speed | Training Required | Best For |
-|-----------|-------------|-------|-------------------|----------|
-| Eigenfaces | 85% | Fast | Yes | Controlled environments |
-| Fisherfaces | 88% | Fast | Yes (labeled) | Varying lighting |
-| LBPH | 91% | Medium | No | General purpose |
-
----
-
-## API Reference
-
-### FaceImage
-
-Represents a face image with quality metrics.
-
-```java
-// From file
-FaceImage face = FaceImage.fromFile(new File("face.jpg"));
-
-// From BufferedImage
-FaceImage face = FaceImage.fromBufferedImage(bufferedImage);
-
-// Quality metrics
-double quality = face.getQualityScore();
-double brightness = face.getBrightness();
-double sharpness = face.getSharpness();
-
-// Resize
-FaceImage resized = face.resize(160, 160);
-```
-
-### FeatureVector
-
-Numerical representation of a face for comparison.
-
-```java
-FeatureVector features = extractor.extract(faceImage);
-
-// Distance metrics
-double euclidean = features.euclideanDistance(other);
-double cosine = features.cosineDistance(other);
-double manhattan = features.manhattanDistance(other);
-
-// Vector operations
-FeatureVector normalized = features.normalize();
-double similarity = features.cosineSimilarity(other);
-```
-
-### Identity
-
-Represents a known person with enrolled samples.
-
-```java
-Identity person = new Identity("John Doe");
-person.setExternalId("EMP-12345");
-person.setMetadata("department", "Engineering");
-
-// Enroll samples
-person.enrollSample(features, qualityScore, "photo1.jpg");
-
-// Get statistics
-int sampleCount = person.getSampleCount();
-double avgQuality = person.getAverageQualityScore();
-```
-
-### RecognitionResult
-
-Result of a recognition operation.
-
-```java
-RecognitionResult result = service.recognize(image);
-
-if (result.isRecognized()) {
-    Identity identity = result.getIdentity().get();
-    double confidence = result.getConfidence();
-    double distance = result.getDistance();
-
-    // Alternative matches
-    List<MatchResult> alternatives = result.getAlternatives();
-
-    // Performance metrics
-    ProcessingMetrics metrics = result.getMetrics().get();
-    long totalTime = metrics.getTotalTimeMs();
-}
-```
-
----
-
-## Benchmarks
-
-### Recognition Accuracy
-
-Tested on standard face recognition datasets:
-
-| Dataset | Eigenfaces | Fisherfaces | LBPH |
-|---------|-----------|-------------|------|
-| Yale Faces | 87.3% | 91.2% | 93.5% |
-| ORL (AT&T) | 89.5% | 92.8% | 95.2% |
-| Extended Yale B | 72.4% | 85.6% | 88.1% |
-
-### Performance Metrics
-
-Measured on Intel i7-10700K, 32GB RAM:
-
-| Operation | Time (ms) | Notes |
-|-----------|-----------|-------|
-| Face Detection | 15-25 | Per image |
-| Feature Extraction | 5-10 | Eigenfaces |
-| 1:N Matching | 0.1 | Per comparison |
-| Full Recognition | 25-50 | End-to-end |
-
-### Memory Usage
-
-| Model | Training Memory | Runtime Memory |
-|-------|----------------|----------------|
-| Eigenfaces (10 components) | ~50 MB | ~5 MB |
-| Fisherfaces | ~80 MB | ~8 MB |
-| LBPH (8x8 grid) | ~10 MB | ~20 MB |
-
----
+All commands honour `--model <path>` and `--config <application.yml>` for reproducible runs.
 
 ## Configuration
 
-### Service Configuration
+All runtime settings live in `src/main/resources/application.yml` and can be overridden via environment variables (`FACERECOGNITION_EXTRACTION_ALGORITHM=lbph`) or a custom `application.yml` passed to `--spring.config.location`. Core keys:
 
-```java
-FaceRecognitionService.Config config = new FaceRecognitionService.Config()
-    .setRecognitionThreshold(0.6)    // Minimum confidence for match
-    .setDetectionConfidence(0.5)     // Minimum detection confidence
-    .setMinQuality(0.3)              // Minimum image quality
-    .setAutoAlign(true)              // Auto-align detected faces
-    .setTargetWidth(48)              // Normalized face width
-    .setTargetHeight(64);            // Normalized face height
-
-FaceRecognitionService service = FaceRecognitionService.builder()
-    .config(config)
-    .extractor(new EigenfacesExtractor())
-    .classifier(new KNNClassifier())
-    .build();
+```yaml
+facerecognition:
+  detection:
+    min-face-size: 30
+    min-confidence: 0.5
+  extraction:
+    algorithm: eigenfaces      # eigenfaces | fisherfaces | lbph | onnx
+    num-components: 10
+    onnx:
+      model-path: ""           # path to a .onnx model for the deep backend
+  classification:
+    algorithm: knn
+    k-neighbors: 3
+    distance-metric: euclidean # euclidean | cosine | manhattan | chi_square
+  recognition:
+    threshold: 0.6
+  quality:
+    min-score: 0.3
+  image:
+    target-width: 100
+    target-height: 100
+    face-alignment: true
+  model:
+    auto-save: true
+    auto-load: true
+    save-path: data/models/default.frm
+  ratelimit:
+    enabled: true
+    requests-per-minute: 60
 ```
 
-### Classifier Configuration
+## Benchmarks
 
-```java
-FaceClassifier.ClassifierConfig config = new FaceClassifier.ClassifierConfig()
-    .setThreshold(0.6)
-    .setK(3)                                    // For KNN
-    .setMetric(DistanceMetric.COSINE)
-    .setUseAverageFeatures(false);
+> **Honest disclaimer.** The numbers currently checked into [docs/benchmarks/](docs/benchmarks/) come from the bundled micro-dataset (`src/test/resources/datasets/mini/`) and are not directly comparable to LFW or Yale B. Classical algorithms on aligned frontal faces typically land in the 80–95% range depending on dataset; don't expect deep-learning-level accuracy.
 
-KNNClassifier classifier = new KNNClassifier(config);
-```
-
----
-
-## Advanced Usage
-
-### Multiple Enrollments per Identity
-
-```java
-Identity person = service.enroll(image1, "John Doe");
-service.enroll(image2, "John Doe");  // Adds to existing identity
-service.enroll(image3, "John Doe");  // More samples = better accuracy
-
-service.train();  // Retrain with all samples
-```
-
-### Custom Distance Metrics
-
-```java
-classifier.setDistanceMetric(DistanceMetric.COSINE);
-// or EUCLIDEAN, MANHATTAN, CHI_SQUARE, MAHALANOBIS
-```
-
-### Feature Vector Analysis
-
-```java
-FeatureVector features = extractor.extract(face);
-
-// Inspect features
-System.out.println("Dimension: " + features.getDimension());
-System.out.println("Norm: " + features.norm());
-System.out.println("Values: " + features.toDetailedString(5));
-
-// Compare with enrolled identities
-for (Identity id : service.getIdentities()) {
-    FeatureVector enrolled = id.getAverageFeatureVector();
-    double distance = features.euclideanDistance(enrolled);
-    System.out.println(id.getName() + ": " + distance);
-}
-```
-
-### Eigenface Visualization
-
-```java
-EigenfacesExtractor extractor = (EigenfacesExtractor) service.getExtractor();
-
-// Get mean face
-double[] meanFace = extractor.getMeanFace();
-
-// Get eigenfaces
-double[][] eigenfaces = extractor.getAllEigenfaces();
-
-// Explained variance
-double[] variance = extractor.getExplainedVarianceRatio();
-System.out.println("Explained variance: " + extractor.getCumulativeVariance() * 100 + "%");
-```
-
----
-
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [ROADMAP.md](ROADMAP.md) | Development roadmap and future plans |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
-| [CHANGELOG.md](CHANGELOG.md) | Version history |
-| [API Reference](docs/api/) | Complete API documentation |
-
-### Research Papers
-
-This implementation is based on the following foundational papers:
-
-1. **Eigenfaces**: Turk, M., & Pentland, A. (1991). "Eigenfaces for Recognition"
-2. **Fisherfaces**: Belhumeur, P. N., et al. (1997). "Eigenfaces vs. Fisherfaces"
-3. **LBPH**: Ahonen, T., et al. (2006). "Face Description with Local Binary Patterns"
-
----
-
-## Building from Source
-
-### Prerequisites
-
-- Java Development Kit (JDK) 8 or higher
-- Maven 3.6 or higher
-- (Optional) MySQL 5.7+ for user management
-
-### Build Commands
+Run the benchmark suite locally:
 
 ```bash
-# Full build with tests
-mvn clean install
-
-# Build without tests
-mvn clean install -DskipTests
-
-# Generate documentation
-mvn javadoc:javadoc
-
-# Run tests with coverage
-mvn clean test jacoco:report
+mvn -P benchmarks exec:java
+# or via the CLI
+java -jar target/face-recognition-*-exec.jar benchmark \
+    --dataset src/test/resources/datasets/mini \
+    --algorithm all \
+    --report docs/benchmarks/mini.json
 ```
 
-### Running Tests
+The benchmark harness lives under `com.facerecognition.benchmark` and reports top-1 accuracy, per-stage latency, and confusion matrices as JSON / Markdown.
 
-```bash
-# All tests
-mvn test
+## Observability
 
-# Specific test class
-mvn test -Dtest=EigenfacesExtractorTest
+- **Logs** — structured via Logback, per-request `traceId` via MDC; file appender rolls daily with 1 GB cap.
+- **Metrics** — custom Micrometer timers `facerecognition.detect`, `facerecognition.extract`, `facerecognition.match`, `facerecognition.recognize.total`; counters for recognitions / enrollments / errors.
+- **Health** — `/actuator/health` exposes a custom `model-ready` component reflecting `FaceRecognitionService#isTrained()`.
+- **Tracing** — propagate `X-Request-ID` from your upstream and it will appear in every log line and response body.
 
-# Integration tests
-mvn verify -P integration-tests
-```
-
----
-
-## Project Structure
+## Project layout
 
 ```
 face-recognition/
 ├── src/
 │   ├── main/
-│   │   ├── java/
-│   │   │   ├── com/facerecognition/    # New clean architecture
-│   │   │   │   ├── domain/             # Core business logic
-│   │   │   │   ├── application/        # Application services
-│   │   │   │   ├── infrastructure/     # Algorithm implementations
-│   │   │   │   └── api/                # API layer
-│   │   │   └── src/                    # Legacy GUI application
-│   │   └── resources/                  # Application resources
-│   └── test/
-│       ├── java/                       # Test sources
-│       └── resources/                  # Test datasets
-├── docs/                               # Documentation
-├── platform-specific/                  # Platform-specific files
-├── ROADMAP.md                          # Development roadmap
-├── CONTRIBUTING.md                     # Contribution guide
-└── pom.xml                             # Maven configuration
+│   │   ├── java/com/facerecognition/
+│   │   │   ├── FaceRecognitionApplication.java     # Spring Boot entry point
+│   │   │   ├── config/                             # @ConfigurationProperties + bean factories
+│   │   │   ├── domain/                             # Pure domain model + service interfaces
+│   │   │   │   ├── model/
+│   │   │   │   └── service/
+│   │   │   ├── application/service/                # Orchestrator (FaceRecognitionService)
+│   │   │   ├── infrastructure/
+│   │   │   │   ├── classification/
+│   │   │   │   ├── detection/
+│   │   │   │   ├── extraction/
+│   │   │   │   ├── persistence/
+│   │   │   │   └── preprocessing/
+│   │   │   ├── api/
+│   │   │   │   ├── rest/                           # Controllers, DTOs, advice, filters
+│   │   │   │   └── cli/                            # Picocli commands
+│   │   │   └── benchmark/                          # Accuracy + performance harness
+│   │   └── resources/
+│   │       ├── application.yml
+│   │       └── logback-spring.xml
+│   └── test/java/com/facerecognition/              # Unit + integration tests
+├── docs/
+│   ├── architecture.md
+│   ├── benchmarks/
+│   └── onnx.md
+├── .github/
+│   ├── workflows/                                  # CI, CodeQL, Dependabot, release
+│   ├── ISSUE_TEMPLATE/
+│   └── PULL_REQUEST_TEMPLATE.md
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── CODE_OF_CONDUCT.md
+├── SECURITY.md
+├── ROADMAP.md
+├── Dockerfile
+└── pom.xml
 ```
-
----
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are very welcome — bug fixes, extractors, distance metrics, deep-learning adapters, documentation. Start with [CONTRIBUTING.md](CONTRIBUTING.md), which covers the development loop, coding standards, and how to run the full test + quality-gate suite locally. Please also read the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-### Quick Contribution Steps
+## Security
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes with tests
-4. Ensure all tests pass: `mvn test`
-5. Commit: `git commit -m 'Add amazing feature'`
-6. Push: `git push origin feature/amazing-feature`
-7. Open a Pull Request
+Report vulnerabilities privately — see [SECURITY.md](SECURITY.md). Do **not** file public issues for security bugs.
 
-### Areas for Contribution
+## References
 
-- Additional recognition algorithms (e.g., deep learning)
-- Performance optimizations
-- Additional distance metrics
-- Dataset benchmarks
-- Documentation improvements
-- Bug fixes
+This implementation builds on foundational papers:
 
----
+1. Turk, M. & Pentland, A. (1991). *Eigenfaces for Recognition.*
+2. Belhumeur, P. N., Hespanha, J. P. & Kriegman, D. J. (1997). *Eigenfaces vs. Fisherfaces: Recognition Using Class Specific Linear Projection.*
+3. Ahonen, T., Hadid, A. & Pietikäinen, M. (2006). *Face Description with Local Binary Patterns.*
+4. Schroff, F., Kalenichenko, D. & Philbin, J. (2015). *FaceNet: A Unified Embedding for Face Recognition and Clustering.*
+5. Deng, J., Guo, J., Xue, N. & Zafeiriou, S. (2019). *ArcFace: Additive Angular Margin Loss for Deep Face Recognition.*
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 - see [LICENSE.txt](LICENSE.txt) for details.
+Licensed under the **GNU General Public License v3.0** — see [License.txt](License.txt).
 
----
+## Acknowledgements
 
-## Acknowledgments
-
-- **Author**: [Prasad Subrahmanya](https://github.com/prasadus92)
-- [JAMA Matrix Library](https://math.nist.gov/javanumerics/jama/)
-- [Bosphorus Database](http://bosphorus.ee.boun.edu.tr/default.aspx) for testing
-- All contributors to the project
-
----
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/prasadus92/face-recognition/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/prasadus92/face-recognition/discussions)
-- **Email**: prasadus92@gmail.com
-
----
-
-<p align="center">
-  Made with care for the computer vision community
-</p>
+- [JAMA](https://math.nist.gov/javanumerics/jama/) for numerical linear algebra.
+- [Spring Boot](https://spring.io/projects/spring-boot), [picocli](https://picocli.info/), [Micrometer](https://micrometer.io/), [Bucket4j](https://bucket4j.com/), [springdoc-openapi](https://springdoc.org/).
+- Maintainer: **[Prasad Subrahmanya](https://github.com/prasadus92)** · prasadus92@gmail.com
