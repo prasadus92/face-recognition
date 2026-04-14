@@ -16,8 +16,8 @@
 
     <licenses>
         <license>
-            <name>GNU General Public License v3.0</name>
-            <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -51,25 +51,26 @@
 
         <!-- Dependency versions -->
         <spring-boot.version>4.0.5</spring-boot.version>
-        <picocli.version>4.7.5</picocli.version>
+        <picocli.version>4.7.7</picocli.version>
         <springdoc.version>3.0.3</springdoc.version>
         <jama.version>1.0.3</jama.version>
-        <commons-lang3.version>3.14.0</commons-lang3.version>
-        <commons-io.version>2.15.1</commons-io.version>
+        <commons-lang3.version>3.20.0</commons-lang3.version>
+        <commons-io.version>2.21.0</commons-io.version>
         <bucket4j.version>8.10.1</bucket4j.version>
 
         <!-- Build plugin versions -->
-        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
-        <maven-failsafe-plugin.version>3.2.5</maven-failsafe-plugin.version>
-        <maven-javadoc-plugin.version>3.6.3</maven-javadoc-plugin.version>
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.5.5</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.5.5</maven-failsafe-plugin.version>
+        <maven-javadoc-plugin.version>3.11.3</maven-javadoc-plugin.version>
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
-        <maven-enforcer-plugin.version>3.4.1</maven-enforcer-plugin.version>
-        <jacoco.version>0.8.12</jacoco.version>
-        <checkstyle-plugin.version>3.3.1</checkstyle-plugin.version>
-        <checkstyle.version>10.14.2</checkstyle.version>
-        <spotbugs-plugin.version>4.8.3.1</spotbugs-plugin.version>
-        <cyclonedx-plugin.version>2.7.11</cyclonedx-plugin.version>
+        <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
+        <jacoco.version>0.8.14</jacoco.version>
+        <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
+        <checkstyle.version>13.4.0</checkstyle.version>
+        <spotbugs-plugin.version>4.8.6.6</spotbugs-plugin.version>
+        <cyclonedx-plugin.version>2.9.1</cyclonedx-plugin.version>
+        <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
 
         <!-- Coverage floor. Starts at the current honest baseline and is
              expected to ratchet upwards over time — never downwards. -->
@@ -488,7 +489,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
-                        <version>3.2.0</version>
+                        <version>${exec-maven-plugin.version}</version>
                         <configuration>
                             <mainClass>com.facerecognition.benchmark.BenchmarkRunner</mainClass>
                         </configuration>

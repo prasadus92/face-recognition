@@ -320,28 +320,47 @@ public class SkinColorDetector implements FaceDetector, Serializable {
         double gNorm = g / 255.0;
         double bNorm = b / 255.0;
 
-        double max = Math.max(Math.max(rNorm, gNorm), bNorm);
+        // Track which channel holds the max so we avoid comparing doubles for
+        // equality (SpotBugs FE_FLOATING_POINT_EQUALITY). The integer
+        // comparisons are exact; we then use the corresponding normalised
+        // value when computing hue.
+        int maxChannel;
+        double max;
+        if (r >= g && r >= b) {
+            maxChannel = 0; // red
+            max = rNorm;
+        } else if (g >= b) {
+            maxChannel = 1; // green
+            max = gNorm;
+        } else {
+            maxChannel = 2; // blue
+            max = bNorm;
+        }
         double min = Math.min(Math.min(rNorm, gNorm), bNorm);
         double delta = max - min;
 
         // Value
         double v = max;
 
-        // Saturation
-        double s = (max == 0) ? 0 : delta / max;
+        // Saturation — max is zero only when all three channels are zero.
+        double s = (max > 0.0) ? (delta / max) : 0.0;
 
         // Hue
         double h = 0;
-        if (delta != 0) {
-            if (max == rNorm) {
-                h = (gNorm - bNorm) / delta;
-                if (g < b) {
-                    h += 6;
-                }
-            } else if (max == gNorm) {
-                h = 2 + (bNorm - rNorm) / delta;
-            } else {
-                h = 4 + (rNorm - gNorm) / delta;
+        if (delta > 0.0) {
+            switch (maxChannel) {
+                case 0:
+                    h = (gNorm - bNorm) / delta;
+                    if (g < b) {
+                        h += 6;
+                    }
+                    break;
+                case 1:
+                    h = 2 + (bNorm - rNorm) / delta;
+                    break;
+                default:
+                    h = 4 + (rNorm - gNorm) / delta;
+                    break;
             }
             h /= 6; // Normalize to 0-1
         }
