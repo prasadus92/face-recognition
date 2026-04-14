@@ -8,7 +8,7 @@
 # Build: docker build -t face-recognition:latest .
 # Run:   docker run --rm -p 8080:8080 -v "$PWD/data:/app/data" face-recognition:latest
 
-FROM maven:3.9-eclipse-temurin-17 AS builder
+FROM maven:3-eclipse-temurin-25 AS builder
 WORKDIR /app
 
 # Pre-fetch dependencies on pom changes so code-only rebuilds are fast.
