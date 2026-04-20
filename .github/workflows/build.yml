@@ -49,7 +49,7 @@ jobs:
 
       - name: Upload JaCoCo HTML report
         if: matrix.java == '17' && always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco-report
           path: target/site/jacoco/
@@ -57,7 +57,7 @@ jobs:
 
       - name: Upload SpotBugs report
         if: matrix.java == '17' && always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: spotbugs-report
           path: target/spotbugsXml.xml
@@ -66,7 +66,7 @@ jobs:
 
       - name: Upload CycloneDX SBOM
         if: matrix.java == '17'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom
           path: target/bom.*
@@ -75,7 +75,7 @@ jobs:
 
       - name: Upload Spring Boot jar
         if: matrix.java == '17' && github.event_name == 'push'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: face-recognition-jar
           path: target/face-recognition-*.jar
