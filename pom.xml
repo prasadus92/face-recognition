@@ -60,18 +60,18 @@
 
         <!-- Build plugin versions -->
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>3.5.5</maven-surefire-plugin.version>
-        <maven-failsafe-plugin.version>3.5.5</maven-failsafe-plugin.version>
-        <maven-javadoc-plugin.version>3.11.3</maven-javadoc-plugin.version>
-        <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
-        <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
-        <jacoco.version>0.8.14</jacoco.version>
+        <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.5.6</maven-failsafe-plugin.version>
+        <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
+        <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
+        <maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
+        <jacoco.version>0.8.15</jacoco.version>
         <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
         <!-- Checkstyle 12.x is the latest line that targets Java 17 bytecode;
              Checkstyle 13.x requires Java 21+ at runtime, which would break
              the Java 17 CI matrix job. -->
         <checkstyle.version>12.3.1</checkstyle.version>
-        <spotbugs-plugin.version>4.8.6.6</spotbugs-plugin.version>
+        <spotbugs-plugin.version>4.9.8.3</spotbugs-plugin.version>
         <cyclonedx-plugin.version>2.9.1</cyclonedx-plugin.version>
         <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
 
