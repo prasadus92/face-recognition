@@ -263,6 +263,7 @@ public class FaceRecognitionService {
                 classifier.enroll(identity);
             }
         }
+        classifier.retrain();
         trained = true;
     }
 
