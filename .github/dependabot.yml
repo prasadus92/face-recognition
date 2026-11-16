@@ -17,6 +17,7 @@ updates:
       jackson:
         patterns:
           - "com.fasterxml.jackson*"
+          - "tools.jackson*"
       test-tooling:
         patterns:
           - "org.junit*"
@@ -28,6 +29,8 @@ updates:
           - "org.jacoco:*"
           - "com.github.spotbugs:*"
           - "org.cyclonedx:*"
+          - "org.codehaus.mojo:*"
+          - "com.puppycrawl.tools:*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -46,3 +49,7 @@ updates:
     labels:
       - "dependencies"
       - "docker"
+    ignore:
+      # Java base images move only to the next LTS, by hand.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

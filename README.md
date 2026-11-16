@@ -6,13 +6,13 @@
 
 <p align="center">
   <a href="https://github.com/prasadus92/face-recognition/actions/workflows/build.yml">
-    <img src="https://github.com/prasadus92/face-recognition/actions/workflows/build.yml/badge.svg?branch=master" alt="Build Status"/>
+    <img src="https://github.com/prasadus92/face-recognition/actions/workflows/build.yml/badge.svg?branch=main" alt="Build Status"/>
   </a>
   <a href="https://codecov.io/gh/prasadus92/face-recognition">
-    <img src="https://codecov.io/gh/prasadus92/face-recognition/branch/master/graph/badge.svg" alt="Code Coverage"/>
+    <img src="https://codecov.io/gh/prasadus92/face-recognition/branch/main/graph/badge.svg" alt="Code Coverage"/>
   </a>
-  <img src="https://img.shields.io/badge/java-17%2B-blue.svg" alt="Java 17+"/>
-  <img src="https://img.shields.io/badge/spring--boot-3.2-brightgreen.svg" alt="Spring Boot 3.2"/>
+  <img src="https://img.shields.io/badge/java-25-blue.svg" alt="Java 25"/>
+  <img src="https://img.shields.io/badge/spring--boot-4.1-brightgreen.svg" alt="Spring Boot 4.1"/>
   <a href="License.txt">
     <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"/>
   </a>
@@ -72,15 +72,14 @@ This repository is a learning-friendly reference implementation of the classical
 
 ### Prerequisites
 
-- JDK 17+
-- Maven 3.9+
+- JDK 25 (the Maven Wrapper downloads Maven 3.10.1)
 
 ### Build
 
 ```bash
 git clone https://github.com/prasadus92/face-recognition.git
 cd face-recognition
-mvn clean package
+./mvnw clean package
 ```
 
 The build produces two jars in `target/`:
