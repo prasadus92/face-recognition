@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- `POST /api/v1/recognize` honors its `threshold` and `maxAlternatives` parameters. Both were documented and ignored; the service threshold from `application.yml` always applied and every alternative was returned. Values outside 0 to 1, or a negative limit, return 400.
+- `POST /api/v1/recognize` honors its `threshold` and `maxAlternatives` parameters. Both were documented and ignored. Without them the configured `recognition.threshold` and `recognition.max-alternatives` apply; the latter was read by nothing before. A threshold outside 0 to 1 (or NaN) or a negative limit returns 400. The classifier reports at most `classification.k-neighbors` minus 1 runners-up for a match.
+- A malformed LFW `pairs.txt` line raises an `IOException` naming the line instead of a bare `NumberFormatException`.
 - Client-supplied names, ids, methods and URIs are stripped of line breaks before they are logged (log injection).
 - Saved and imported models now recognize faces. A model file used to hold only each identity's average feature vector, not the trained extractor, so after a restart or `POST /api/v1/model/import` the service reported itself trained and then failed on the first recognition. Model files now carry the trained extractor, every identity and the preprocessed face crops, so a restored service also keeps its identities when it is retrained.
 - The command-line tool works. The executable jar's main class only started Spring, so no CLI command was reachable; `train` failed with `NotSerializableException` because it serialized the whole service; none of the commands could read PGM files. `java -jar face-recognition-exec.jar <command>` now runs the CLI and the jar without a command starts the REST API.

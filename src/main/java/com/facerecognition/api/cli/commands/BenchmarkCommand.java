@@ -7,6 +7,7 @@ import com.facerecognition.benchmark.BenchmarkRunner.RunnerConfig;
 import com.facerecognition.config.FaceRecognitionProperties;
 import com.facerecognition.config.FaceRecognitionProperties.ExtractorType;
 import com.facerecognition.config.FaceRecognitionServiceFactory;
+import com.facerecognition.domain.service.FaceClassifier;
 import com.facerecognition.domain.service.FaceClassifier.DistanceMetric;
 import com.facerecognition.domain.service.FeatureExtractor;
 
@@ -91,7 +92,7 @@ public final class BenchmarkCommand implements Callable<Integer> {
                 .datasetFormat(format.name())
                 .outputDirectory(output)
                 .benchmarkType(type)
-                .classifierSupplier(() -> FaceRecognitionServiceFactory.classifier(properties(null, config)))
+                .classifierSupplier(() -> classifier(config))
                 .config(config);
         for (ExtractorType algorithm : algorithms) {
             Supplier<FeatureExtractor> extractor = () -> extractor(algorithm, config);
@@ -101,6 +102,10 @@ public final class BenchmarkCommand implements Callable<Integer> {
         BenchmarkRunner.BenchmarkSuite suite = runner.build().run();
         spec.commandLine().getOut().printf("Reports written to %s%n", suite.getOutputDirectory());
         return 0;
+    }
+
+    FaceClassifier classifier(RunnerConfig config) {
+        return FaceRecognitionServiceFactory.classifier(properties(null, config));
     }
 
     private FeatureExtractor extractor(ExtractorType algorithm, RunnerConfig config) {

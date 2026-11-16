@@ -658,38 +658,32 @@ public class DatasetLoader {
             }
 
             String[] parts = line.split("\\s+");
-
-            if (parts.length == 3) {
-                // Same person pair: name, num1, num2
-                String name = parts[0];
-                int num1 = Integer.parseInt(parts[1]);
-                int num2 = Integer.parseInt(parts[2]);
-
-                LabeledFace face1 = loadLfwFace(dataPath, name, num1);
-                LabeledFace face2 = loadLfwFace(dataPath, name, num2);
-
-                if (face1 != null && face2 != null) {
-                    pairs.add(new VerificationPair(face1, face2, true));
+            try {
+                VerificationPair pair = parsePair(dataPath, parts);
+                if (pair != null) {
+                    pairs.add(pair);
                 }
-            } else if (parts.length == 4) {
-                // Different person pair: name1, num1, name2, num2
-                String name1 = parts[0];
-                int num1 = Integer.parseInt(parts[1]);
-                String name2 = parts[2];
-                int num2 = Integer.parseInt(parts[3]);
-
-                LabeledFace face1 = loadLfwFace(dataPath, name1, num1);
-                LabeledFace face2 = loadLfwFace(dataPath, name2, num2);
-
-                if (face1 != null && face2 != null) {
-                    pairs.add(new VerificationPair(face1, face2, false));
-                }
+            } catch (NumberFormatException e) {
+                throw new IOException("Malformed line " + (lineIndex + 1) + " in " + pairsFile + ": " + line, e);
             }
 
             lineIndex++;
         }
 
         return pairs;
+    }
+
+    /** Parses one pairs.txt line: {@code name n1 n2} for a match, {@code name1 n1 name2 n2} for a non-match. */
+    private VerificationPair parsePair(Path dataPath, String[] parts) {
+        boolean samePerson = parts.length == 3;
+        if (!samePerson && parts.length != 4) {
+            return null;
+        }
+        LabeledFace face1 = loadLfwFace(dataPath, parts[0], Integer.parseInt(parts[1]));
+        LabeledFace face2 = samePerson
+                ? loadLfwFace(dataPath, parts[0], Integer.parseInt(parts[2]))
+                : loadLfwFace(dataPath, parts[2], Integer.parseInt(parts[3]));
+        return face1 != null && face2 != null ? new VerificationPair(face1, face2, samePerson) : null;
     }
 
     /**

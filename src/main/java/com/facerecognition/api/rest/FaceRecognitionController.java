@@ -3,6 +3,7 @@ package com.facerecognition.api.rest;
 import com.facerecognition.api.rest.dto.*;
 import com.facerecognition.api.rest.metrics.RecognitionMetrics;
 import com.facerecognition.application.service.FaceRecognitionService;
+import com.facerecognition.config.FaceRecognitionProperties;
 import com.facerecognition.domain.model.FaceImage;
 import com.facerecognition.domain.model.Identity;
 import com.facerecognition.domain.model.RecognitionResult;
@@ -56,6 +57,7 @@ public class FaceRecognitionController {
 
     private final FaceRecognitionService faceRecognitionService;
     private final RecognitionMetrics metrics;
+    private final FaceRecognitionProperties properties;
 
     /**
      * Constructs the controller with required dependencies.
@@ -64,9 +66,11 @@ public class FaceRecognitionController {
      * @param metrics Micrometer metrics facade
      */
     public FaceRecognitionController(FaceRecognitionService faceRecognitionService,
-                                     RecognitionMetrics metrics) {
+                                     RecognitionMetrics metrics,
+                                     FaceRecognitionProperties properties) {
         this.faceRecognitionService = faceRecognitionService;
         this.metrics = metrics;
+        this.properties = properties;
     }
 
     /**
@@ -105,11 +109,13 @@ public class FaceRecognitionController {
             @Parameter(description = "Image file containing a face", required = true)
             @RequestParam("image") MultipartFile image,
 
-            @Parameter(description = "Minimum confidence threshold (0.0 to 1.0)")
-            @RequestParam(value = "threshold", required = false, defaultValue = "0.6") Double threshold,
+            @Parameter(description = "Minimum confidence for a match, 0 to 1. Defaults to facerecognition.recognition.threshold.")
+            @RequestParam(value = "threshold", required = false) Double threshold,
 
-            @Parameter(description = "Maximum number of alternative matches to return")
-            @RequestParam(value = "maxAlternatives", required = false, defaultValue = "5") Integer maxAlternatives,
+            @Parameter(description = "Maximum number of runner-up matches to return. Defaults to "
+                    + "facerecognition.recognition.max-alternatives; the classifier reports at most "
+                    + "classification.k-neighbors minus 1 runners-up for a match.")
+            @RequestParam(value = "maxAlternatives", required = false) Integer maxAlternatives,
 
             @Parameter(description = "Whether to include feature vector in response")
             @RequestParam(value = "includeFeatures", required = false, defaultValue = "false") Boolean includeFeatures
@@ -117,10 +123,13 @@ public class FaceRecognitionController {
         logger.info("Recognition request received: size={} bytes", image.getSize());
 
         validateImageFile(image);
-        if (threshold < 0 || threshold > 1) {
+        if (threshold != null && !(threshold >= 0 && threshold <= 1)) {
             throw new IllegalArgumentException("threshold must be between 0 and 1");
         }
-        if (maxAlternatives < 0) {
+        int alternatives = maxAlternatives != null
+                ? maxAlternatives
+                : properties.getRecognition().getMaxAlternatives();
+        if (alternatives < 0) {
             throw new IllegalArgumentException("maxAlternatives must not be negative");
         }
 
@@ -133,14 +142,16 @@ public class FaceRecognitionController {
         FaceImage faceImage = FaceImage.fromBufferedImage(bufferedImage);
         RecognitionResult result;
         try {
-            result = faceRecognitionService.recognize(faceImage, threshold);
+            result = threshold != null
+                    ? faceRecognitionService.recognize(faceImage, threshold)
+                    : faceRecognitionService.recognize(faceImage);
         } catch (RuntimeException e) {
             metrics.recordError();
             throw e;
         }
         metrics.recordRecognize(System.nanoTime() - startNanos, result.isRecognized());
 
-        RecognitionResponse response = RecognitionResponse.fromDomain(result, maxAlternatives);
+        RecognitionResponse response = RecognitionResponse.fromDomain(result, alternatives);
         if (!Boolean.TRUE.equals(includeFeatures)) {
             response.setFeatures(null);
         }

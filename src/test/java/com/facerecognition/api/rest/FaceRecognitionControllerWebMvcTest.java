@@ -18,6 +18,7 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -25,6 +26,8 @@ import javax.imageio.ImageIO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -118,21 +121,60 @@ class FaceRecognitionControllerWebMvcTest {
         verify(service).recognize(any(FaceImage.class), eq(0.85));
     }
 
-    @Test
-    @DisplayName("POST /api/v1/recognize rejects a threshold outside 0 to 1")
-    void recognizeRejectsBadThreshold() throws Exception {
+    @ParameterizedTest
+    @CsvSource({"threshold, 1.5", "threshold, -0.1", "threshold, NaN", "maxAlternatives, -1"})
+    @DisplayName("POST /api/v1/recognize rejects out-of-range options")
+    void recognizeRejectsBadOptions(String name, String value) throws Exception {
         mvc.perform(multipart("/api/v1/recognize")
                         .file(new MockMultipartFile("image", "probe.png", "image/png", pngBytes))
-                        .param("threshold", "1.5"))
+                        .param(name, value))
                 .andExpect(status().isBadRequest());
+
+        verify(service, never()).recognize(any(FaceImage.class), anyDouble());
+        verify(service, never()).recognize(any(FaceImage.class));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/recognize without options uses the configured threshold and alternative limit")
+    void recognizeDefaultsToConfiguration() throws Exception {
+        when(service.recognize(any(FaceImage.class))).thenReturn(resultWithAlternatives(6));
+
+        mvc.perform(multipart("/api/v1/recognize")
+                        .file(new MockMultipartFile("image", "probe.png", "image/png", pngBytes)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.alternatives.length()").value(5));
 
         verify(service, never()).recognize(any(FaceImage.class), anyDouble());
     }
 
     @Test
+    @DisplayName("POST /api/v1/recognize with maxAlternatives=0 returns no runners-up")
+    void recognizeWithoutAlternatives() throws Exception {
+        when(service.recognize(any(FaceImage.class))).thenReturn(resultWithAlternatives(3));
+
+        mvc.perform(multipart("/api/v1/recognize")
+                        .file(new MockMultipartFile("image", "probe.png", "image/png", pngBytes))
+                        .param("maxAlternatives", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.alternatives.length()").value(0));
+    }
+
+    private static RecognitionResult resultWithAlternatives(int count) {
+        List<RecognitionResult.MatchResult> alternatives = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            alternatives.add(new RecognitionResult.MatchResult(new Identity("p" + i), 0.5 - i * 0.01, 2.0 + i));
+        }
+        return RecognitionResult.builder()
+                .status(RecognitionResult.Status.RECOGNIZED)
+                .bestMatch(new RecognitionResult.MatchResult(new Identity("best"), 0.9, 1.0))
+                .alternatives(alternatives)
+                .build();
+    }
+
+    @Test
     @DisplayName("POST /api/v1/recognize returns 200 + unknown when the classifier is not confident")
     void recognizeUnknown() throws Exception {
-        when(service.recognize(any(FaceImage.class), anyDouble())).thenReturn(RecognitionResult.unknown());
+        when(service.recognize(any(FaceImage.class))).thenReturn(RecognitionResult.unknown());
 
         mvc.perform(multipart("/api/v1/recognize")
                         .file(new MockMultipartFile("image", "probe.png", "image/png", pngBytes)))
@@ -144,7 +186,7 @@ class FaceRecognitionControllerWebMvcTest {
     @Test
     @DisplayName("POST /api/v1/recognize returns 200 + NO_FACE_DETECTED when the detector can't find a face")
     void recognizeNoFace() throws Exception {
-        when(service.recognize(any(FaceImage.class), anyDouble()))
+        when(service.recognize(any(FaceImage.class)))
                 .thenReturn(RecognitionResult.noFaceDetected());
 
         mvc.perform(multipart("/api/v1/recognize")
@@ -220,7 +262,7 @@ class FaceRecognitionControllerWebMvcTest {
     @Test
     @DisplayName("Every response carries an X-Request-ID header (stamped by RequestIdFilter)")
     void responsesCarryTraceId() throws Exception {
-        when(service.recognize(any(FaceImage.class), anyDouble())).thenReturn(RecognitionResult.unknown());
+        when(service.recognize(any(FaceImage.class))).thenReturn(RecognitionResult.unknown());
 
         // The filter isn't picked up by @WebMvcTest unless we also pass it as a
         // controller dependency. For Web MVC scope we simply check that the

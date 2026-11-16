@@ -4,6 +4,7 @@ import com.facerecognition.benchmark.BenchmarkRunner.RunnerConfig;
 import com.facerecognition.config.FaceRecognitionProperties;
 import com.facerecognition.config.FaceRecognitionProperties.ExtractorType;
 import com.facerecognition.domain.service.FaceClassifier.DistanceMetric;
+import com.facerecognition.infrastructure.classification.KNNClassifier;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,16 @@ class BenchmarkCommandTest {
         assertThat(props.getImage().getTargetWidth()).isEqualTo(config.getTargetWidth());
         assertThat(props.getClassification().getDistanceMetric()).isEqualTo(DistanceMetric.CHI_SQUARE);
         assertThat(props.getRecognition().getThreshold()).isEqualTo(0.25);
+    }
+
+    @Test
+    @DisplayName("builds the benchmark classifier with the chosen metric")
+    void classifierUsesMetric() {
+        BenchmarkCommand command = new BenchmarkCommand();
+        new CommandLine(command).setCaseInsensitiveEnumValuesAllowed(true).parseArgs("data", "-m", "cosine");
+
+        assertThat(((KNNClassifier) command.classifier(new RunnerConfig())).getDistanceMetric())
+                .isEqualTo(DistanceMetric.COSINE);
     }
 
     @Test
