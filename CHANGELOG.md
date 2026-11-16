@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The CLI and the Spring auto-configuration build the pipeline through one `FaceRecognitionServiceFactory`.
 - `BenchmarkRunner` lost its hand-parsed `main`; the `benchmark` command is its front end. The `benchmarks` Maven profile is gone. Defaults changed: threshold 0 (closed-set rank-1 accuracy, was 0.6), 10 folds (was 5), reports in `benchmark-results/` (was `./benchmark_results`). `--warmup`, `--runs` and `--verbose` are gone.
 - `recognize` reports an unreadable image as an error line and carries on, exiting 1. For an unmatched image it prints the nearest person's confidence instead of 0.
-- Model files written by the CLI and by `FileModelRepository` are replaced atomically.
+- Model files written by the CLI and by `FileModelRepository` are replaced atomically and keep the permissions of the file they replace (`rw-r--r--` when new).
 - PGM images larger than 4096 pixels per side, or with samples above their declared maximum, are rejected before allocation.
 - The CLI logs warnings to stderr, so `recognize --json` output stays parseable. `--version` reads the jar manifest.
 - The log line for a service built without a face detector drops from WARN to INFO.
