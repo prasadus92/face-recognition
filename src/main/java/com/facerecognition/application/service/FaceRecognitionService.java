@@ -3,10 +3,10 @@ package com.facerecognition.application.service;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,6 +26,8 @@ import com.facerecognition.domain.model.RecognitionResult;
 import com.facerecognition.domain.service.FaceClassifier;
 import com.facerecognition.domain.service.FaceDetector;
 import com.facerecognition.domain.service.FeatureExtractor;
+import com.facerecognition.infrastructure.persistence.InvalidModelException;
+import com.facerecognition.infrastructure.persistence.ModelCodec;
 import com.facerecognition.infrastructure.persistence.ModelRepository;
 import com.facerecognition.infrastructure.persistence.TrainedModel;
 import com.facerecognition.infrastructure.preprocessing.FaceAligner;
@@ -57,7 +59,7 @@ public class FaceRecognitionService {
     private static final Logger log = LoggerFactory.getLogger(FaceRecognitionService.class);
 
     private final FaceDetector detector;
-    private final FeatureExtractor extractor;
+    private volatile FeatureExtractor extractor;
     private final FaceClassifier classifier;
     private final ModelRepository modelRepository;
     private final FaceAligner aligner;
@@ -70,16 +72,7 @@ public class FaceRecognitionService {
     private volatile boolean trained;
 
     /** In-flight training sample — held in-memory until {@link #train()} is called. */
-    private static final class TrainingSample {
-        final FaceImage image;
-        final String identityId;
-        final String label;
-
-        TrainingSample(FaceImage image, String identityId, String label) {
-            this.image = image;
-            this.identityId = identityId;
-            this.label = label;
-        }
+    private record TrainingSample(String identityId, FaceImage crop) {
     }
 
     /**
@@ -194,6 +187,7 @@ public class FaceRecognitionService {
     public Identity enroll(FaceImage image, String identityName, String externalId) {
         Objects.requireNonNull(image, "Image cannot be null");
         Objects.requireNonNull(identityName, "Identity name cannot be null");
+        FaceImage crop = preprocessForTraining(image).toGrayscale();
 
         lock.writeLock().lock();
         try {
@@ -205,7 +199,7 @@ public class FaceRecognitionService {
                 }
                 identities.put(identity.getId(), identity);
             }
-            trainingSamples.add(new TrainingSample(image, identity.getId(), identityName));
+            trainingSamples.add(new TrainingSample(identity.getId(), crop));
             trained = false;
             return identity;
         } finally {
@@ -235,60 +229,14 @@ public class FaceRecognitionService {
             if (trainingSamples.isEmpty()) {
                 throw new IllegalStateException("No training samples enrolled");
             }
-
-            List<FaceImage> faces = new ArrayList<>();
-            List<String> labels = new ArrayList<>();
-            for (TrainingSample sample : trainingSamples) {
-                FaceImage processed = preprocessForTraining(sample.image);
-                if (processed != null) {
-                    faces.add(processed);
-                    labels.add(sample.label);
-                }
-            }
-
-            if (faces.isEmpty()) {
-                throw new IllegalStateException("No valid faces found in training samples");
-            }
+            List<FaceImage> faces = trainingSamples.stream().map(TrainingSample::crop).toList();
+            List<String> labels = trainingSamples.stream().map(TrainingSample::identityId).toList();
 
             extractor.reset();
             extractor.train(faces, labels);
+            rebuildGallery();
 
-            classifier.clear();
-
-            Map<String, List<FeatureVector>> identityFeatures = new HashMap<>();
-            for (int i = 0; i < faces.size(); i++) {
-                FeatureVector features = extractor.extract(faces.get(i));
-                identityFeatures.computeIfAbsent(labels.get(i), k -> new ArrayList<>()).add(features);
-            }
-
-            // Replace stale samples on each identity with freshly extracted ones.
-            for (Identity identity : identities.values()) {
-                identity.clearSamples();
-            }
-            for (TrainingSample sample : trainingSamples) {
-                Identity identity = identities.get(sample.identityId);
-                if (identity == null) {
-                    continue;
-                }
-                List<FeatureVector> features = identityFeatures.get(sample.label);
-                if (features != null && !features.isEmpty()) {
-                    for (FeatureVector fv : features) {
-                        identity.enrollSample(fv, 1.0, "training");
-                    }
-                    identityFeatures.remove(sample.label);
-                }
-            }
-
-            for (Identity identity : identities.values()) {
-                if (identity.hasSamples()) {
-                    classifier.enroll(identity);
-                }
-            }
-
-            trained = true;
-            log.info("Training complete: identities={} samples={}",
-                    identities.size(), faces.size());
-
+            log.info("Training complete: identities={} samples={}", identities.size(), faces.size());
             if (config.isAutoSave()) {
                 persistSafely();
             }
@@ -297,9 +245,18 @@ public class FaceRecognitionService {
         }
     }
 
-    // ---------------------------------------------------------------------
-    // Recognition
-    // ---------------------------------------------------------------------
+    private void rebuildGallery() {
+        classifier.clear();
+        identities.values().forEach(Identity::clearSamples);
+        for (TrainingSample sample : trainingSamples) {
+            Identity identity = identities.get(sample.identityId());
+            if (identity != null) {
+                identity.enrollSample(extractor.extract(sample.crop()), 1.0, "training");
+            }
+        }
+        identities.values().stream().filter(Identity::hasSamples).forEach(classifier::enroll);
+        trained = true;
+    }
 
     /** Recognises the largest face in the given image. */
     public RecognitionResult recognize(FaceImage image) {
@@ -352,87 +309,102 @@ public class FaceRecognitionService {
     // ---------------------------------------------------------------------
 
     /**
-     * Attempts to load a previously saved model from the configured
-     * {@link ModelRepository}. Returns {@code true} if a model was loaded.
-     * Safe to call at application startup even if no model is present.
+     * Restores the model saved under the configured name, if there is one.
+     *
+     * @return {@code true} if a model was loaded
      */
     public boolean tryLoadSavedModel() {
         if (modelRepository == null) {
             return false;
         }
         String name = modelBaseName();
-        lock.writeLock().lock();
         try {
-            Optional<TrainedModel> loaded = modelRepository.load(name);
-            if (loaded.isEmpty()) {
+            Optional<byte[]> data = modelRepository.load(name);
+            if (data.isEmpty()) {
                 return false;
             }
-            TrainedModel model = loaded.get();
-            restoreFromModel(model);
-            log.info("Restored {} identities from model '{}'",
-                    model.getIdentityCount(), name);
+            importModel(data.get());
+            log.info("Restored {} identities from model '{}'", identities.size(), name);
             return true;
         } catch (IOException e) {
             log.warn("Could not load saved model '{}': {}", name, e.getMessage());
             return false;
-        } finally {
-            lock.writeLock().unlock();
         }
     }
 
-    /** Serialises the current state into a fresh {@link TrainedModel}. */
-    public TrainedModel snapshot() {
+    /**
+     * Encodes the current extractor, identities and training crops (see {@link ModelCodec}).
+     *
+     * @return the encoded model
+     */
+    public byte[] exportModel() {
         lock.readLock().lock();
         try {
-            TrainedModel.Builder builder = TrainedModel.builder(
-                    extractor.getAlgorithmName(), extractor.getVersion());
-            for (Identity identity : identities.values()) {
-                FeatureVector avg = identity.getAverageFeatureVector();
-                if (avg != null) {
-                    builder.addIdentity(identity, avg);
-                }
-            }
-            return builder.build();
+            return ModelCodec.encode(toModel());
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    /** Explicit save — used by the REST export endpoint and CLI. */
-    public void saveModel() throws IOException {
-        if (modelRepository == null) {
-            throw new IllegalStateException("No ModelRepository configured");
-        }
-        TrainedModel snapshot = snapshot();
-        modelRepository.save(snapshot, modelBaseName(), true);
-    }
-
-    /** Hot-load a {@link TrainedModel} previously produced by this service. */
-    public void loadModel(TrainedModel model) {
-        Objects.requireNonNull(model, "model");
+    /**
+     * Replaces all state with a model produced by {@link #exportModel()}.
+     *
+     * @param data the encoded model
+     * @throws InvalidModelException if the data is not a valid model
+     */
+    public void importModel(byte[] data) throws InvalidModelException {
+        TrainedModel model = ModelCodec.decode(data);
         lock.writeLock().lock();
         try {
-            restoreFromModel(model);
+            restore(model);
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    private void restoreFromModel(TrainedModel model) {
+    /**
+     * Writes the current model to the configured {@link ModelRepository}.
+     *
+     * @throws IOException if the model cannot be written
+     */
+    public void saveModel() throws IOException {
+        if (modelRepository == null) {
+            throw new IllegalStateException("No ModelRepository configured");
+        }
+        modelRepository.save(modelBaseName(), exportModel());
+    }
+
+    private TrainedModel toModel() {
+        List<TrainedModel.IdentityRecord> records = identities.values().stream()
+                .map(i -> new TrainedModel.IdentityRecord(
+                        i.getId(), i.getName(), i.getExternalId(), i.isActive(), i.getAllMetadata()))
+                .toList();
+        List<TrainedModel.FaceSample> samples = trainingSamples.stream()
+                .map(s -> new TrainedModel.FaceSample(
+                        s.identityId(), s.crop().getWidth(), s.crop().getHeight(), s.crop().toGrayscaleBytes()))
+                .toList();
+        return new TrainedModel(extractor, records, samples, Instant.now());
+    }
+
+    private void restore(TrainedModel model) {
         identities.clear();
         trainingSamples.clear();
         classifier.clear();
-
-        for (TrainedModel.EnrolledIdentity ei : model.getEnrolledIdentities()) {
-            Identity identity = new Identity(ei.getIdentityName());
-            // Preserve the original ID so REST callers can still look things up.
-            identity.setExternalId(ei.getIdentityId());
-            identity.enrollSample(ei.getFeatureVector(), 1.0, "imported");
+        trained = false;
+        for (TrainedModel.IdentityRecord record : model.identities()) {
+            Identity identity = new Identity(record.id(), record.name(), record.externalId());
+            identity.setActive(record.active());
+            record.metadata().forEach(identity::setMetadata);
             identities.put(identity.getId(), identity);
-            classifier.enroll(identity);
         }
-        // Imported models are ready to classify without a fresh train() call.
-        trained = !identities.isEmpty();
+        for (TrainedModel.FaceSample sample : model.samples()) {
+            trainingSamples.add(new TrainingSample(sample.identityId(),
+                    FaceImage.fromGrayscale(sample.width(), sample.height(), sample.pixels())));
+        }
+        extractor = model.extractor();
+        if (extractor.isTrained()) {
+            rebuildGallery();
+        }
     }
 
     private void persistSafely() {

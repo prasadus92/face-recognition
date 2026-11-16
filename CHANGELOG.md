@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Saved and imported models now recognize faces. A model file used to hold only each identity's average feature vector, not the trained extractor, so after a restart or `POST /api/v1/model/import` the service reported itself trained and then failed on the first recognition. Model files now carry the trained extractor, every identity and the preprocessed face crops, so a restored service also keeps its identities when it is retrained.
+- `POST /api/v1/model/import` no longer deserializes arbitrary classes from the upload. Decoding runs behind an `ObjectInputFilter` allowlist with depth, reference, array and size limits.
+
+### Changed
+- Model file format version 3. Files written by earlier versions are rejected with a message to retrain; they could not recognize faces anyway.
+- The persistence package is now `TrainedModel` (a record), `ModelCodec`, `ModelRepository` (save and load by name) and `FileModelRepository` (atomic writes). The unused backup, restore, listing and caching APIs are gone.
+- `POST /api/v1/model/import` drops the `merge` parameter, which never merged.
+
 ### Changed
 - **Relicensed from GNU General Public License v3.0 to Apache License, Version 2.0.** The project was originally released under GPL-3.0 in 2014. The relicensing was legally permissible because all copyrightable contributions up to this point were made by the sole copyright holder, so no third-party consent was required. Apache 2.0 matches the ecosystem default for Java libraries (Spring Boot, Jackson, Micrometer, Bucket4j, picocli, springdoc are all Apache 2.0) and removes the copyleft adoption friction that came with GPL-3.0. See `License.txt` for the full Apache 2.0 text and the transition note.
 - **Spring Boot 3.2.5 → 4.0.5** (and springdoc 2.3.0 → 3.0.3). See the dedicated 4.0 upgrade commit for the detailed API-change list.

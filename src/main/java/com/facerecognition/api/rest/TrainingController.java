@@ -5,8 +5,7 @@ import com.facerecognition.api.rest.dto.ModelStatusDto;
 import com.facerecognition.application.service.FaceRecognitionService;
 import com.facerecognition.domain.model.Identity;
 import com.facerecognition.domain.service.FeatureExtractor;
-import com.facerecognition.infrastructure.persistence.ModelSerializer;
-import com.facerecognition.infrastructure.persistence.TrainedModel;
+import com.facerecognition.infrastructure.persistence.InvalidModelException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -200,10 +199,7 @@ public class TrainingController {
         }
 
         try {
-            // Use the canonical ModelSerializer so exported files are
-            // interchangeable with the on-disk format read by FileModelRepository.
-            TrainedModel snapshot = faceRecognitionService.snapshot();
-            byte[] modelData = ModelSerializer.serialize(snapshot, true);
+            byte[] modelData = faceRecognitionService.exportModel();
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
@@ -222,14 +218,13 @@ public class TrainingController {
      * Imports a previously exported model.
      *
      * @param modelFile the model file to import
-     * @param merge whether to merge with existing identities or replace
      * @return the model status after import
      */
     @PostMapping(value = "/model/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
         summary = "Import trained model",
-        description = "Imports a previously exported model file. The model will need to be retrained " +
-                      "after import to be fully functional."
+        description = "Replaces the current model with a previously exported model file. " +
+                      "The imported model is ready to recognize faces without retraining."
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -250,40 +245,25 @@ public class TrainingController {
     })
     public ResponseEntity<ModelStatusDto> importModel(
             @Parameter(description = "Model file to import", required = true)
-            @RequestParam("file") MultipartFile modelFile,
-
-            @Parameter(description = "Whether to merge with existing identities or replace them")
-            @RequestParam(value = "merge", required = false, defaultValue = "false") Boolean merge
+            @RequestParam("file") MultipartFile modelFile
     ) {
-        logger.info("Import model request received: file={}, size={} bytes, merge={}",
-                modelFile.getOriginalFilename(), modelFile.getSize(), merge);
+        logger.info("Import model request received: size={} bytes", modelFile.getSize());
 
         if (modelFile.isEmpty()) {
             throw new IllegalArgumentException("Model file is required");
         }
 
         try {
-            byte[] bytes = modelFile.getBytes();
-            TrainedModel imported = ModelSerializer.deserialize(bytes);
-
-            if (!Boolean.TRUE.equals(merge)) {
-                // Replace mode — wipe the live state and restore from the file.
-                faceRecognitionService.loadModel(imported);
-                logger.info("Imported model (replace): algorithm={} identities={}",
-                        imported.getAlgorithmName(), imported.getIdentityCount());
-            } else {
-                // Merge mode — overlay imported identities onto the existing set.
-                // The current MVP merges by re-loading and re-enrolling locally
-                // known identities afterwards; a proper merge is a follow-up.
-                faceRecognitionService.loadModel(imported);
-                logger.info("Imported model (merge): algorithm={} identities={} (merge is currently alias for replace)",
-                        imported.getAlgorithmName(), imported.getIdentityCount());
-            }
-
+            faceRecognitionService.importModel(modelFile.getBytes());
+            logger.info("Imported model: algorithm={} identities={}",
+                    faceRecognitionService.getExtractor().getAlgorithmName(),
+                    faceRecognitionService.getIdentityCount());
             return ResponseEntity.ok(getModelStatus());
-        } catch (IOException | RuntimeException e) {
-            logger.error("Model import failed", e);
+        } catch (InvalidModelException e) {
             throw new ModelImportException(e.getMessage());
+        } catch (IOException e) {
+            logger.error("Model import failed", e);
+            throw new ModelImportException("Could not read the uploaded file");
         }
     }
 
