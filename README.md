@@ -93,7 +93,7 @@ A recognition response for an ORL photo against a gallery of 3 people, trimmed t
 
 ![Swagger UI for the Face Recognition API](docs/images/swagger-ui.png)
 
-Errors share one JSON shape with a `traceId` that matches the `X-Request-ID` header and every log line of the request. Requests are rate limited per client IP (60 per minute by default), uploads are capped at 10 MB, and setting `facerecognition.security.api-key` requires an `X-API-Key` header.
+Errors share one JSON shape with a `traceId` that matches the `X-Request-ID` header and every log line of the request. Requests are rate limited per client IP (60 per minute by default; `X-Forwarded-For` counts only from trusted proxies, see [SECURITY.md](SECURITY.md)), uploads are capped at 10 MB, and setting `facerecognition.security.api-key` requires an `X-API-Key` header.
 
 ## Command line
 

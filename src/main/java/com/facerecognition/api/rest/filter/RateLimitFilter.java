@@ -25,6 +25,10 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * Per-client-IP token-bucket rate limiter built on Bucket4j.
  *
+ * <p>Buckets are keyed by {@link HttpServletRequest#getRemoteAddr()}. With
+ * {@code server.forward-headers-strategy: native}, Tomcat sets it from {@code X-Forwarded-For}
+ * only when the request comes from an internal proxy address, so clients cannot pick their key.</p>
+ *
  * <p>Enabled when {@code facerecognition.ratelimit.enabled=true} (the default).
  * Only the {@code /api/v1/**} surface is rate-limited — actuator, swagger and
  * static resources are deliberately excluded so health checks and docs stay
@@ -54,7 +58,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
-        Bucket bucket = buckets.computeIfAbsent(clientKey(request), k -> newBucket());
+        Bucket bucket = buckets.computeIfAbsent(request.getRemoteAddr(), k -> newBucket());
         if (bucket.tryConsume(1)) {
             response.setHeader("X-RateLimit-Remaining", Long.toString(bucket.getAvailableTokens()));
             chain.doFilter(request, response);
@@ -74,14 +78,5 @@ public class RateLimitFilter extends OncePerRequestFilter {
                         .refillGreedy(requestsPerMinute, Duration.ofMinutes(1))
                         .build())
                 .build();
-    }
-
-    private String clientKey(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            int comma = forwarded.indexOf(',');
-            return comma > 0 ? forwarded.substring(0, comma).trim() : forwarded.trim();
-        }
-        return request.getRemoteAddr();
     }
 }

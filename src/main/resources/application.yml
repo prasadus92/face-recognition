@@ -21,7 +21,7 @@ spring:
 
 server:
   port: 8080
-  forward-headers-strategy: framework
+  forward-headers-strategy: native   # trust X-Forwarded-For only from internal proxy addresses
   error:
     include-message: always
     include-binding-errors: always
