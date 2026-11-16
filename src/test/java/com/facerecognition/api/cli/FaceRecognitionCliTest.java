@@ -142,6 +142,9 @@ class FaceRecognitionCliTest {
         assertThat(run("detect", portrait.toString(), portrait.toString(), "-a", boxed.toString())).isEqualTo(2);
         assertThat(run("detect", portrait.toString(), "-a", dir.resolve("boxed.bmp").toString())).isEqualTo(2);
         assertThat(run("detect", "--min-confidence", "1.5", portrait.toString())).isEqualTo(2);
+
+        assertThat(run("detect", portrait.toString(), "-a", dir.resolve("missing/boxed.png").toString())).isEqualTo(1);
+        assertThat(out.toString().lines()).singleElement().asString().contains("error:");
     }
 
     @Test

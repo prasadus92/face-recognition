@@ -90,10 +90,10 @@ public final class DetectCommand implements Callable<Integer> {
                 List<Face> faces = detector.detectFaces(image, minConfidence).stream()
                         .map(r -> new Face(r.getX(), r.getY(), r.getWidth(), r.getHeight(), r.getConfidence()))
                         .toList();
-                detections.add(new Detection(path.toString(), faces, null));
                 if (annotate != null) {
                     writeAnnotated(image.getImage(), faces, annotate);
                 }
+                detections.add(new Detection(path.toString(), faces, null));
             } catch (IOException | RuntimeException e) {
                 detections.add(new Detection(path.toString(), List.of(), e.getMessage()));
             }

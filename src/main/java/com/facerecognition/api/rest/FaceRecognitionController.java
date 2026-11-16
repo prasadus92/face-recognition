@@ -222,8 +222,8 @@ public class FaceRecognitionController {
 
         Identity identity = faceRecognitionService.enroll(faceImage, name.trim(), externalId);
 
-        EnrollmentResponse response = EnrollmentResponse.success(identity, null, qualityScore);
-        response.setSampleCount(faceRecognitionService.getEnrolledImageCount(identity.getId()));
+        EnrollmentResponse response = EnrollmentResponse.success(
+                identity, faceRecognitionService.getEnrolledImageCount(identity.getId()), qualityScore);
         metrics.recordEnrollment();
 
         logger.info("Enrollment completed: identityId={}, name={}, sampleCount={}",
@@ -418,15 +418,15 @@ public class FaceRecognitionController {
                 .orElse(null);
     }
 
-    /**
-     * Validates the uploaded image file.
-     */
     /** Reports enrolled images, which exist before training, rather than trained feature vectors. */
     private IdentityDto withImageCount(IdentityDto dto) {
         dto.setSampleCount(faceRecognitionService.getEnrolledImageCount(dto.getId()));
         return dto;
     }
 
+    /**
+     * Validates the uploaded image file.
+     */
     private void validateImageFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Image file is required");
