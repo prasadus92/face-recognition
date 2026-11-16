@@ -262,8 +262,7 @@ public class FaceRecognitionController {
             throw new IdentityNotFoundException(id);
         }
 
-        // Mark as inactive (soft delete)
-        identity.setActive(false);
+        faceRecognitionService.setIdentityActive(identity.getId(), false);
 
         logger.info("Identity deleted: id={}, name={}", identity.getId(), LogValues.safe(identity.getName()));
 
@@ -398,7 +397,7 @@ public class FaceRecognitionController {
             identity.setExternalId(externalId);
         }
         if (active != null) {
-            identity.setActive(active);
+            faceRecognitionService.setIdentityActive(identity.getId(), active);
         }
 
         IdentityDto response = withImageCount(IdentityDto.fromDomain(identity));

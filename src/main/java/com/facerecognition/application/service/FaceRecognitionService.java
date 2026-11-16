@@ -561,6 +561,29 @@ public class FaceRecognitionService {
         }
     }
 
+    /**
+     * Activates or soft-deletes an identity. Inactive identities are never matched, and the
+     * classifier recalibrates so confidence reflects the people who remain.
+     *
+     * @param identityId the identity to change
+     * @param active     false to soft-delete
+     * @return false if no such identity exists
+     */
+    public boolean setIdentityActive(String identityId, boolean active) {
+        lock.writeLock().lock();
+        try {
+            Identity identity = identities.get(identityId);
+            if (identity == null) {
+                return false;
+            }
+            identity.setActive(active);
+            classifier.retrain();
+            return true;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     /** @return how many face images are enrolled in total, whether or not the model is trained yet */
     public int getEnrolledImageCount() {
         lock.readLock().lock();

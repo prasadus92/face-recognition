@@ -68,8 +68,9 @@ public class KNNClassifier implements FaceClassifier, Serializable {
 
     @Override
     public boolean unenroll(String identityId) {
+        boolean removed = enrolledIdentities.remove(identityId) != null;
         calibration = null;
-        return enrolledIdentities.remove(identityId) != null;
+        return removed;
     }
 
     @Override
@@ -223,31 +224,53 @@ public class KNNClassifier implements FaceClassifier, Serializable {
     }
 
     /**
-     * Distances measured on the gallery itself: for every enrolled sample, the nearest other sample
-     * of the same person ({@code genuine}) and the nearest sample of anyone else ({@code impostor}).
-     * Confidence is a logistic curve centered halfway between their medians.
+     * Distances measured on the gallery itself: for every enrolled sample, the distance to its own
+     * person ({@code genuine}: the nearest other sample, or the person's average in average mode) and
+     * to the nearest other person ({@code impostor}). Confidence is a logistic curve centered halfway
+     * between their medians. At most {@value #MAX_SAMPLES} samples, picked at a fixed stride, take
+     * part, which bounds the cost at about {@code MAX_SAMPLES^2} distances.
      */
     private record Calibration(double genuine, double impostor) {
 
+        static final int MAX_SAMPLES = 500;
+
+        private record Entry(Identity owner, FeatureVector features) {
+        }
+
         static Calibration of(KNNClassifier classifier) {
-            List<Identity> active = classifier.enrolledIdentities.values().stream()
-                    .filter(Identity::isActive).toList();
+            List<Entry> all = new ArrayList<>();
+            classifier.enrolledIdentities.values().stream()
+                    .filter(Identity::isActive)
+                    .forEach(owner -> owner.getSamples().forEach(s -> all.add(new Entry(owner, s.getFeatures()))));
+            int stride = Math.max(1, (all.size() + MAX_SAMPLES - 1) / MAX_SAMPLES);
+            List<Entry> entries = new ArrayList<>();
+            for (int i = 0; i < all.size(); i += stride) {
+                entries.add(all.get(i));
+            }
+
             List<Double> genuine = new ArrayList<>();
             List<Double> impostor = new ArrayList<>();
-            for (Identity owner : active) {
-                List<Identity.EnrolledSample> samples = owner.getSamples();
-                for (Identity.EnrolledSample sample : samples) {
-                    FeatureVector features = sample.getFeatures();
-                    samples.stream()
-                            .filter(other -> other != sample)
-                            .mapToDouble(other -> classifier.computeDistance(features, other.getFeatures()))
-                            .min()
-                            .ifPresent(genuine::add);
-                    active.stream()
-                            .filter(other -> other != owner)
-                            .mapToDouble(other -> classifier.distanceTo(features, other))
-                            .min()
-                            .ifPresent(impostor::add);
+            for (Entry entry : entries) {
+                double ownBest = Double.MAX_VALUE;
+                double otherBest = Double.MAX_VALUE;
+                for (Entry other : entries) {
+                    if (other == entry) {
+                        continue;
+                    }
+                    double d = classifier.config.isUseAverageFeatures()
+                            ? classifier.distanceTo(entry.features(), other.owner())
+                            : classifier.computeDistance(entry.features(), other.features());
+                    if (other.owner() == entry.owner()) {
+                        ownBest = Math.min(ownBest, d);
+                    } else {
+                        otherBest = Math.min(otherBest, d);
+                    }
+                }
+                if (ownBest < Double.MAX_VALUE) {
+                    genuine.add(ownBest);
+                }
+                if (otherBest < Double.MAX_VALUE) {
+                    impostor.add(otherBest);
                 }
             }
             return new Calibration(median(genuine), median(impostor));
@@ -258,11 +281,10 @@ public class KNNClassifier implements FaceClassifier, Serializable {
             if (Double.isNaN(impostor) || impostor <= 0) {
                 return Double.NaN;
             }
-            if (Double.isNaN(genuine) || genuine >= impostor) {
-                return Math.pow(2.0, -distance / impostor);
-            }
-            double center = (genuine + impostor) / 2;
-            double width = (impostor - genuine) / 8;
+            // With 1 photo per person there is no genuine distance; 0 keeps strangers rejected.
+            double own = Double.isNaN(genuine) || genuine >= impostor ? 0 : genuine;
+            double center = (own + impostor) / 2;
+            double width = (impostor - own) / 8;
             return 1.0 / (1.0 + Math.exp((distance - center) / width));
         }
 

@@ -27,7 +27,7 @@ LBPH extracts fastest, but its 16,384-value histograms make every comparison exp
 
 ## Open set: telling strangers apart
 
-Closed-set accuracy assumes everyone is enrolled. In practice a recognizer also has to answer "unknown". Here the gallery holds photos 1 to 5 of people 1 to 20; the genuine probes are their photos 6 to 10, and the strangers are all 200 photos of people 21 to 40. Everything runs through the CLI with 40 components and the default threshold of 0.6.
+Closed-set accuracy assumes everyone is enrolled. In practice a recognizer also has to answer "unknown". Here the gallery holds photos 1 to 5 of people 1 to 20; the genuine probes are their photos 6 to 10, and the strangers are all 200 photos of people 21 to 40. Everything runs through the CLI with 40 components, Euclidean distance for all 3 algorithms (the CLI has no metric option yet) and the default threshold of 0.6.
 
 | Algorithm | Genuine probes matched to the right person | Strangers accepted |
 |---|---|---|
@@ -35,14 +35,18 @@ Closed-set accuracy assumes everyone is enrolled. In practice a recognizer also 
 | Fisherfaces | 68 of 100 | 0 of 200 |
 | LBPH | 58 of 100 | 0 of 200 |
 
-Confidence is calibrated on the gallery: a probe as close to its match as a typical photo of the same person scores about 0.98, one as far as the typical nearest other person about 0.02. Before this calibration the score used a fixed scale that put every face above 0.6, so all 200 strangers were accepted by all 3 algorithms. Raise the threshold to reject more strangers, lower it to accept more genuine probes.
+Confidence is calibrated on the gallery. For each enrolled photo the classifier measures the distance to the nearest other photo of the same person and to the nearest photo of anyone else. A logistic curve centered halfway between the 2 medians gives about 0.98 at the first and 0.02 at the second.
 
-## Setup
+Before this calibration the score used a fixed scale that put every face above 0.6, so all 200 strangers were accepted by all 3 algorithms. Both scores fall as distance grows, so the ranking, and the trade-off available across thresholds, is unchanged. What changes is that the default threshold lands at a sensible distance for whatever gallery is enrolled. Raise it to reject more strangers, lower it to accept more genuine probes.
+
+The calibration reads distances from the gallery photos the extractor was trained on. Fisherfaces pulls those photos together by design. On this split the median distance from a gallery photo to the nearest other gallery photo of the same person is 0.07, against 0.46 from a new photo of that person. The curve therefore sits too tight for Fisherfaces, which is why it rejects more genuine probes than the others. Eigenfaces (0.44 against 0.52) and LBPH (1.63 against 1.76) are less affected.
+
+## Setup## Setup
 
 - Photos are resized to 48x64 pixels and converted to grayscale.
 - Eigenfaces keeps 40 components. Fisherfaces keeps 39, the most LDA allows for 40 people.
 - LBPH uses radius 1, 8 neighbors and an 8x8 grid of 256-bin histograms.
-- The classifier is a nearest neighbor over every training photo.
+- The classifier is a nearest neighbor over every training photo. Calibration uses at most 500 gallery photos, picked at a fixed stride, which keeps it under a second for Eigenfaces even on large galleries.
 - Folds are stratified by person and shuffled with seed 42, so every run gives the same numbers.
 - Measured on 2026-11-16 with `scripts/benchmark-orl.sh` as of pull request #50.
 
