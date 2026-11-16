@@ -9,6 +9,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @DisplayName("FaceRecognitionService recognition options")
 class FaceRecognitionServiceThresholdTest {
@@ -54,5 +57,29 @@ class FaceRecognitionServiceThresholdTest {
         assertThat(service.getEnrolledImageCount(ann)).isEqualTo(2);
         assertThat(service.getEnrolledImageCount(bo)).isEqualTo(1);
         assertThat(service.getEnrolledImageCount("nobody")).isZero();
+    }
+
+    @Test
+    @DisplayName("training and soft deletes recalibrate the classifier")
+    void recalibratesClassifier() {
+        KNNClassifier classifier = spy(new KNNClassifier());
+        FaceRecognitionService service = FaceRecognitionService.builder()
+                .extractor(new EigenfacesExtractor(3))
+                .classifier(classifier)
+                .config(new FaceRecognitionService.Config()
+                        .setTargetWidth(SyntheticFaces.SIZE)
+                        .setTargetHeight(SyntheticFaces.SIZE))
+                .build();
+        String ann = service.enroll(SyntheticFaces.face(0, 0), "Ann").getId();
+        service.enroll(SyntheticFaces.face(1, 0), "Bo");
+
+        service.train();
+        verify(classifier, times(1)).retrain();
+
+        assertThat(service.setIdentityActive(ann, false)).isTrue();
+        verify(classifier, times(2)).retrain();
+        assertThat(service.getIdentities()).filteredOn(i -> i.getId().equals(ann))
+                .singleElement().extracting(i -> i.isActive()).isEqualTo(false);
+        assertThat(service.setIdentityActive("nobody", false)).isFalse();
     }
 }

@@ -36,6 +36,7 @@ public class KNNClassifier implements FaceClassifier, Serializable {
     private final ClassifierConfig config;
     private final Map<String, Identity> enrolledIdentities;
     private DistanceMetric distanceMetric;
+    private transient volatile Calibration calibration;
 
     /**
      * Creates a KNN classifier with default settings.
@@ -62,11 +63,14 @@ public class KNNClassifier implements FaceClassifier, Serializable {
             throw new IllegalArgumentException("Identity must have at least one enrolled sample");
         }
         enrolledIdentities.put(identity.getId(), identity);
+        calibration = null;
     }
 
     @Override
     public boolean unenroll(String identityId) {
-        return enrolledIdentities.remove(identityId) != null;
+        boolean removed = enrolledIdentities.remove(identityId) != null;
+        calibration = null;
+        return removed;
     }
 
     @Override
@@ -187,16 +191,18 @@ public class KNNClassifier implements FaceClassifier, Serializable {
     @Override
     public void setDistanceMetric(DistanceMetric metric) {
         this.distanceMetric = Objects.requireNonNull(metric);
+        calibration = null;
     }
 
     @Override
     public void clear() {
         enrolledIdentities.clear();
+        calibration = null;
     }
 
     @Override
     public void retrain() {
-        // KNN doesn't require training
+        calibration = Calibration.of(this);
     }
 
     private List<DistanceEntry> computeAllDistances(FeatureVector probe) {
@@ -205,14 +211,101 @@ public class KNNClassifier implements FaceClassifier, Serializable {
         for (Identity identity : enrolledIdentities.values()) {
             if (!identity.isActive()) continue;
 
-            double distance = config.isUseAverageFeatures()
-                ? computeDistanceToAverage(probe, identity)
-                : computeMinDistance(probe, identity);
-
-            entries.add(new DistanceEntry(identity, distance));
+            entries.add(new DistanceEntry(identity, distanceTo(probe, identity)));
         }
 
         return entries;
+    }
+
+    private double distanceTo(FeatureVector probe, Identity identity) {
+        return config.isUseAverageFeatures()
+                ? computeDistanceToAverage(probe, identity)
+                : computeMinDistance(probe, identity);
+    }
+
+    /**
+     * Distances measured on the gallery itself: for sampled anchor photos, the distance to their own
+     * person ({@code genuine}: the nearest other photo, or the person's average in average mode) and
+     * to the nearest other person ({@code impostor}). Confidence is a logistic curve centered halfway
+     * between their medians. At most {@value #MAX_ANCHORS} anchors, picked at a fixed stride, are
+     * compared with the whole gallery, so the cost grows linearly with the gallery.
+     */
+    private record Calibration(double genuine, double impostor) {
+
+        static final int MAX_ANCHORS = 500;
+
+        private record Entry(Identity owner, FeatureVector features) {
+        }
+
+        static Calibration of(KNNClassifier classifier) {
+            List<Identity> active = classifier.enrolledIdentities.values().stream()
+                    .filter(Identity::isActive).filter(Identity::hasSamples).toList();
+            List<Entry> gallery = new ArrayList<>();
+            active.forEach(owner -> owner.getSamples().forEach(s -> gallery.add(new Entry(owner, s.getFeatures()))));
+            Map<Identity, FeatureVector> averages = new HashMap<>();
+            if (classifier.config.isUseAverageFeatures()) {
+                active.forEach(owner -> averages.put(owner, owner.getAverageFeatureVector()));
+            }
+
+            int stride = Math.max(1, (gallery.size() + MAX_ANCHORS - 1) / MAX_ANCHORS);
+            List<Double> genuine = new ArrayList<>();
+            List<Double> impostor = new ArrayList<>();
+            for (int a = 0; a < gallery.size(); a += stride) {
+                Entry anchor = gallery.get(a);
+                double own = Double.MAX_VALUE;
+                double other = Double.MAX_VALUE;
+                if (averages.isEmpty()) {
+                    for (Entry candidate : gallery) {
+                        if (candidate == anchor) {
+                            continue;
+                        }
+                        double d = classifier.computeDistance(anchor.features(), candidate.features());
+                        if (candidate.owner() == anchor.owner()) {
+                            own = Math.min(own, d);
+                        } else {
+                            other = Math.min(other, d);
+                        }
+                    }
+                } else {
+                    for (Map.Entry<Identity, FeatureVector> person : averages.entrySet()) {
+                        double d = classifier.computeDistance(anchor.features(), person.getValue());
+                        if (person.getKey() == anchor.owner()) {
+                            own = anchor.owner().getSampleCount() > 1 ? d : own;
+                        } else {
+                            other = Math.min(other, d);
+                        }
+                    }
+                }
+                if (own < Double.MAX_VALUE) {
+                    genuine.add(own);
+                }
+                if (other < Double.MAX_VALUE) {
+                    impostor.add(other);
+                }
+            }
+            return new Calibration(median(genuine), median(impostor));
+        }
+
+        /** @return the confidence for a distance, or NaN when the gallery cannot calibrate it */
+        double confidence(double distance) {
+            if (Double.isNaN(impostor) || impostor <= 0) {
+                return Double.NaN;
+            }
+            // With 1 photo per person there is no genuine distance; 0 keeps strangers rejected.
+            double own = Double.isNaN(genuine) || genuine >= impostor ? 0 : genuine;
+            double center = (own + impostor) / 2;
+            double width = (impostor - own) / 8;
+            return 1.0 / (1.0 + Math.exp((distance - center) / width));
+        }
+
+        private static double median(List<Double> values) {
+            if (values.isEmpty()) {
+                return Double.NaN;
+            }
+            List<Double> sorted = values.stream().sorted().toList();
+            int middle = sorted.size() / 2;
+            return sorted.size() % 2 == 1 ? sorted.get(middle) : (sorted.get(middle - 1) + sorted.get(middle)) / 2;
+        }
     }
 
     private double computeMinDistance(FeatureVector probe, Identity identity) {
@@ -250,50 +343,31 @@ public class KNNClassifier implements FaceClassifier, Serializable {
     }
 
     /**
-     * Maps a raw distance to a confidence in {@code [0, 1]} via exponential decay:
-     * {@code confidence = exp(-distance / scale)}.
+     * Maps a distance to a confidence in {@code [0, 1]}, calibrated on the gallery (see
+     * {@link Calibration}): a probe as close as a typical photo of the same person scores about 0.98,
+     * one as far as the typical nearest other person about 0.02, and 0.5 sits halfway. With fewer than
+     * 2 people enrolled there is nothing to calibrate against and a fixed per-metric scale applies.
      *
-     * <p>The per-metric scale constants returned by {@link #getDistanceScale()} are
-     * <em>calibration defaults</em> chosen so that typical raw distances on 48x64
-     * Eigenfaces features land around the 0.6 recognition threshold. They are not
-     * universal — if you swap extractor, image size, or feature dimension, you
-     * will want to recalibrate them for your dataset. The classical way is to
-     * compute the distribution of same-identity vs different-identity distances
-     * on a validation set and choose {@code scale} such that {@code exp(-μ/scale)}
-     * lands on the desired operating point.</p>
-     *
-     * <p>This is deliberately a single line of code so the calibration stays
-     * obvious: don't replace it with an opaque callback unless you have a
-     * reason to.</p>
-     *
-     * @param distance the raw distance produced by {@link #computeDistance}
-     * @return a confidence score in {@code [0, 1]}
+     * @param distance the distance to the best match
+     * @return the confidence
      */
     private double distanceToConfidence(double distance) {
-        return Math.exp(-distance / getDistanceScale());
+        Calibration current = calibration;
+        if (current == null) {
+            current = Calibration.of(this);
+            calibration = current;
+        }
+        double confidence = current.confidence(distance);
+        return Double.isNaN(confidence) ? Math.exp(-distance / fallbackScale()) : confidence;
     }
 
-    /**
-     * Scale constants used by {@link #distanceToConfidence(double)}. These
-     * numbers come from empirical measurement on classical extractors —
-     * Eigenfaces/Fisherfaces raw Euclidean distances between aligned 48x64
-     * grayscale faces cluster in the 1000–10000 range, so 5000 is a decent
-     * half-decay. LBPH chi-square and cosine distances live on very different
-     * scales.
-     */
-    private double getDistanceScale() {
-        switch (distanceMetric) {
-            case EUCLIDEAN:
-                return 5000.0;
-            case COSINE:
-                return 0.5;
-            case MANHATTAN:
-                return 10000.0;
-            case CHI_SQUARE:
-                return 1.0;
-            default:
-                return 5000.0;
-        }
+    private double fallbackScale() {
+        return switch (distanceMetric) {
+            case COSINE -> 0.5;
+            case CHI_SQUARE -> 1.0;
+            case MANHATTAN -> 10000.0;
+            case EUCLIDEAN, MAHALANOBIS -> 5000.0;
+        };
     }
 
     private List<RecognitionResult.MatchResult> buildAlternatives(List<DistanceEntry> entries, int maxCount) {
