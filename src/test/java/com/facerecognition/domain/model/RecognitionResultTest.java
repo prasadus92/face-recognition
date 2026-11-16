@@ -457,21 +457,6 @@ class RecognitionResultTest {
         }
 
         @Test
-        @DisplayName("Should compare match results by confidence")
-        void shouldCompareMatchResultsByConfidence() {
-            Identity id1 = createIdentity("Person1");
-            Identity id2 = createIdentity("Person2");
-
-            RecognitionResult.MatchResult match1 = new RecognitionResult.MatchResult(id1, 0.9, 0.1);
-            RecognitionResult.MatchResult match2 = new RecognitionResult.MatchResult(id2, 0.8, 0.2);
-
-            // Higher confidence should come first (negative comparison result)
-            assertThat(match1.compareTo(match2)).isNegative();
-            assertThat(match2.compareTo(match1)).isPositive();
-            assertThat(match1.compareTo(match1)).isZero();
-        }
-
-        @Test
         @DisplayName("Should format match result toString correctly")
         void shouldFormatMatchResultToStringCorrectly() {
             Identity identity = createIdentity("John Doe");

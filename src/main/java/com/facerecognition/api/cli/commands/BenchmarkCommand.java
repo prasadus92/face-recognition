@@ -107,7 +107,7 @@ public final class BenchmarkCommand implements Callable<Integer> {
         return FaceRecognitionServiceFactory.extractor(properties(algorithm, config));
     }
 
-    private FaceRecognitionProperties properties(ExtractorType algorithm, RunnerConfig config) {
+    FaceRecognitionProperties properties(ExtractorType algorithm, RunnerConfig config) {
         FaceRecognitionProperties props = new FaceRecognitionProperties();
         if (algorithm != null) {
             props.getExtraction().setAlgorithm(algorithm);

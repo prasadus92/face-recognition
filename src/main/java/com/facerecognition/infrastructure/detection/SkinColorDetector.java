@@ -1,7 +1,6 @@
 package com.facerecognition.infrastructure.detection;
 
 import com.facerecognition.domain.model.FaceImage;
-import com.facerecognition.domain.model.FaceLandmarks;
 import com.facerecognition.domain.model.FaceRegion;
 import com.facerecognition.domain.service.FaceDetector;
 
@@ -219,7 +218,7 @@ public class SkinColorDetector implements FaceDetector, Serializable {
             }
 
             // Calculate confidence based on multiple factors
-            double confidence = calculateConfidence(component, regionWidth, regionHeight, fillRatio);
+            double confidence = calculateConfidence(regionWidth, regionHeight, fillRatio);
 
             if (confidence >= minConfidence) {
                 faces.add(new FaceRegion(
@@ -640,14 +639,12 @@ public class SkinColorDetector implements FaceDetector, Serializable {
      *   <li>Size (medium sizes score higher)</li>
      * </ul>
      *
-     * @param component the connected component
      * @param width region width
      * @param height region height
      * @param fillRatio skin pixel fill ratio
      * @return confidence score (0.0 to 1.0)
      */
-    private double calculateConfidence(ConnectedComponent component,
-                                       int width, int height, double fillRatio) {
+    private double calculateConfidence(int width, int height, double fillRatio) {
         // Fill ratio contribution (0.4 weight)
         double fillScore = Math.min(fillRatio / 0.6, 1.0) * 0.4;
 
@@ -717,26 +714,6 @@ public class SkinColorDetector implements FaceDetector, Serializable {
         }
 
         return merged;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>This implementation does not support landmark detection.</p>
-     */
-    @Override
-    public boolean supportsLandmarks() {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @return always empty as landmarks are not supported
-     */
-    @Override
-    public Optional<FaceLandmarks> detectLandmarks(FaceImage image, FaceRegion faceRegion) {
-        return Optional.empty();
     }
 
     /**

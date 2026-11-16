@@ -6,6 +6,7 @@ import com.facerecognition.infrastructure.classification.KNNClassifier;
 import com.facerecognition.infrastructure.extraction.LBPHExtractor;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -14,6 +15,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,6 +33,9 @@ import static org.mockito.Mockito.lenient;
 @DisplayName("FaceRecognitionService Tests")
 @ExtendWith(MockitoExtension.class)
 class FaceRecognitionServiceTest {
+
+    @TempDir
+    Path tempDir;
 
     @Mock
     private FaceDetector mockDetector;
@@ -139,8 +144,8 @@ class FaceRecognitionServiceTest {
             FaceImage face1 = createTestFaceImage(48, 64, Color.RED);
             FaceImage face2 = createTestFaceImage(48, 64, Color.BLUE);
 
-            Identity john = realService.enroll(face1, "John Doe");
-            Identity jane = realService.enroll(face2, "Jane Doe");
+            realService.enroll(face1, "John Doe");
+            realService.enroll(face2, "Jane Doe");
 
             assertThat(realService.getIdentityCount()).isEqualTo(2);
 
@@ -257,8 +262,7 @@ class FaceRecognitionServiceTest {
         @Test
         @DisplayName("Should enroll from file")
         void shouldEnrollFromFile() throws IOException {
-            File tempFile = File.createTempFile("test", ".png");
-            tempFile.deleteOnExit();
+            File tempFile = tempDir.resolve("test.png").toFile();
             BufferedImage image = createBufferedImage(100, 100, Color.GRAY);
             ImageIO.write(image, "png", tempFile);
 
@@ -449,8 +453,7 @@ class FaceRecognitionServiceTest {
             service.train();
 
             // Create temp file
-            File tempFile = File.createTempFile("test", ".png");
-            tempFile.deleteOnExit();
+            File tempFile = tempDir.resolve("test.png").toFile();
             BufferedImage image = createBufferedImage(100, 100, Color.GRAY);
             ImageIO.write(image, "png", tempFile);
 
@@ -521,7 +524,7 @@ class FaceRecognitionServiceTest {
 
             // Recognize
             FaceImage probe = createTestFaceImage(100, 100, Color.GRAY);
-            RecognitionResult result = service.recognize(probe);
+            service.recognize(probe);
 
             verify(mockDetector, atLeastOnce()).detectLargestFace(any());
         }

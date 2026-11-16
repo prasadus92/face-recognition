@@ -1,7 +1,6 @@
 package com.facerecognition.domain.service;
 
 import com.facerecognition.domain.model.FaceImage;
-import com.facerecognition.domain.model.FaceLandmarks;
 import com.facerecognition.domain.model.FaceRegion;
 
 import java.util.List;
@@ -27,7 +26,6 @@ import java.util.Optional;
  * @version 2.0
  * @since 2.0
  * @see FaceRegion
- * @see FaceLandmarks
  */
 public interface FaceDetector {
 
@@ -69,22 +67,6 @@ public interface FaceDetector {
         return detectFaces(image).stream()
             .max((a, b) -> Double.compare(a.getConfidence(), b.getConfidence()));
     }
-
-    /**
-     * Checks if the detector supports landmark detection.
-     *
-     * @return true if landmarks can be detected
-     */
-    boolean supportsLandmarks();
-
-    /**
-     * Detects facial landmarks for a given face region.
-     *
-     * @param image the full image
-     * @param faceRegion the detected face region
-     * @return Optional containing landmarks, or empty if not supported/failed
-     */
-    Optional<FaceLandmarks> detectLandmarks(FaceImage image, FaceRegion faceRegion);
 
     /**
      * Gets the name of this detector implementation.

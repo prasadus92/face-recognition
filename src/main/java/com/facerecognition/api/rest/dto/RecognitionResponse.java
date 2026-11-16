@@ -178,10 +178,11 @@ public class RecognitionResponse {
     /**
      * Creates a RecognitionResponse from a domain RecognitionResult.
      *
-     * @param result the domain recognition result
+     * @param result          the domain recognition result
+     * @param maxAlternatives how many runner-up matches to include
      * @return a new RecognitionResponse
      */
-    public static RecognitionResponse fromDomain(RecognitionResult result) {
+    public static RecognitionResponse fromDomain(RecognitionResult result, int maxAlternatives) {
         RecognitionResponse response = new RecognitionResponse();
         response.setRequestId(result.getRequestId());
         response.setTimestamp(result.getTimestamp());
@@ -198,7 +199,7 @@ public class RecognitionResponse {
         });
 
         List<MatchDto> alternatives = new ArrayList<>();
-        for (RecognitionResult.MatchResult alt : result.getAlternatives()) {
+        for (RecognitionResult.MatchResult alt : result.getTopAlternatives(maxAlternatives)) {
             alternatives.add(new MatchDto(
                 alt.getIdentity().getId(),
                 alt.getIdentity().getName(),

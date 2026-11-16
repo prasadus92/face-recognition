@@ -465,7 +465,6 @@ public class PerformanceBenchmark {
         Map<String, Long> usage = new LinkedHashMap<>();
 
         forceGarbageCollection();
-        long baseline = getCurrentMemoryUsage();
 
         // Train extractor and measure
         DatasetLoader.DatasetSplit split = dataset.split(config.getTrainRatio(), config.getRandomSeed());

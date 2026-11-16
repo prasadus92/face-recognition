@@ -114,10 +114,15 @@ public class FaceRecognitionController {
             @Parameter(description = "Whether to include feature vector in response")
             @RequestParam(value = "includeFeatures", required = false, defaultValue = "false") Boolean includeFeatures
     ) throws IOException {
-        logger.info("Recognition request received: file={}, size={} bytes",
-                image.getOriginalFilename(), image.getSize());
+        logger.info("Recognition request received: size={} bytes", image.getSize());
 
         validateImageFile(image);
+        if (threshold < 0 || threshold > 1) {
+            throw new IllegalArgumentException("threshold must be between 0 and 1");
+        }
+        if (maxAlternatives < 0) {
+            throw new IllegalArgumentException("maxAlternatives must not be negative");
+        }
 
         BufferedImage bufferedImage = ImageIO.read(image.getInputStream());
         if (bufferedImage == null) {
@@ -128,14 +133,14 @@ public class FaceRecognitionController {
         FaceImage faceImage = FaceImage.fromBufferedImage(bufferedImage);
         RecognitionResult result;
         try {
-            result = faceRecognitionService.recognize(faceImage);
+            result = faceRecognitionService.recognize(faceImage, threshold);
         } catch (RuntimeException e) {
             metrics.recordError();
             throw e;
         }
         metrics.recordRecognize(System.nanoTime() - startNanos, result.isRecognized());
 
-        RecognitionResponse response = RecognitionResponse.fromDomain(result);
+        RecognitionResponse response = RecognitionResponse.fromDomain(result, maxAlternatives);
         if (!Boolean.TRUE.equals(includeFeatures)) {
             response.setFeatures(null);
         }
@@ -151,7 +156,6 @@ public class FaceRecognitionController {
      * @param image the image file containing a face
      * @param name the identity name
      * @param externalId optional external system ID
-     * @param sourceDescription optional description of the image source
      * @return the enrollment result
      */
     @PostMapping(value = "/enroll", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -186,13 +190,10 @@ public class FaceRecognitionController {
             @RequestParam("name") String name,
 
             @Parameter(description = "Optional external system identifier")
-            @RequestParam(value = "externalId", required = false) String externalId,
-
-            @Parameter(description = "Optional description of the image source")
-            @RequestParam(value = "sourceDescription", required = false) String sourceDescription
+            @RequestParam(value = "externalId", required = false) String externalId
     ) throws IOException {
-        logger.info("Enrollment request received: name={}, file={}, size={} bytes",
-                name, image.getOriginalFilename(), image.getSize());
+        logger.info("Enrollment request received: name={}, size={} bytes",
+                LogValues.safe(name), image.getSize());
 
         validateImageFile(image);
 
@@ -218,7 +219,7 @@ public class FaceRecognitionController {
         metrics.recordEnrollment();
 
         logger.info("Enrollment completed: identityId={}, name={}, sampleCount={}",
-                identity.getId(), identity.getName(), identity.getSampleCount());
+                identity.getId(), LogValues.safe(identity.getName()), identity.getSampleCount());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -246,7 +247,7 @@ public class FaceRecognitionController {
             @Parameter(description = "Identity ID to delete", required = true)
             @PathVariable("id") String id
     ) {
-        logger.info("Delete identity request received: id={}", id);
+        logger.info("Delete identity request received: id={}", LogValues.safe(id));
 
         Identity identity = findIdentityById(id);
         if (identity == null) {
@@ -256,7 +257,7 @@ public class FaceRecognitionController {
         // Mark as inactive (soft delete)
         identity.setActive(false);
 
-        logger.info("Identity deleted: id={}, name={}", identity.getId(), identity.getName());
+        logger.info("Identity deleted: id={}, name={}", identity.getId(), LogValues.safe(identity.getName()));
 
         return ResponseEntity.noContent().build();
     }
@@ -324,7 +325,7 @@ public class FaceRecognitionController {
             @Parameter(description = "Identity ID", required = true)
             @PathVariable("id") String id
     ) {
-        logger.debug("Get identity request received: id={}", id);
+        logger.debug("Get identity request received: id={}", LogValues.safe(id));
 
         Identity identity = findIdentityById(id);
         if (identity == null) {
@@ -375,7 +376,7 @@ public class FaceRecognitionController {
             @Parameter(description = "Active status")
             @RequestParam(value = "active", required = false) Boolean active
     ) {
-        logger.info("Update identity request received: id={}", id);
+        logger.info("Update identity request received: id={}", LogValues.safe(id));
 
         Identity identity = findIdentityById(id);
         if (identity == null) {
@@ -394,7 +395,7 @@ public class FaceRecognitionController {
 
         IdentityDto response = IdentityDto.fromDomain(identity);
 
-        logger.info("Identity updated: id={}, name={}", identity.getId(), identity.getName());
+        logger.info("Identity updated: id={}, name={}", identity.getId(), LogValues.safe(identity.getName()));
 
         return ResponseEntity.ok(response);
     }
