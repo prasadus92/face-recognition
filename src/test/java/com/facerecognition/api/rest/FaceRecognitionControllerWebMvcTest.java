@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -271,6 +272,18 @@ class FaceRecognitionControllerWebMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name").value("Alice"));
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/identities/{id} soft-deletes through the service")
+    void deleteGoesThroughService() throws Exception {
+        Identity ann = new Identity("Ann");
+        when(service.getIdentities()).thenReturn(List.of(ann));
+
+        mvc.perform(delete("/api/v1/identities/" + ann.getId()))
+                .andExpect(status().isNoContent());
+
+        verify(service).setIdentityActive(ann.getId(), false);
     }
 
     @Test

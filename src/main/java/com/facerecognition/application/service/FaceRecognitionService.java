@@ -263,6 +263,7 @@ public class FaceRecognitionService {
                 classifier.enroll(identity);
             }
         }
+        classifier.retrain();
         trained = true;
     }
 
@@ -557,6 +558,29 @@ public class FaceRecognitionService {
             return (int) trainingSamples.stream().filter(s -> s.identityId().equals(identityId)).count();
         } finally {
             lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Activates or soft-deletes an identity. Inactive identities are never matched, and the
+     * classifier recalibrates so confidence reflects the people who remain.
+     *
+     * @param identityId the identity to change
+     * @param active     false to soft-delete
+     * @return false if no such identity exists
+     */
+    public boolean setIdentityActive(String identityId, boolean active) {
+        lock.writeLock().lock();
+        try {
+            Identity identity = identities.get(identityId);
+            if (identity == null) {
+                return false;
+            }
+            identity.setActive(active);
+            classifier.retrain();
+            return true;
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 
