@@ -71,7 +71,7 @@
 
         <!-- Coverage floor. Starts at the current honest baseline and is
              expected to ratchet upwards over time — never downwards. -->
-        <jacoco.line.coverage.minimum>0.20</jacoco.line.coverage.minimum>
+        <jacoco.line.coverage.minimum>0.55</jacoco.line.coverage.minimum>
     </properties>
 
     <dependencyManagement>

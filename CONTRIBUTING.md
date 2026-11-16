@@ -93,9 +93,10 @@ java -jar target/face-recognition-*-exec.jar --help
 Run targeted subsets:
 
 ```bash
-./mvnw test                          # unit + integration
+./mvnw test                          # unit tests
+./mvnw verify                        # unit + integration tests
 ./mvnw -Dtest=EigenfacesExtractorTest test
-./mvnw -P benchmarks exec:java       # run the benchmark harness
+java -jar target/face-recognition-*-exec.jar benchmark DATASET   # run the benchmark harness
 ```
 
 ## Quality gates
