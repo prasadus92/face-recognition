@@ -83,15 +83,12 @@ public class FaceRecognitionProperties {
         private int numComponents = 10;
         /** LBPH-specific configuration (ignored for other extractors). */
         private final Lbph lbph = new Lbph();
-        /** ONNX-specific configuration (ignored unless algorithm=onnx). */
-        private final Onnx onnx = new Onnx();
 
         public ExtractorType getAlgorithm() { return algorithm; }
         public void setAlgorithm(ExtractorType algorithm) { this.algorithm = algorithm; }
         public int getNumComponents() { return numComponents; }
         public void setNumComponents(int numComponents) { this.numComponents = numComponents; }
         public Lbph getLbph() { return lbph; }
-        public Onnx getOnnx() { return onnx; }
 
         public static class Lbph {
             private int gridX = 8;
@@ -108,26 +105,6 @@ public class FaceRecognitionProperties {
             public int getNeighbors() { return neighbors; }
             public void setNeighbors(int neighbors) { this.neighbors = neighbors; }
         }
-
-        public static class Onnx {
-            /** Filesystem path or classpath URL to a .onnx model. Empty disables the backend. */
-            private String modelPath = "";
-            /** Execution provider, e.g. {@code cpu}, {@code cuda}, {@code coreml}. */
-            private String provider = "cpu";
-            /** Expected embedding dimension produced by the model. */
-            private int embeddingDimension = 128;
-            /** Input image side expected by the model. */
-            private int inputSize = 160;
-
-            public String getModelPath() { return modelPath; }
-            public void setModelPath(String modelPath) { this.modelPath = modelPath; }
-            public String getProvider() { return provider; }
-            public void setProvider(String provider) { this.provider = provider; }
-            public int getEmbeddingDimension() { return embeddingDimension; }
-            public void setEmbeddingDimension(int embeddingDimension) { this.embeddingDimension = embeddingDimension; }
-            public int getInputSize() { return inputSize; }
-            public void setInputSize(int inputSize) { this.inputSize = inputSize; }
-        }
     }
 
     /** Built-in extractor implementations. */
@@ -137,9 +114,7 @@ public class FaceRecognitionProperties {
         /** Belhumeur et al., Fisherfaces (LDA). */
         FISHERFACES,
         /** Ahonen et al., LBP Histograms. */
-        LBPH,
-        /** ONNX-based deep embedding (bring your own model). */
-        ONNX
+        LBPH
     }
 
     /** Classifier tuning. */

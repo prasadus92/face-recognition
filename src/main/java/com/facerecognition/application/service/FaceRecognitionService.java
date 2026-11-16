@@ -547,6 +547,29 @@ public class FaceRecognitionService {
         }
     }
 
+    /**
+     * @param identityId the identity to count for
+     * @return how many face images are enrolled for it, whether or not the model is trained yet
+     */
+    public int getEnrolledImageCount(String identityId) {
+        lock.readLock().lock();
+        try {
+            return (int) trainingSamples.stream().filter(s -> s.identityId().equals(identityId)).count();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** @return how many face images are enrolled in total, whether or not the model is trained yet */
+    public int getEnrolledImageCount() {
+        lock.readLock().lock();
+        try {
+            return trainingSamples.size();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
     public int getIdentityCount() {
         return identities.size();
     }

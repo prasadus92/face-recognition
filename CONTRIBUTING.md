@@ -62,7 +62,7 @@ java -jar target/face-recognition-*-exec.jar --help
 ## Branching and commits
 
 - Base all work on `main`.
-- Use short, descriptive branch names: `feat/fisherfaces-lda`, `fix/knn-confidence`, `docs/onnx-setup`.
+- Use short, descriptive branch names: `feat/fisherfaces-lda`, `fix/knn-confidence`, `docs/benchmark-yale`.
 - Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) in commit subjects:
   ```
   feat(extraction): add calibrated KNN confidence normalizer

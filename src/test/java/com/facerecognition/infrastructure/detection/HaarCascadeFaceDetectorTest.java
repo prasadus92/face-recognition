@@ -2,6 +2,7 @@ package com.facerecognition.infrastructure.detection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.withinPercentage;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -44,13 +45,13 @@ class HaarCascadeFaceDetectorTest {
     }
 
     @Test
-    @DisplayName("detects the face in the bundled face.png test fixture")
+    @DisplayName("detects the face in the bundled portrait.png fixture")
     void detectsBundledFace() throws IOException {
-        FaceImage image = loadBundledImage("face.png");
+        FaceImage image = loadBundledImage("portrait.png");
         List<FaceRegion> regions = detector.detectFaces(image);
 
         assertThat(regions)
-                .as("The bundled face.png is a clear frontal portrait; the detector "
+                .as("The bundled portrait.png is a clear frontal portrait; the detector "
                         + "must find at least one face in it or the cascade is not wired up.")
                 .isNotEmpty();
 
@@ -72,14 +73,14 @@ class HaarCascadeFaceDetectorTest {
     @Test
     @DisplayName("returns the same box as OpenCV 4.14 for the fixture face")
     void matchesOpenCv() throws IOException {
-        // cv2.CascadeClassifier(...).detectMultiScale(gray, 1.1, 3, minSize=(24, 24)) on face.png
-        List<FaceRegion> regions = new HaarCascadeFaceDetector().detectFaces(loadBundledImage("face.png"));
+        // cv2.CascadeClassifier(...).detectMultiScale(gray, 1.1, 3, minSize=(24, 24)) on portrait.png
+        List<FaceRegion> regions = new HaarCascadeFaceDetector().detectFaces(loadBundledImage("portrait.png"));
 
         assertThat(regions).singleElement().satisfies(face -> {
-            assertThat(face.getX()).isEqualTo(63);
-            assertThat(face.getY()).isEqualTo(25);
-            assertThat(face.getWidth()).isEqualTo(242);
-            assertThat(face.getHeight()).isEqualTo(242);
+            assertThat(face.getX()).isEqualTo(94);
+            assertThat(face.getY()).isEqualTo(86);
+            assertThat(face.getWidth()).isEqualTo(118);
+            assertThat(face.getHeight()).isEqualTo(118);
         });
     }
 
@@ -94,15 +95,16 @@ class HaarCascadeFaceDetectorTest {
 
     @ParameterizedTest
     @ValueSource(doubles = {1.0, 0.75, 0.5, 0.33, 0.25})
-    @DisplayName("finds the fixture face from 375 down to 93 pixels wide")
+    @DisplayName("finds the fixture face from 300 down to 75 pixels wide")
     void detectsFaceAcrossSizes(double scale) throws IOException {
-        FaceImage full = loadBundledImage("face.png");
+        FaceImage full = loadBundledImage("portrait.png");
         FaceImage image = full.resize((int) (full.getWidth() * scale), (int) (full.getHeight() * scale));
 
         List<FaceRegion> regions = new HaarCascadeFaceDetector().detectFaces(image);
 
         assertThat(regions).singleElement().satisfies(face -> {
-            assertThat(face.getWidth()).isBetween(image.getHeight() / 2, image.getHeight());
+            assertThat((double) face.getWidth()).isCloseTo(118 * scale, withinPercentage(15));
+            assertThat((double) face.getX()).isCloseTo(94 * scale, withinPercentage(15));
             assertThat(face.getX() + face.getWidth()).isLessThanOrEqualTo(image.getWidth());
             assertThat(face.getY() + face.getHeight()).isLessThanOrEqualTo(image.getHeight());
         });

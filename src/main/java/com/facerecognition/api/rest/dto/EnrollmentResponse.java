@@ -33,10 +33,7 @@ public class EnrollmentResponse {
     @Schema(description = "External system ID", example = "EMP-12345")
     private String externalId;
 
-    @Schema(description = "Sample ID of the enrolled face", example = "660e8400-e29b-41d4-a716-446655440001")
-    private String sampleId;
-
-    @Schema(description = "Total number of enrolled samples for this identity", example = "3")
+    @Schema(description = "Number of face images enrolled for this identity", example = "3")
     private int sampleCount;
 
     @Schema(description = "Quality score of the enrolled face (0.0 to 1.0)", example = "0.85")
@@ -58,19 +55,18 @@ public class EnrollmentResponse {
      * Creates a successful enrollment response.
      *
      * @param identity the enrolled identity
-     * @param sampleId the ID of the enrolled sample
+     * @param enrolledImages how many face images are now enrolled for the identity
      * @param qualityScore the quality score
      * @return a new EnrollmentResponse
      */
-    public static EnrollmentResponse success(Identity identity, String sampleId, double qualityScore) {
+    public static EnrollmentResponse success(Identity identity, int enrolledImages, double qualityScore) {
         EnrollmentResponse response = new EnrollmentResponse();
         response.setSuccess(true);
         response.setMessage("Face enrolled successfully");
         response.setIdentityId(identity.getId());
         response.setName(identity.getName());
         response.setExternalId(identity.getExternalId());
-        response.setSampleId(sampleId);
-        response.setSampleCount(identity.getSampleCount());
+        response.setSampleCount(enrolledImages);
         response.setQualityScore(qualityScore);
         response.setEnrolledAt(LocalDateTime.now());
         response.setRequiresTraining(true);
@@ -130,14 +126,6 @@ public class EnrollmentResponse {
 
     public void setExternalId(String externalId) {
         this.externalId = externalId;
-    }
-
-    public String getSampleId() {
-        return sampleId;
-    }
-
-    public void setSampleId(String sampleId) {
-        this.sampleId = sampleId;
     }
 
     public int getSampleCount() {

@@ -225,6 +225,7 @@ class FaceRecognitionControllerWebMvcTest {
         Identity john = new Identity("John Doe");
         john.enrollSample(new com.facerecognition.domain.model.FeatureVector(new double[]{1.0, 2.0}, "t", 1), 1.0, "t");
         when(service.enroll(any(FaceImage.class), any(), any())).thenReturn(john);
+        when(service.getEnrolledImageCount(john.getId())).thenReturn(3);
 
         mvc.perform(multipart("/api/v1/enroll")
                         .file(new MockMultipartFile("image", "john.png", "image/png", pngBytes))
@@ -233,7 +234,20 @@ class FaceRecognitionControllerWebMvcTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.name").value("John Doe"))
+                .andExpect(jsonPath("$.sampleCount").value(3))
                 .andExpect(jsonPath("$.externalId").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("identity endpoints report enrolled images, which exist before training")
+    void identitiesReportEnrolledImages() throws Exception {
+        Identity ann = new Identity("Ann");
+        when(service.getIdentities()).thenReturn(List.of(ann));
+        when(service.getEnrolledImageCount(ann.getId())).thenReturn(4);
+
+        mvc.perform(get("/api/v1/identities"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].sampleCount").value(4));
     }
 
     @Test

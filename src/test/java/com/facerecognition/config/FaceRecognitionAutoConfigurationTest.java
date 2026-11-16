@@ -24,7 +24,6 @@ import com.facerecognition.infrastructure.detection.SkinColorDetector;
 import com.facerecognition.infrastructure.extraction.EigenfacesExtractor;
 import com.facerecognition.infrastructure.extraction.FisherfacesExtractor;
 import com.facerecognition.infrastructure.extraction.LBPHExtractor;
-import com.facerecognition.infrastructure.extraction.OnnxDeepFeatureExtractor;
 import com.facerecognition.infrastructure.persistence.FileModelRepository;
 import com.facerecognition.infrastructure.persistence.ModelRepository;
 
@@ -91,20 +90,6 @@ class FaceRecognitionAutoConfigurationTest {
         ).run(ctx -> {
             FeatureExtractor extractor = ctx.getBean(FeatureExtractor.class);
             assertThat(extractor).isInstanceOf(FisherfacesExtractor.class);
-        });
-    }
-
-    @Test
-    @DisplayName("algorithm=ONNX switches to the deep scaffold but stays untrained without a model")
-    void onnxScaffold() {
-        runner.withPropertyValues(
-                "facerecognition.extraction.algorithm=ONNX",
-                "facerecognition.extraction.onnx.embedding-dimension=256"
-        ).run(ctx -> {
-            FeatureExtractor extractor = ctx.getBean(FeatureExtractor.class);
-            assertThat(extractor).isInstanceOf(OnnxDeepFeatureExtractor.class);
-            assertThat(extractor.getFeatureDimension()).isEqualTo(256);
-            assertThat(extractor.isTrained()).isFalse();
         });
     }
 

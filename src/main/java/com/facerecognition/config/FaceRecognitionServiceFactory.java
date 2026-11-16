@@ -13,7 +13,6 @@ import com.facerecognition.infrastructure.detection.SkinColorDetector;
 import com.facerecognition.infrastructure.extraction.EigenfacesExtractor;
 import com.facerecognition.infrastructure.extraction.FisherfacesExtractor;
 import com.facerecognition.infrastructure.extraction.LBPHExtractor;
-import com.facerecognition.infrastructure.extraction.OnnxDeepFeatureExtractor;
 import com.facerecognition.infrastructure.persistence.ModelRepository;
 
 import java.nio.file.Paths;
@@ -51,11 +50,6 @@ public final class FaceRecognitionServiceFactory {
             case LBPH -> {
                 FaceRecognitionProperties.Extraction.Lbph lbph = extraction.getLbph();
                 yield new LBPHExtractor(lbph.getGridX(), lbph.getGridY(), lbph.getRadius(), lbph.getNeighbors());
-            }
-            case ONNX -> {
-                FaceRecognitionProperties.Extraction.Onnx onnx = extraction.getOnnx();
-                yield new OnnxDeepFeatureExtractor(onnx.getModelPath(), onnx.getEmbeddingDimension(),
-                        onnx.getInputSize(), onnx.getProvider());
             }
         };
     }
