@@ -1,7 +1,6 @@
 package com.facerecognition.config;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -123,7 +122,6 @@ public class FaceRecognitionAutoConfiguration {
         if (storageDir == null) {
             storageDir = Paths.get(".").toAbsolutePath();
         }
-        Files.createDirectories(storageDir);
         log.info("Initializing model repository at {}", storageDir);
         return new FileModelRepository(storageDir);
     }

@@ -3,6 +3,7 @@ package com.facerecognition.domain.service;
 import com.facerecognition.domain.model.FaceImage;
 import com.facerecognition.domain.model.FeatureVector;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -112,7 +113,9 @@ public interface FeatureExtractor {
     /**
      * Configuration for feature extractors.
      */
-    class ExtractorConfig {
+    class ExtractorConfig implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private int numComponents = 10;
         private boolean normalize = true;
         private int imageWidth = 48;

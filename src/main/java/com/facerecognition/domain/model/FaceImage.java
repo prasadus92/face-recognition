@@ -158,6 +158,28 @@ public class FaceImage implements Serializable {
         return new FaceImage(image, null, ImageFormat.UNKNOWN);
     }
 
+    /**
+     * Creates an image from grayscale values as produced by {@link #toGrayscaleBytes()}.
+     *
+     * @param width  image width
+     * @param height image height
+     * @param pixels one unsigned grayscale byte per pixel, row-major
+     * @return a new FaceImage whose {@link #toGrayscaleArray()} returns exactly these values
+     */
+    public static FaceImage fromGrayscale(int width, int height, byte[] pixels) {
+        if (pixels.length != width * height) {
+            throw new IllegalArgumentException("Expected " + (width * height) + " pixels, got " + pixels.length);
+        }
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int v = pixels[y * width + x] & 0xFF;
+                image.setRGB(x, y, (v << 16) | (v << 8) | v);
+            }
+        }
+        return fromBufferedImage(image);
+    }
+
     private void validateDimensions(int width, int height) {
         if (width < MIN_DIMENSION || height < MIN_DIMENSION) {
             throw new IllegalArgumentException(
@@ -385,6 +407,30 @@ public class FaceImage implements Serializable {
         g.dispose();
 
         return new FaceImage(resized, sourcePath, format);
+    }
+
+    /**
+     * Extracts pixel data as unsigned grayscale bytes, the mean of R, G and B per pixel.
+     *
+     * @return one byte per pixel, row-major
+     */
+    public byte[] toGrayscaleBytes() {
+        byte[] pixels = new byte[width * height];
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                pixels[y * width + x] = (byte) getGrayscale(x, y);
+            }
+        }
+        return pixels;
+    }
+
+    /**
+     * Returns a copy of this image reduced to its grayscale values.
+     *
+     * @return a grayscale copy with identical {@link #toGrayscaleArray()} output
+     */
+    public FaceImage toGrayscale() {
+        return fromGrayscale(width, height, toGrayscaleBytes());
     }
 
     /**
