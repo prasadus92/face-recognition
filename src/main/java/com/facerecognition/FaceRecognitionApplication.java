@@ -1,5 +1,7 @@
 package com.facerecognition;
 
+import com.facerecognition.api.cli.FaceRecognitionCli;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -11,21 +13,17 @@ import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Spring Boot entry point for the face-recognition service.
- *
- * <p>All bean wiring lives in
- * {@link com.facerecognition.config.FaceRecognitionAutoConfiguration}; the
- * auto-load-on-startup behaviour is handled by
- * {@link com.facerecognition.config.ModelAutoLoadListener}. Keeping this class
- * dependency-free makes it safe to use in {@code @WebMvcTest} slices.</p>
+ * Entry point. With a CLI command as the first argument ({@code train}, {@code enroll},
+ * {@code recognize}, {@code benchmark}, {@code help}) it runs that command and exits;
+ * otherwise it starts the REST API. Bean wiring lives in
+ * {@link com.facerecognition.config.FaceRecognitionAutoConfiguration}.
  */
 @SpringBootApplication
 @OpenAPIDefinition(
         info = @Info(
                 title = "Face Recognition API",
                 version = "2.1.0",
-                description = "Classical face-recognition library for the JVM — Eigenfaces, "
-                        + "Fisherfaces, LBPH — exposed as a Spring Boot REST API.",
+                description = "Eigenfaces, Fisherfaces and LBPH face recognition as a REST API.",
                 contact = @Contact(
                         name = "Prasad Subrahmanya",
                         email = "prasadus92@gmail.com",
@@ -45,6 +43,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class FaceRecognitionApplication {
 
     public static void main(String[] args) {
+        if (FaceRecognitionCli.handles(args)) {
+            System.exit(FaceRecognitionCli.execute(args));
+        }
         SpringApplication.run(FaceRecognitionApplication.class, args);
     }
 }

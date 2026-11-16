@@ -3,8 +3,11 @@ package com.facerecognition.domain.model;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -69,6 +72,8 @@ public class FaceImage implements Serializable {
         PNG("png", "image/png"),
         /** BMP format - uncompressed bitmap. */
         BMP("bmp", "image/bmp"),
+        /** PGM format - grayscale, used by the AT&amp;T/ORL face database. */
+        PGM("pgm", "image/x-portable-graymap"),
         /** Unknown or unsupported format. */
         UNKNOWN("", "application/octet-stream");
 
@@ -100,6 +105,7 @@ public class FaceImage implements Serializable {
             if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return JPEG;
             if (lower.endsWith(".png")) return PNG;
             if (lower.endsWith(".bmp")) return BMP;
+            if (lower.endsWith(".pgm")) return PGM;
             return UNKNOWN;
         }
     }
@@ -139,7 +145,7 @@ public class FaceImage implements Serializable {
             throw new IOException("File does not exist: " + file.getAbsolutePath());
         }
 
-        BufferedImage image = ImageIO.read(file);
+        BufferedImage image = readImage(file);
         if (image == null) {
             throw new IOException("Could not read image from file: " + file.getAbsolutePath());
         }
@@ -154,6 +160,15 @@ public class FaceImage implements Serializable {
      * @param image the BufferedImage
      * @return a new FaceImage instance
      */
+    private static BufferedImage readImage(File file) throws IOException {
+        if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".pgm")) {
+            return ImageIO.read(file);
+        }
+        try (InputStream in = Files.newInputStream(file.toPath())) {
+            return PgmReader.read(in);
+        }
+    }
+
     public static FaceImage fromBufferedImage(BufferedImage image) {
         return new FaceImage(image, null, ImageFormat.UNKNOWN);
     }

@@ -2,8 +2,6 @@ package com.facerecognition.benchmark;
 
 import com.facerecognition.domain.model.FaceImage;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -903,143 +901,21 @@ public class DatasetLoader {
         return new LoadedDataset(datasetName, "flat", path, faces, width, height);
     }
 
-    /**
-     * Loads an image and optionally normalizes it.
-     */
     private FaceImage loadImage(Path path) {
         try {
-            BufferedImage image;
-
-            if (path.toString().toLowerCase().endsWith(".pgm")) {
-                image = loadPgm(path);
-            } else {
-                image = ImageIO.read(path.toFile());
+            FaceImage faceImage = FaceImage.fromFile(path.toFile());
+            if (convertToGrayscale) {
+                faceImage = faceImage.toGrayscale();
             }
-
-            if (image == null) {
-                return null;
-            }
-
-            // Convert to grayscale if requested
-            if (convertToGrayscale && image.getType() != BufferedImage.TYPE_BYTE_GRAY) {
-                BufferedImage gray = new BufferedImage(
-                    image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
-                gray.getGraphics().drawImage(image, 0, 0, null);
-                image = gray;
-            }
-
-            FaceImage faceImage = FaceImage.fromBufferedImage(image);
-
-            // Resize if normalization is enabled
-            if (normalizeSize &&
-                (faceImage.getWidth() != targetWidth || faceImage.getHeight() != targetHeight)) {
+            if (normalizeSize
+                    && (faceImage.getWidth() != targetWidth || faceImage.getHeight() != targetHeight)) {
                 faceImage = faceImage.resize(targetWidth, targetHeight);
             }
-
             return faceImage;
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             System.err.println("Warning: Failed to load image: " + path + " - " + e.getMessage());
             return null;
         }
-    }
-
-    /**
-     * Loads a PGM (Portable Gray Map) image.
-     */
-    private BufferedImage loadPgm(Path path) throws IOException {
-        try (DataInputStream dis = new DataInputStream(
-                new BufferedInputStream(Files.newInputStream(path)))) {
-
-            // Read magic number
-            String magic = readLine(dis);
-            if (!magic.equals("P5")) {
-                // Try P2 (ASCII) format
-                if (magic.equals("P2")) {
-                    return loadPgmAscii(path);
-                }
-                throw new IOException("Not a valid PGM file (expected P5 or P2): " + magic);
-            }
-
-            // Skip comments
-            String line;
-            do {
-                line = readLine(dis);
-            } while (line.startsWith("#"));
-
-            // Parse dimensions
-            String[] dims = line.split("\\s+");
-            int width = Integer.parseInt(dims[0]);
-            int height = Integer.parseInt(dims[1]);
-
-            // Read max value
-            String maxLine = readLine(dis);
-            int maxVal = Integer.parseInt(maxLine.trim());
-
-            // Read pixel data
-            BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
-            byte[] pixels = new byte[width * height];
-
-            if (maxVal <= 255) {
-                dis.readFully(pixels);
-            } else {
-                // 16-bit values, scale to 8-bit
-                for (int i = 0; i < pixels.length; i++) {
-                    int val = dis.readUnsignedShort();
-                    pixels[i] = (byte) (val * 255 / maxVal);
-                }
-            }
-
-            image.getRaster().setDataElements(0, 0, width, height, pixels);
-            return image;
-        }
-    }
-
-    /**
-     * Loads a PGM file in ASCII format (P2).
-     */
-    private BufferedImage loadPgmAscii(Path path) throws IOException {
-        List<String> lines = Files.readAllLines(path);
-        int lineIndex = 1;
-
-        // Skip comments
-        while (lines.get(lineIndex).startsWith("#")) {
-            lineIndex++;
-        }
-
-        // Parse dimensions
-        String[] dims = lines.get(lineIndex++).split("\\s+");
-        int width = Integer.parseInt(dims[0]);
-        int height = Integer.parseInt(dims[1]);
-
-        // Skip max value line
-        lineIndex++;
-
-        // Read pixel values
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
-        StringBuilder allValues = new StringBuilder();
-        while (lineIndex < lines.size()) {
-            allValues.append(lines.get(lineIndex++)).append(" ");
-        }
-
-        String[] values = allValues.toString().trim().split("\\s+");
-        byte[] pixels = new byte[width * height];
-        for (int i = 0; i < pixels.length && i < values.length; i++) {
-            pixels[i] = (byte) Integer.parseInt(values[i]);
-        }
-
-        image.getRaster().setDataElements(0, 0, width, height, pixels);
-        return image;
-    }
-
-    private String readLine(DataInputStream dis) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        int c;
-        while ((c = dis.read()) != -1 && c != '\n') {
-            if (c != '\r') {
-                sb.append((char) c);
-            }
-        }
-        return sb.toString();
     }
 
     private LabeledFace loadLfwFace(Path dataPath, String name, int number) {
