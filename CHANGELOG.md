@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- A rewritten README: what the project does, measured accuracy, quickstart, REST and CLI examples taken from real runs, how the pipeline works, and images (a detection example on the public-domain Artemis II crew portrait, a pipeline diagram, the Swagger UI).
+- `CLAUDE.md` (with `AGENTS.md` as a symlink) and `.claude/settings.json` for coding agents.
 - `detect` CLI command: prints face boxes (text or `--json`) for files and folders, or saves a copy of one image with every face boxed (`--annotate`).
 
 ### Removed
@@ -26,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `POST /api/v1/model/import` no longer deserializes arbitrary classes from the upload. Decoding runs behind an `ObjectInputFilter` allowlist of the exact classes a model contains, with depth, reference, array and stream-size limits. An import that fails leaves the current model in place and returns 400.
 
 ### Changed
+- `ROADMAP.md`, `SECURITY.md` and `SUPPORT.md` describe the project as it is: no Discussions forum, no 2.2 release, security reports by email.
 - Reproducible AT&T/ORL benchmark: `scripts/benchmark-orl.sh` downloads and checksums the dataset and runs 10-fold and 2-fold cross-validation plus a latency run. Results are in `docs/benchmarks/orl.md`.
 - `benchmark --metric` picks the nearest-neighbor distance (`EUCLIDEAN`, `COSINE`, `MANHATTAN`, `CHI_SQUARE`).
 - `FaceRecognitionService#recognize(FaceImage, double)` takes a per-call threshold.

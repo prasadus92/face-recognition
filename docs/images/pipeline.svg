@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 250" role="img" aria-labelledby="title desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title id="title">Recognition pipeline</title>
+  <desc id="desc">An image goes through face detection, cropping, feature extraction and nearest-neighbor matching to produce an identity with a confidence. The model file stores the fitted extractor, the identities and the face crops.</desc>
+  <style>
+    .surface { fill: #ffffff; }
+    .card { fill: #f6f8fa; stroke: #d0d7de; }
+    .accent { fill: #0e7490; }
+    .arrow { stroke: #0e7490; fill: none; }
+    .head { fill: #0e7490; }
+    .title { fill: #1f2328; font-size: 15px; font-weight: 600; }
+    .body { fill: #59636e; font-size: 12px; }
+    .store { fill: none; stroke: #8c959f; stroke-dasharray: 4 4; }
+    .note { fill: #59636e; font-size: 12px; }
+    @media (prefers-color-scheme: dark) {
+      .surface { fill: #0d1117; }
+      .card { fill: #161b22; stroke: #30363d; }
+      .accent { fill: #22d3ee; }
+      .arrow { stroke: #22d3ee; }
+      .head { fill: #22d3ee; }
+      .title { fill: #e6edf3; }
+      .body { fill: #9198a1; }
+      .store { stroke: #6e7681; }
+      .note { fill: #9198a1; }
+    }
+  </style>
+  <rect class="surface" x="0" y="0" width="960" height="250" rx="12"/>
+
+  <g>
+    <rect class="card" x="20" y="28" width="164" height="112" rx="10"/>
+    <rect class="accent" x="20" y="28" width="164" height="4" rx="2"/>
+    <text class="title" x="36" y="60">1. Detect</text>
+    <text class="body" x="36" y="84">Haar cascade over an</text>
+    <text class="body" x="36" y="101">image pyramid, grouped</text>
+    <text class="body" x="36" y="118">as in OpenCV</text>
+  </g>
+  <g>
+    <rect class="card" x="208" y="28" width="164" height="112" rx="10"/>
+    <rect class="accent" x="208" y="28" width="164" height="4" rx="2"/>
+    <text class="title" x="224" y="60">2. Crop</text>
+    <text class="body" x="224" y="84">Take the largest face,</text>
+    <text class="body" x="224" y="101">pad it by 10%, resize</text>
+    <text class="body" x="224" y="118">to a grayscale crop</text>
+  </g>
+  <g>
+    <rect class="card" x="396" y="28" width="164" height="112" rx="10"/>
+    <rect class="accent" x="396" y="28" width="164" height="4" rx="2"/>
+    <text class="title" x="412" y="60">3. Extract</text>
+    <text class="body" x="412" y="84">Eigenfaces (PCA),</text>
+    <text class="body" x="412" y="101">Fisherfaces (LDA) or</text>
+    <text class="body" x="412" y="118">LBPH histograms</text>
+  </g>
+  <g>
+    <rect class="card" x="584" y="28" width="164" height="112" rx="10"/>
+    <rect class="accent" x="584" y="28" width="164" height="4" rx="2"/>
+    <text class="title" x="600" y="60">4. Match</text>
+    <text class="body" x="600" y="84">Nearest enrolled photo</text>
+    <text class="body" x="600" y="101">by Euclidean, cosine or</text>
+    <text class="body" x="600" y="118">chi-square distance</text>
+  </g>
+  <g>
+    <rect class="card" x="772" y="28" width="168" height="112" rx="10"/>
+    <rect class="accent" x="772" y="28" width="168" height="4" rx="2"/>
+    <text class="title" x="788" y="60">Identity</text>
+    <text class="body" x="788" y="84">Name and confidence,</text>
+    <text class="body" x="788" y="101">or unknown below the</text>
+    <text class="body" x="788" y="118">threshold</text>
+  </g>
+
+  <g stroke-width="2" stroke-linecap="round">
+    <path class="arrow" d="M186 84 H202"/>
+    <path class="arrow" d="M374 84 H390"/>
+    <path class="arrow" d="M562 84 H578"/>
+    <path class="arrow" d="M750 84 H766"/>
+  </g>
+  <g>
+    <path class="head" d="M206 84 l-7 -5 v10 z"/>
+    <path class="head" d="M394 84 l-7 -5 v10 z"/>
+    <path class="head" d="M582 84 l-7 -5 v10 z"/>
+    <path class="head" d="M770 84 l-7 -5 v10 z"/>
+  </g>
+
+  <rect class="store" x="208" y="170" width="540" height="56" rx="10"/>
+  <text class="title" x="226" y="195">Model file (.frm)</text>
+  <text class="note" x="226" y="214">The fitted extractor, every identity and the training crops, so a restored model can retrain</text>
+  <path class="arrow" d="M290 142 V168 M478 142 V168 M666 142 V168" stroke-width="1.5" stroke-dasharray="3 4"/>
+</svg>
