@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -74,6 +73,8 @@ public class FaceImage implements Serializable {
         BMP("bmp", "image/bmp"),
         /** PGM format - grayscale, used by the AT&amp;T/ORL face database. */
         PGM("pgm", "image/x-portable-graymap"),
+        /** GIF format - first frame only. */
+        GIF("gif", "image/gif"),
         /** Unknown or unsupported format. */
         UNKNOWN("", "application/octet-stream");
 
@@ -106,6 +107,7 @@ public class FaceImage implements Serializable {
             if (lower.endsWith(".png")) return PNG;
             if (lower.endsWith(".bmp")) return BMP;
             if (lower.endsWith(".pgm")) return PGM;
+            if (lower.endsWith(".gif")) return GIF;
             return UNKNOWN;
         }
     }
@@ -154,14 +156,8 @@ public class FaceImage implements Serializable {
         return new FaceImage(image, file.getAbsolutePath(), format);
     }
 
-    /**
-     * Creates a FaceImage from a BufferedImage.
-     *
-     * @param image the BufferedImage
-     * @return a new FaceImage instance
-     */
     private static BufferedImage readImage(File file) throws IOException {
-        if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".pgm")) {
+        if (ImageFormat.fromFilename(file.getName()) != ImageFormat.PGM) {
             return ImageIO.read(file);
         }
         try (InputStream in = Files.newInputStream(file.toPath())) {
@@ -169,6 +165,12 @@ public class FaceImage implements Serializable {
         }
     }
 
+    /**
+     * Creates a FaceImage from a BufferedImage.
+     *
+     * @param image the BufferedImage
+     * @return a new FaceImage instance
+     */
     public static FaceImage fromBufferedImage(BufferedImage image) {
         return new FaceImage(image, null, ImageFormat.UNKNOWN);
     }

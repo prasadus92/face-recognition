@@ -47,11 +47,30 @@ class PgmReaderTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"P6 1 1 255\n", "P5 0 1 255\n", "P5 1 1 70000\n", "P5 1 1 255\n", "P5 x 1 255\n", "P5"})
+    @ValueSource(strings = {"P6 1 1 255\n", "P5 0 1 255\n", "P5 1 1 70000\n",
+        "P5 1 1 255\n", "P5 x 1 255\n", "P5"})
     @DisplayName("rejects other formats, bad headers and truncated data")
     void rejectsMalformed(String header) {
         assertThatThrownBy(() -> read(header.getBytes(StandardCharsets.US_ASCII)))
                 .isInstanceOf(IOException.class);
+    }
+
+    @Test
+    @DisplayName("rejects images wider than FaceImage supports, even with complete pixel data")
+    void rejectsOversizedImages() {
+        int width = FaceImage.MAX_DIMENSION + 1;
+
+        assertThatThrownBy(() -> read(concat("P5 " + width + " 1 255\n", new byte[width])))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("out of range");
+    }
+
+    @Test
+    @DisplayName("rejects binary samples above the declared maximum")
+    void rejectsSamplesAboveMax() {
+        assertThatThrownBy(() -> read(concat("P5 1 1 100\n", new byte[]{(byte) 200})))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("exceeds the maximum value");
     }
 
     private static BufferedImage read(byte[] data) throws IOException {

@@ -10,6 +10,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Spec;
 import tools.jackson.databind.SerializationFeature;
@@ -21,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 
@@ -50,24 +52,40 @@ public final class RecognizeCommand implements Callable<Integer> {
     @Mixin
     private PipelineOptions pipeline;
 
-    /** One line of output. {@code name} is null when nobody matched. */
-    record Match(String image, String status, String name, double confidence) {
+    /**
+     * One line of output.
+     *
+     * @param name       the matched person, or null when nobody passed the threshold
+     * @param confidence confidence of the nearest person, matched or not
+     * @param error      why the image could not be processed, or null
+     */
+    record Match(String image, String status, String name, double confidence, String error) {
     }
 
     @Override
     public Integer call() throws IOException {
+        if (threshold < 0 || threshold > 1) {
+            throw new ParameterException(spec.commandLine(), "--threshold must be between 0 and 1");
+        }
         FaceRecognitionService service = pipeline.load(model);
         service.getConfig().setRecognitionThreshold(threshold);
 
-        List<Match> matches = new ArrayList<>();
-        for (Path image : expand(inputs)) {
-            RecognitionResult result = service.recognize(FaceImage.fromFile(image.toFile()));
-            matches.add(new Match(image.toString(), result.getStatus().name(),
-                    result.getBestMatch().map(m -> m.getIdentity().getName()).orElse(null),
-                    result.getConfidence()));
-        }
+        List<Match> matches = expand(inputs).stream().map(image -> recognize(service, image)).toList();
         print(matches, spec.commandLine().getOut());
-        return 0;
+        return matches.stream().anyMatch(m -> m.error() != null) ? 1 : 0;
+    }
+
+    private static Match recognize(FaceRecognitionService service, Path image) {
+        try {
+            RecognitionResult result = service.recognize(FaceImage.fromFile(image.toFile()));
+            double nearest = result.getBestMatch().or(() -> result.getAlternatives().stream().findFirst())
+                    .map(RecognitionResult.MatchResult::getConfidence)
+                    .orElse(0.0);
+            return new Match(image.toString(), result.getStatus().name(),
+                    result.getBestMatch().map(m -> m.getIdentity().getName()).orElse(null), nearest, null);
+        } catch (IOException | RuntimeException e) {
+            return new Match(image.toString(), "ERROR", null, 0, e.getMessage());
+        }
     }
 
     private void print(List<Match> matches, PrintWriter out) {
@@ -77,8 +95,10 @@ public final class RecognizeCommand implements Callable<Integer> {
             return;
         }
         for (Match match : matches) {
-            out.printf("%s\t%s\t%.3f%n", match.image(),
-                    match.name() == null ? match.status().toLowerCase() : match.name(), match.confidence());
+            String outcome = match.error() != null ? "error: " + match.error()
+                    : match.name() != null ? match.name()
+                    : match.status().toLowerCase(Locale.ROOT);
+            out.printf("%s\t%s\t%.3f%n", match.image(), outcome, match.confidence());
         }
     }
 

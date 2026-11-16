@@ -3,6 +3,7 @@ package com.facerecognition.api.cli;
 import com.facerecognition.application.service.FaceRecognitionService;
 import com.facerecognition.config.FaceRecognitionProperties;
 import com.facerecognition.config.FaceRecognitionServiceFactory;
+import com.facerecognition.infrastructure.persistence.AtomicFiles;
 
 import picocli.CommandLine.Option;
 
@@ -39,11 +40,8 @@ public final class PipelineOptions {
         return service;
     }
 
+    /** Writes the model atomically, so an interrupted save keeps the previous file. */
     public static void save(FaceRecognitionService service, Path model) throws IOException {
-        Path parent = model.toAbsolutePath().getParent();
-        if (parent != null) {
-            Files.createDirectories(parent);
-        }
-        Files.write(model, service.exportModel());
+        AtomicFiles.write(model, service.exportModel());
     }
 }

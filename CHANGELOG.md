@@ -28,7 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The CLI is `train`, `enroll`, `recognize` and `benchmark`. Model files are the same format the REST API exports. `serve` (a second, hand-written HTTP server) and the `export`/`import` commands are gone; run the jar without a command for the API.
 - `FaceImage.fromFile` reads PGM (P5 and P2), shared by the CLI, the service and the benchmark loader.
 - The CLI and the Spring auto-configuration build the pipeline through one `FaceRecognitionServiceFactory`.
-- `BenchmarkRunner` lost its hand-parsed `main`; the `benchmark` command is its front end. The `benchmarks` Maven profile is gone.
+- `BenchmarkRunner` lost its hand-parsed `main`; the `benchmark` command is its front end. The `benchmarks` Maven profile is gone. Defaults changed: threshold 0 (closed-set rank-1 accuracy, was 0.6), 10 folds (was 5), reports in `benchmark-results/` (was `./benchmark_results`). `--warmup`, `--runs` and `--verbose` are gone.
+- `recognize` reports an unreadable image as an error line and carries on, exiting 1. For an unmatched image it prints the nearest person's confidence instead of 0.
+- Model files written by the CLI and by `FileModelRepository` are replaced atomically.
+- PGM images larger than 4096 pixels per side, or with samples above their declared maximum, are rejected before allocation.
+- The CLI logs warnings to stderr, so `recognize --json` output stays parseable. `--version` reads the jar manifest.
+- The log line for a service built without a face detector drops from WARN to INFO.
 - Benchmark reports use Jackson 3. The `jackson-datatype-jsr310` and `picocli-spring-boot-starter` dependencies are gone.
 
 ## [2.1.0]
