@@ -9,6 +9,7 @@ import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
 import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -115,6 +116,27 @@ class FaceRecognitionCliTest {
         assertThat(out.toString())
                 .contains("broken.png\terror:")
                 .contains("good.png\tperson-2\t");
+    }
+
+    @Test
+    @DisplayName("detect prints the face box and can save an annotated copy")
+    void detectAndAnnotate() throws IOException {
+        Path portrait = dir.resolve("portrait.png");
+        try (var in = getClass().getResourceAsStream("/portrait.png")) {
+            Files.copy(in, portrait);
+        }
+        Path boxed = dir.resolve("boxed.jpg");
+
+        assertThat(run("detect", portrait.toString(), "--annotate", boxed.toString())).isZero();
+        assertThat(out.toString()).isEqualTo(portrait + "\t95,88,116,116\t1.00" + System.lineSeparator());
+        BufferedImage written = ImageIO.read(boxed.toFile());
+        assertThat(written.getWidth()).isEqualTo(300);
+        assertThat(written.getHeight()).isEqualTo(330);
+
+        assertThat(run("detect", "--json", portrait.toString())).isZero();
+        assertThat(out.toString()).contains("\"width\" : 116");
+
+        assertThat(run("detect", portrait.toString(), portrait.toString(), "-a", boxed.toString())).isEqualTo(2);
     }
 
     @Test

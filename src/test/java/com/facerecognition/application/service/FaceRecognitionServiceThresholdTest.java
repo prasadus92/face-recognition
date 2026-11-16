@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("FaceRecognitionService thresholds")
+@DisplayName("FaceRecognitionService recognition options")
 class FaceRecognitionServiceThresholdTest {
 
     @Test
@@ -35,5 +35,24 @@ class FaceRecognitionServiceThresholdTest {
                 .isEqualTo(RecognitionResult.Status.RECOGNIZED);
         assertThat(service.recognize(SyntheticFaces.face(1, 9), 1.0).getStatus())
                 .isEqualTo(RecognitionResult.Status.UNKNOWN);
+    }
+
+    @Test
+    @DisplayName("counts enrolled images per identity before training")
+    void countsEnrolledImages() {
+        FaceRecognitionService service = FaceRecognitionService.builder()
+                .extractor(new EigenfacesExtractor(3))
+                .classifier(new KNNClassifier())
+                .config(new FaceRecognitionService.Config()
+                        .setTargetWidth(SyntheticFaces.SIZE)
+                        .setTargetHeight(SyntheticFaces.SIZE))
+                .build();
+        String ann = service.enroll(SyntheticFaces.face(0, 0), "Ann").getId();
+        service.enroll(SyntheticFaces.face(0, 1), "Ann");
+        String bo = service.enroll(SyntheticFaces.face(1, 0), "Bo").getId();
+
+        assertThat(service.getEnrolledImageCount(ann)).isEqualTo(2);
+        assertThat(service.getEnrolledImageCount(bo)).isEqualTo(1);
+        assertThat(service.getEnrolledImageCount("nobody")).isZero();
     }
 }

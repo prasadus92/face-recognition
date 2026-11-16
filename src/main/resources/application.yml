@@ -45,18 +45,13 @@ facerecognition:
     scale-factor: 1.1           # scale step between pyramid levels
     min-neighbours: 3           # a face needs more than this many overlapping hits
   extraction:
-    algorithm: EIGENFACES       # EIGENFACES | FISHERFACES | LBPH | ONNX
+    algorithm: EIGENFACES       # EIGENFACES | FISHERFACES | LBPH
     num-components: 10
     lbph:
       grid-x: 8
       grid-y: 8
       radius: 1
       neighbors: 8
-    onnx:
-      model-path: ""            # .onnx path (empty disables the backend)
-      provider: cpu             # cpu | cuda | coreml | directml
-      embedding-dimension: 128
-      input-size: 160
   classification:
     algorithm: KNN
     k-neighbors: 3
@@ -133,7 +128,7 @@ springdoc:
     display-request-duration: true
     try-it-out-enabled: true
     filter: true
-  show-actuator: true
+  show-actuator: false
 
 # ---------------------------------------------------------------
 # Logging — log pattern picks up MDC(traceId) injected by RequestIdFilter

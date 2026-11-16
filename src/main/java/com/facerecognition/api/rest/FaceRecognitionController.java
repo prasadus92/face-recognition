@@ -227,10 +227,11 @@ public class FaceRecognitionController {
                 identity.getSamples().get(identity.getSamples().size() - 1).getSampleId();
 
         EnrollmentResponse response = EnrollmentResponse.success(identity, sampleId, qualityScore);
+        response.setSampleCount(faceRecognitionService.getEnrolledImageCount(identity.getId()));
         metrics.recordEnrollment();
 
         logger.info("Enrollment completed: identityId={}, name={}, sampleCount={}",
-                identity.getId(), LogValues.safe(identity.getName()), identity.getSampleCount());
+                identity.getId(), LogValues.safe(identity.getName()), response.getSampleCount());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

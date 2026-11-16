@@ -1,6 +1,7 @@
 package com.facerecognition.api.cli;
 
 import com.facerecognition.api.cli.commands.BenchmarkCommand;
+import com.facerecognition.api.cli.commands.DetectCommand;
 import com.facerecognition.api.cli.commands.EnrollCommand;
 import com.facerecognition.api.cli.commands.RecognizeCommand;
 import com.facerecognition.api.cli.commands.TrainCommand;
@@ -28,13 +29,14 @@ import java.util.Set;
         mixinStandardHelpOptions = true,
         versionProvider = FaceRecognitionCli.ManifestVersion.class,
         description = {
-            "Train, enroll, recognize and benchmark from the command line.",
+            "Train, enroll, recognize, detect and benchmark from the command line.",
             "Run without a command to start the REST API."
         },
         subcommands = {
             TrainCommand.class,
             EnrollCommand.class,
             RecognizeCommand.class,
+            DetectCommand.class,
             BenchmarkCommand.class,
             CommandLine.HelpCommand.class
         })
