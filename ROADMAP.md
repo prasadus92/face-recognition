@@ -6,7 +6,7 @@ What works today, and what I would build next. Issues and pull requests on any i
 
 - Eigenfaces, Fisherfaces and LBPH behind one `FeatureExtractor` interface, measured on AT&T/ORL by a script anyone can rerun ([results](docs/benchmarks/orl.md)).
 - A pure-Java Haar face detector that matches OpenCV 4.x on the bundled frontal-face cascade.
-- Nearest-neighbor matching with confidence calibrated on the gallery, so the threshold rejects strangers.
+- Nearest-neighbor matching with confidence calibrated on the gallery. At the default threshold, 0 to 10 of 200 stranger photos are accepted on ORL, depending on the algorithm.
 - One executable jar: a Spring Boot REST API (OpenAPI, Actuator, Prometheus, rate limiting, optional API key) and a CLI (`train`, `enroll`, `recognize`, `detect`, `benchmark`).
 - Model files that carry the fitted extractor and the training crops, read back behind a deserialization allowlist.
 - A Docker image built and smoke-tested in CI.

@@ -32,7 +32,7 @@ docker build -t face-recognition .
 - Model files are Java-serialized behind an allowlist in `ModelCodec`. A new class that ends up inside `TrainedModel` must be added to `ALLOWED_CLASSES`, or every saved model stops loading. Never widen the filter to a package prefix.
 - Bump `ModelCodec.FORMAT_VERSION` when the persisted shape changes; old files are rejected with a retrain message.
 - The detector matches OpenCV 4.x on the bundled cascade. `HaarCascadeFaceDetectorTest.matchesOpenCv` pins OpenCV's box for `src/test/resources/portrait.png`; if a change moves it, compare against `cv2.CascadeClassifier.detectMultiScale` before updating the expected value.
-- Confidence comes from `KNNClassifier`'s gallery calibration, so the REST and CLI thresholds mean "closer than halfway between a typical genuine and a typical impostor distance". Do not reintroduce fixed scales.
+- Confidence comes from `KNNClassifier`'s gallery calibration, so 0.5 sits halfway between a typical genuine and a typical impostor distance and the default 0.6 is slightly stricter. Do not reintroduce fixed scales.
 - CLI and REST must build the pipeline through `FaceRecognitionServiceFactory` so they cannot drift.
 - Numbers in `README.md` and `docs/benchmarks/orl.md` come from `scripts/benchmark-orl.sh`. Rerun it after any change to extraction, classification or preprocessing and update both.
 

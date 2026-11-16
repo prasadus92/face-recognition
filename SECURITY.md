@@ -13,7 +13,7 @@ Please do not open a public issue. Email `prasadus92@gmail.com` with:
 - the commit or release you tested;
 - whether you would like to be credited.
 
-I will acknowledge the report within 72 hours, agree a fix and disclosure date with you, and credit you in the release notes unless you prefer otherwise.
+I will acknowledge the report within 72 hours, agree on a fix and a disclosure date with you, and credit you in the release notes unless you prefer otherwise.
 
 ## Scope
 

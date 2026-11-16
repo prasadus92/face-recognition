@@ -5,17 +5,17 @@
 ![Spring Boot 4.1](https://img.shields.io/badge/spring--boot-4.1-brightgreen.svg)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](License.txt)
 
-Face recognition in plain Java: Eigenfaces, Fisherfaces and LBPH, a Haar face detector that gives the same answers as OpenCV, and one jar that runs as a REST API or as a command-line tool. No native libraries, no Python, no GPU.
+Face recognition in plain Java: Eigenfaces, Fisherfaces and LBPH, a Haar face detector that matches OpenCV's `detectMultiScale` on the AT&T/ORL photos, and one jar that runs as a REST API or as a command-line tool. No native libraries, no Python, no GPU.
 
 ![The detect command boxing the 4 faces in the Artemis II crew portrait](docs/images/artemis-ii-crew-detected.jpg)
 
-<sub>`face-recognition detect docs/images/artemis-ii-crew.jpg --min-confidence 0.3 --annotate out.jpg` on the Artemis II crew portrait (NASA, public domain).</sub>
+<sub>`java -jar target/face-recognition-*-exec.jar detect docs/images/artemis-ii-crew.jpg --min-confidence 0.3 --annotate out.jpg` on the Artemis II crew portrait (NASA photo by Josh Valcarcel, public domain).</sub>
 
 ## What it does
 
-- **Finds faces** with OpenCV's frontal-face Haar cascade, evaluated in Java over an image pyramid. On the 400 AT&T/ORL photos it finds a face in 364 with 366 boxes, exactly as OpenCV 4.14 does, and returns OpenCV's box for the test portrait.
+- **Finds faces** with OpenCV's frontal-face Haar cascade, evaluated in Java over an image pyramid. With OpenCV's default minimum face size of 24 pixels it finds a face in 364 of the 400 AT&T/ORL photos with 366 boxes, as OpenCV 4.14 does, and returns OpenCV's box for the test portrait. The server and CLI use a minimum of 30 pixels, so their boxes can differ by a pixel or 2.
 - **Recognizes people** with 3 classical methods behind one `FeatureExtractor` interface: Eigenfaces (PCA), Fisherfaces (LDA) and local binary pattern histograms (LBPH).
-- **Says "unknown"** when it should. Confidence is calibrated on the enrolled photos, so the threshold separates a typical match from a typical stranger.
+- **Rejects most strangers.** Confidence is calibrated on the enrolled photos, so the threshold sits between a typical match and a typical stranger. At the default 0.6, Fisherfaces and LBPH accepted none of 200 stranger photos on ORL, Eigenfaces 10.
 - **Runs as a service or a tool.** The same jar serves a REST API with OpenAPI docs, health checks, Prometheus metrics, rate limiting and an optional API key, or runs `train`, `enroll`, `recognize`, `detect` and `benchmark` from the shell.
 - **Saves models you can restore.** A model file holds the fitted extractor, every identity and the training crops, so a restarted service recognizes immediately and can retrain. Files are read back behind a deserialization allowlist.
 
@@ -30,7 +30,7 @@ Measured on the [AT&T Database of Faces](https://www.cl.cam.ac.uk/research/dtg/a
 | LBPH | Euclidean | 98.00% | 92.25% |
 | LBPH | Chi-square | **99.00%** | **94.25%** |
 
-With 20 people enrolled and 20 strangers, the default threshold of 0.6 accepts 10 of 200 stranger photos with Eigenfaces and none with Fisherfaces or LBPH, while matching 73, 68 and 58 of 100 genuine photos. Extracting features from one face crop and matching it against 280 photos takes 0.5 ms with Eigenfaces and 6 ms with LBPH on an Apple M1 Pro; detection adds about 13 ms for a 92x112 photo. Setup, fold deviations, latency and the open-set test are in [docs/benchmarks/orl.md](docs/benchmarks/orl.md). To reproduce every number:
+With 20 people enrolled and 20 strangers (40 components), the default threshold of 0.6 accepts 10 of 200 stranger photos with Eigenfaces and none with Fisherfaces or LBPH, while matching 73, 68 and 58 of 100 genuine photos. Extracting features from one 48x64 face crop and matching it against 280 photos takes 0.5 ms with Eigenfaces and 6 ms with LBPH on an Apple M1 Pro. Setup, fold deviations, latency and the open-set test are in [docs/benchmarks/orl.md](docs/benchmarks/orl.md). To reproduce every number:
 
 ```bash
 scripts/benchmark-orl.sh
@@ -44,7 +44,7 @@ With Docker:
 
 ```bash
 docker build -t face-recognition .
-docker run --rm -p 8080:8080 -v "$PWD/data:/app/data" face-recognition
+docker run --rm -p 8080:8080 -v face-data:/app/data face-recognition
 ```
 
 From source, with JDK 25 (the Maven Wrapper fetches Maven):
@@ -54,7 +54,7 @@ From source, with JDK 25 (the Maven Wrapper fetches Maven):
 java -jar target/face-recognition-*-exec.jar
 ```
 
-Then open <http://localhost:8080/swagger-ui.html>. The model is saved to `data/models/default.frm` after every training run and loaded again at startup.
+Then open <http://localhost:8080/swagger-ui.html>. The model is saved to `data/models/default.frm` (the `face-data` volume in Docker) after every training run and loaded again at startup.
 
 ## REST API
 
@@ -115,7 +115,7 @@ $ java -jar target/face-recognition-*-exec.jar detect portrait.png
 portrait.png	95,88,116,116	1.00
 ```
 
-`train` expects one folder per person (`faces/<name>/<photo>`) and reads JPEG, PNG, BMP, GIF and PGM. `recognize` and `detect` take files or folders and can print `--json`. `benchmark DATASET --format orl` runs the accuracy harness. Each command has `--help`.
+`train` expects one folder per person (`faces/<name>/<photo>`) and reads JPEG, PNG, BMP, GIF and PGM. `recognize` and `detect` take files or folders and can print `--json`. The last column of `detect` is a face's support relative to the best face in the same image. `benchmark DATASET --format orl` runs the accuracy harness. Each command has `--help`.
 
 A gallery of 3 people gives the confidence calibration little to learn from, so expect some strangers to pass at the default threshold; the open-set numbers above use 20.
 
@@ -124,7 +124,7 @@ A gallery of 3 people gives the confidence calibration little to learn from, so 
 ![Detect, crop, extract, match](docs/images/pipeline.svg)
 
 1. **Detect.** The image is converted to grayscale and resized into a pyramid. At each level the 24x24 Haar cascade slides across it; each weak classifier compares a weighted sum of rectangles, read from an integral image, with its threshold scaled by the window's standard deviation. Overlapping hits are grouped as `cv::groupRectangles` does.
-2. **Crop.** The largest face is padded by 10%, cropped and resized to a 100x100 grayscale image. Without a detector (the CLI default) the whole image is the crop.
+2. **Crop.** The largest face box grows by 10% on each side, is cropped, resized to a 100x100 grayscale image and histogram-equalized. Without a detector (the CLI default) the whole image is the crop.
 3. **Extract.**
    - Eigenfaces projects the crop onto the principal components of the training set (Turk and Pentland, 1991).
    - Fisherfaces applies PCA, then the linear discriminant that best separates the enrolled people (Belhumeur, Hespanha and Kriegman, 1997).
@@ -133,7 +133,7 @@ A gallery of 3 people gives the confidence calibration little to learn from, so 
 
 ## Configuration
 
-Everything lives in [`application.yml`](src/main/resources/application.yml) and can be overridden with environment variables such as `FACERECOGNITION_EXTRACTION_ALGORITHM=LBPH`:
+The server reads [`application.yml`](src/main/resources/application.yml), and environment variables such as `FACERECOGNITION_EXTRACTION_ALGORITHM=LBPH` override it. The CLI uses its own flags and these defaults.
 
 ```yaml
 facerecognition:
@@ -152,6 +152,8 @@ facerecognition:
 ```
 
 ## Use as a library
+
+The library is not on Maven Central yet. Run `./mvnw install`, then depend on `com.facerecognition:face-recognition:2.1.0-SNAPSHOT`.
 
 ```java
 FaceRecognitionService service = FaceRecognitionService.builder()
@@ -198,7 +200,7 @@ That runs the unit and integration tests, Checkstyle, SpotBugs and the JaCoCo co
 
 - The face database is courtesy of AT&T Laboratories Cambridge.
 - The Haar cascade is OpenCV's `haarcascade_frontalface_default.xml` (BSD license; see [NOTICE](NOTICE)).
-- The Artemis II crew photo and the test portrait are NASA images in the public domain. Their use implies no NASA endorsement.
+- The Artemis II crew photo (NASA, Josh Valcarcel) and the test portrait (NASA photo S85-41895) are in the public domain; sources are in [NOTICE](NOTICE). Their use implies no NASA endorsement.
 - Built on Spring Boot, picocli, JAMA, Micrometer, Bucket4j and springdoc-openapi.
 
 ## License

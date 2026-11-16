@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest. Contributions of all shapes (bug fixes, extractors, distance metrics, docs, benchmark datasets, deep-learning adapters) are very welcome.
+Thanks for your interest. Contributions of all shapes (bug fixes, extractors, distance metrics, docs, benchmark datasets, deep-learning adapters) are welcome.
 
 By participating in this project you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
 
@@ -21,8 +21,8 @@ By participating in this project you agree to abide by the [Code of Conduct](COD
 1. Open an issue before large changes. A 10-line comment on an issue is cheaper than a 500-line rejected PR.
 2. **One logical change per PR.** Keep diffs reviewable.
 3. **Don't break the build.** CI runs the same gates locally and in GitHub Actions; if they go red, please fix or mark the PR draft.
-4. **Tests or it didn't happen.** New behaviour needs unit tests; new REST endpoints need integration tests.
-5. **No bundled model weights, no bundled cascade XML** unless they have an explicit compatible licence and you document its source.
+4. **Every change needs tests.** New behavior needs unit tests; new REST endpoints need integration tests.
+5. **No bundled model weights, no bundled cascade XML** unless they have an explicit compatible license and you document its source.
 
 ## Development setup
 
