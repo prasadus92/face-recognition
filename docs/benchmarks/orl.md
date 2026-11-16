@@ -25,6 +25,18 @@ Time to identify one 48x64 face against a gallery of 280 training photos, after 
 
 LBPH extracts fastest, but its 16,384-value histograms make every comparison expensive. Eigenfaces and Fisherfaces compare 40 and 39 numbers.
 
+## Open set: telling strangers apart
+
+Closed-set accuracy assumes everyone is enrolled. In practice a recognizer also has to answer "unknown". Here the gallery holds photos 1 to 5 of people 1 to 20; the genuine probes are their photos 6 to 10, and the strangers are all 200 photos of people 21 to 40. Everything runs through the CLI with 40 components and the default threshold of 0.6.
+
+| Algorithm | Genuine probes matched to the right person | Strangers accepted |
+|---|---|---|
+| Eigenfaces | 73 of 100 | 10 of 200 |
+| Fisherfaces | 68 of 100 | 0 of 200 |
+| LBPH | 58 of 100 | 0 of 200 |
+
+Confidence is calibrated on the gallery: a probe as close to its match as a typical photo of the same person scores about 0.98, one as far as the typical nearest other person about 0.02. Before this calibration the score used a fixed scale that put every face above 0.6, so all 200 strangers were accepted by all 3 algorithms. Raise the threshold to reject more strangers, lower it to accept more genuine probes.
+
 ## Setup
 
 - Photos are resized to 48x64 pixels and converted to grayscale.
@@ -40,7 +52,7 @@ LBPH extracts fastest, but its 16,384-value histograms make every comparison exp
 scripts/benchmark-orl.sh
 ```
 
-The script downloads the dataset from AT&T Laboratories Cambridge, checks its SHA-256, builds the jar and runs the 5 benchmarks above. It takes about 3 minutes on an M1 Pro. HTML, JSON, Markdown and CSV reports land in `target/benchmarks/orl/`. To run one configuration yourself:
+The script downloads the dataset from AT&T Laboratories Cambridge, checks its SHA-256, builds the jar and runs the 5 benchmarks and the open-set check above. It takes about 4 minutes on an M1 Pro. HTML, JSON, Markdown and CSV reports land in `target/benchmarks/orl/`. To run one configuration yourself:
 
 ```bash
 java -jar target/face-recognition-*-exec.jar benchmark data/orl --format orl \

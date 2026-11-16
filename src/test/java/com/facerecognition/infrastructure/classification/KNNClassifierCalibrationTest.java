@@ -2,6 +2,7 @@ package com.facerecognition.infrastructure.classification;
 
 import com.facerecognition.domain.model.FeatureVector;
 import com.facerecognition.domain.model.Identity;
+import com.facerecognition.domain.model.RecognitionResult;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,11 +38,15 @@ class KNNClassifierCalibrationTest {
     @DisplayName("enrolling another person recalibrates")
     void recalibratesOnEnroll() {
         KNNClassifier classifier = galleryOf(person("ann", 0, 0), person("bo", 10, 0));
-        double before = classifier.classify(vector(2, 0), 0.0).getConfidence();
+        RecognitionResult before = classifier.classify(vector(1.5, 0), 0.0);
 
-        classifier.enroll(person("cy", 3, 0));
+        classifier.enroll(person("cy", 4, 0));
+        RecognitionResult after = classifier.classify(vector(1.5, 0), 0.0);
 
-        assertThat(classifier.classify(vector(2, 0), 0.0).getConfidence()).isNotEqualTo(before);
+        assertThat(after.getBestMatch().orElseThrow().getIdentity().getName()).isEqualTo("ann");
+        assertThat(after.getBestMatch().orElseThrow().getDistance())
+                .isEqualTo(before.getBestMatch().orElseThrow().getDistance());
+        assertThat(after.getConfidence()).isLessThan(before.getConfidence());
     }
 
     private static KNNClassifier galleryOf(Identity... people) {
