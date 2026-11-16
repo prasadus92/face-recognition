@@ -96,6 +96,24 @@ class KNNClassifierCalibrationTest {
         assertThat(classifier.classify(vector(1, 0), 0.0).getConfidence()).isCloseTo(1 / (1 + Math.exp(-4)), offset(1e-9));
     }
 
+    @Test
+    @DisplayName("anchor sampling on a large gallery keeps the genuine distances")
+    void samplesAnchorsAgainstTheWholeGallery() {
+        KNNClassifier classifier = new KNNClassifier();
+        for (int person = 0; person < 500; person++) {
+            Identity identity = new Identity("p" + person);
+            for (int photo = 0; photo < 10; photo++) {
+                identity.enrollSample(vector(person * 50.0 + photo, 0), 1.0, "test");
+            }
+            classifier.enroll(identity);
+        }
+        classifier.retrain();
+
+        // Every 10th photo is an anchor: genuine median 1, impostor median 41, so center 21, width 5.
+        assertThat(classifier.classify(vector(0, 20), 0.0).getConfidence())
+                .isCloseTo(1 / (1 + Math.exp((20 - 21) / 5.0)), offset(1e-9));
+    }
+
     private static Identity triangle(String name, double x) {
         Identity identity = new Identity(name);
         identity.enrollSample(vector(x, 0), 1.0, "test");

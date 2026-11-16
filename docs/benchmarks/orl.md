@@ -39,14 +39,14 @@ Confidence is calibrated on the gallery. For each enrolled photo the classifier 
 
 Before this calibration the score used a fixed scale that put every face above 0.6, so all 200 strangers were accepted by all 3 algorithms. Both scores fall as distance grows, so the ranking, and the trade-off available across thresholds, is unchanged. What changes is that the default threshold lands at a sensible distance for whatever gallery is enrolled. Raise it to reject more strangers, lower it to accept more genuine probes.
 
-The calibration reads distances from the gallery photos the extractor was trained on. Fisherfaces pulls those photos together by design. On this split the median distance from a gallery photo to the nearest other gallery photo of the same person is 0.07, against 0.46 from a new photo of that person. The curve therefore sits too tight for Fisherfaces, which is why it rejects more genuine probes than the others. Eigenfaces (0.44 against 0.52) and LBPH (1.63 against 1.76) are less affected.
+The calibration reads distances from the gallery photos the extractor was trained on. Fisherfaces pulls those photos together by design. On this split the median distance from a gallery photo to the nearest other gallery photo of the same person is 0.07, against about 0.5 from a new photo of that person to its nearest gallery photo. The curve therefore sits too tight for Fisherfaces, which is why it rejects more genuine probes than the others. Eigenfaces and LBPH show a much smaller gap.
 
-## Setup## Setup
+## Setup
 
 - Photos are resized to 48x64 pixels and converted to grayscale.
 - Eigenfaces keeps 40 components. Fisherfaces keeps 39, the most LDA allows for 40 people.
 - LBPH uses radius 1, 8 neighbors and an 8x8 grid of 256-bin histograms.
-- The classifier is a nearest neighbor over every training photo. Calibration uses at most 500 gallery photos, picked at a fixed stride, which keeps it under a second for Eigenfaces even on large galleries.
+- The classifier is a nearest neighbor over every training photo. Calibration compares at most 500 anchor photos, picked at a fixed stride, with the whole gallery, so its cost grows linearly with the gallery.
 - Folds are stratified by person and shuffled with seed 42, so every run gives the same numbers.
 - Measured on 2026-11-16 with `scripts/benchmark-orl.sh` as of pull request #50.
 

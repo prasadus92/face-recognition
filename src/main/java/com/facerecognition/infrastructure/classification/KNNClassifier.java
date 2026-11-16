@@ -224,53 +224,63 @@ public class KNNClassifier implements FaceClassifier, Serializable {
     }
 
     /**
-     * Distances measured on the gallery itself: for every enrolled sample, the distance to its own
-     * person ({@code genuine}: the nearest other sample, or the person's average in average mode) and
+     * Distances measured on the gallery itself: for sampled anchor photos, the distance to their own
+     * person ({@code genuine}: the nearest other photo, or the person's average in average mode) and
      * to the nearest other person ({@code impostor}). Confidence is a logistic curve centered halfway
-     * between their medians. At most {@value #MAX_SAMPLES} samples, picked at a fixed stride, take
-     * part, which bounds the cost at about {@code MAX_SAMPLES^2} distances.
+     * between their medians. At most {@value #MAX_ANCHORS} anchors, picked at a fixed stride, are
+     * compared with the whole gallery, so the cost grows linearly with the gallery.
      */
     private record Calibration(double genuine, double impostor) {
 
-        static final int MAX_SAMPLES = 500;
+        static final int MAX_ANCHORS = 500;
 
         private record Entry(Identity owner, FeatureVector features) {
         }
 
         static Calibration of(KNNClassifier classifier) {
-            List<Entry> all = new ArrayList<>();
-            classifier.enrolledIdentities.values().stream()
-                    .filter(Identity::isActive)
-                    .forEach(owner -> owner.getSamples().forEach(s -> all.add(new Entry(owner, s.getFeatures()))));
-            int stride = Math.max(1, (all.size() + MAX_SAMPLES - 1) / MAX_SAMPLES);
-            List<Entry> entries = new ArrayList<>();
-            for (int i = 0; i < all.size(); i += stride) {
-                entries.add(all.get(i));
+            List<Identity> active = classifier.enrolledIdentities.values().stream()
+                    .filter(Identity::isActive).filter(Identity::hasSamples).toList();
+            List<Entry> gallery = new ArrayList<>();
+            active.forEach(owner -> owner.getSamples().forEach(s -> gallery.add(new Entry(owner, s.getFeatures()))));
+            Map<Identity, FeatureVector> averages = new HashMap<>();
+            if (classifier.config.isUseAverageFeatures()) {
+                active.forEach(owner -> averages.put(owner, owner.getAverageFeatureVector()));
             }
 
+            int stride = Math.max(1, (gallery.size() + MAX_ANCHORS - 1) / MAX_ANCHORS);
             List<Double> genuine = new ArrayList<>();
             List<Double> impostor = new ArrayList<>();
-            for (Entry entry : entries) {
-                double ownBest = Double.MAX_VALUE;
-                double otherBest = Double.MAX_VALUE;
-                for (Entry other : entries) {
-                    if (other == entry) {
-                        continue;
+            for (int a = 0; a < gallery.size(); a += stride) {
+                Entry anchor = gallery.get(a);
+                double own = Double.MAX_VALUE;
+                double other = Double.MAX_VALUE;
+                if (averages.isEmpty()) {
+                    for (Entry candidate : gallery) {
+                        if (candidate == anchor) {
+                            continue;
+                        }
+                        double d = classifier.computeDistance(anchor.features(), candidate.features());
+                        if (candidate.owner() == anchor.owner()) {
+                            own = Math.min(own, d);
+                        } else {
+                            other = Math.min(other, d);
+                        }
                     }
-                    double d = classifier.config.isUseAverageFeatures()
-                            ? classifier.distanceTo(entry.features(), other.owner())
-                            : classifier.computeDistance(entry.features(), other.features());
-                    if (other.owner() == entry.owner()) {
-                        ownBest = Math.min(ownBest, d);
-                    } else {
-                        otherBest = Math.min(otherBest, d);
+                } else {
+                    for (Map.Entry<Identity, FeatureVector> person : averages.entrySet()) {
+                        double d = classifier.computeDistance(anchor.features(), person.getValue());
+                        if (person.getKey() == anchor.owner()) {
+                            own = anchor.owner().getSampleCount() > 1 ? d : own;
+                        } else {
+                            other = Math.min(other, d);
+                        }
                     }
                 }
-                if (ownBest < Double.MAX_VALUE) {
-                    genuine.add(ownBest);
+                if (own < Double.MAX_VALUE) {
+                    genuine.add(own);
                 }
-                if (otherBest < Double.MAX_VALUE) {
-                    impostor.add(otherBest);
+                if (other < Double.MAX_VALUE) {
+                    impostor.add(other);
                 }
             }
             return new Calibration(median(genuine), median(impostor));
