@@ -47,7 +47,7 @@ public class GlobalExceptionHandler {
             FaceRecognitionController.IdentityNotFoundException ex,
             HttpServletRequest request) {
 
-        logger.warn("Identity not found: {}", ex.getIdentityId());
+        logger.warn("Identity not found: {}", LogValues.safe(ex.getIdentityId()));
 
         ErrorResponse error = ErrorResponse.notFound(
                 ErrorResponse.ErrorCodes.IDENTITY_NOT_FOUND,
@@ -349,7 +349,7 @@ public class GlobalExceptionHandler {
             MethodArgumentTypeMismatchException ex,
             HttpServletRequest request) {
 
-        logger.warn("Type mismatch: {} = {}", ex.getName(), ex.getValue());
+        logger.warn("Type mismatch: {} = {}", ex.getName(), LogValues.safe(ex.getValue()));
 
         ErrorResponse error = ErrorResponse.badRequest(
                 ErrorResponse.ErrorCodes.VALIDATION_ERROR,
@@ -392,7 +392,7 @@ public class GlobalExceptionHandler {
             HttpRequestMethodNotSupportedException ex,
             HttpServletRequest request) {
 
-        logger.warn("Method not allowed: {} on {}", ex.getMethod(), request.getRequestURI());
+        logger.warn("Method not allowed: {} on {}", LogValues.safe(ex.getMethod()), LogValues.safe(request.getRequestURI()));
 
         ErrorResponse error = ErrorResponse.of(
                 HttpStatus.METHOD_NOT_ALLOWED.value(),

@@ -1,7 +1,6 @@
 package com.facerecognition.domain.service;
 
 import com.facerecognition.domain.model.FaceImage;
-import com.facerecognition.domain.model.FaceLandmarks;
 import com.facerecognition.domain.model.FaceRegion;
 
 import java.util.List;
@@ -27,7 +26,6 @@ import java.util.Optional;
  * @version 2.0
  * @since 2.0
  * @see FaceRegion
- * @see FaceLandmarks
  */
 public interface FaceDetector {
 
@@ -71,22 +69,6 @@ public interface FaceDetector {
     }
 
     /**
-     * Checks if the detector supports landmark detection.
-     *
-     * @return true if landmarks can be detected
-     */
-    boolean supportsLandmarks();
-
-    /**
-     * Detects facial landmarks for a given face region.
-     *
-     * @param image the full image
-     * @param faceRegion the detected face region
-     * @return Optional containing landmarks, or empty if not supported/failed
-     */
-    Optional<FaceLandmarks> detectLandmarks(FaceImage image, FaceRegion faceRegion);
-
-    /**
      * Gets the name of this detector implementation.
      *
      * @return the detector name
@@ -113,30 +95,4 @@ public interface FaceDetector {
      * @param minSize the minimum size in pixels
      */
     void setMinFaceSize(int minSize);
-
-    /**
-     * Configuration options for face detection.
-     */
-    class DetectionConfig {
-        private double minConfidence = 0.5;
-        private int minFaceSize = 30;
-        private boolean detectLandmarks = true;
-        private int maxFaces = 10;
-        private double scaleFactor = 1.1;
-
-        public double getMinConfidence() { return minConfidence; }
-        public DetectionConfig setMinConfidence(double c) { this.minConfidence = c; return this; }
-
-        public int getMinFaceSize() { return minFaceSize; }
-        public DetectionConfig setMinFaceSize(int s) { this.minFaceSize = s; return this; }
-
-        public boolean isDetectLandmarks() { return detectLandmarks; }
-        public DetectionConfig setDetectLandmarks(boolean d) { this.detectLandmarks = d; return this; }
-
-        public int getMaxFaces() { return maxFaces; }
-        public DetectionConfig setMaxFaces(int m) { this.maxFaces = m; return this; }
-
-        public double getScaleFactor() { return scaleFactor; }
-        public DetectionConfig setScaleFactor(double s) { this.scaleFactor = s; return this; }
-    }
 }

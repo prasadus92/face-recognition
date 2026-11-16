@@ -819,7 +819,6 @@ public class CrossValidator {
 
         // Simple approximation for smaller df
         double x = df / (df + t * t);
-        double beta = 0.5; // Incomplete beta function approximation
         return 0.5 * Math.pow(x, df / 2);
     }
 

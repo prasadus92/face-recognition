@@ -3,6 +3,7 @@ package com.facerecognition.api.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,6 +18,7 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -24,6 +26,8 @@ import javax.imageio.ImageIO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -75,7 +79,7 @@ class FaceRecognitionControllerWebMvcTest {
     void recognizeHappyPath() throws Exception {
         Identity john = new Identity("John Doe");
         RecognitionResult result = RecognitionResult.recognized(john, 0.87, 1200.0);
-        when(service.recognize(any(FaceImage.class))).thenReturn(result);
+        when(service.recognize(any(FaceImage.class), anyDouble())).thenReturn(result);
 
         mvc.perform(multipart("/api/v1/recognize")
                         .file(new MockMultipartFile("image", "probe.png", "image/png", pngBytes))
@@ -88,8 +92,83 @@ class FaceRecognitionControllerWebMvcTest {
                 .andExpect(jsonPath("$.bestMatch.confidence").value(0.87));
 
         ArgumentCaptor<FaceImage> captor = ArgumentCaptor.forClass(FaceImage.class);
-        verify(service).recognize(captor.capture());
+        verify(service).recognize(captor.capture(), eq(0.6));
         assertThat(captor.getValue().getWidth()).isEqualTo(32);
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/recognize applies the threshold and alternative limit from the request")
+    void recognizeHonorsRequestOptions() throws Exception {
+        RecognitionResult result = RecognitionResult.builder()
+                .status(RecognitionResult.Status.RECOGNIZED)
+                .bestMatch(new RecognitionResult.MatchResult(new Identity("Ann"), 0.9, 1.0))
+                .alternatives(List.of(
+                        new RecognitionResult.MatchResult(new Identity("Bo"), 0.5, 2.0),
+                        new RecognitionResult.MatchResult(new Identity("Cy"), 0.7, 1.5),
+                        new RecognitionResult.MatchResult(new Identity("Di"), 0.2, 3.0)))
+                .build();
+        when(service.recognize(any(FaceImage.class), anyDouble())).thenReturn(result);
+
+        mvc.perform(multipart("/api/v1/recognize")
+                        .file(new MockMultipartFile("image", "probe.png", "image/png", pngBytes))
+                        .param("threshold", "0.85")
+                        .param("maxAlternatives", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.alternatives.length()").value(2))
+                .andExpect(jsonPath("$.alternatives[0].name").value("Cy"))
+                .andExpect(jsonPath("$.alternatives[1].name").value("Bo"));
+
+        verify(service).recognize(any(FaceImage.class), eq(0.85));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"threshold, 1.5", "threshold, -0.1", "threshold, NaN", "maxAlternatives, -1"})
+    @DisplayName("POST /api/v1/recognize rejects out-of-range options")
+    void recognizeRejectsBadOptions(String name, String value) throws Exception {
+        mvc.perform(multipart("/api/v1/recognize")
+                        .file(new MockMultipartFile("image", "probe.png", "image/png", pngBytes))
+                        .param(name, value))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).recognize(any(FaceImage.class), anyDouble());
+        verify(service, never()).recognize(any(FaceImage.class));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/recognize without options uses the configured threshold and alternative limit")
+    void recognizeDefaultsToConfiguration() throws Exception {
+        when(service.recognize(any(FaceImage.class))).thenReturn(resultWithAlternatives(6));
+
+        mvc.perform(multipart("/api/v1/recognize")
+                        .file(new MockMultipartFile("image", "probe.png", "image/png", pngBytes)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.alternatives.length()").value(5));
+
+        verify(service, never()).recognize(any(FaceImage.class), anyDouble());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/recognize with maxAlternatives=0 returns no runners-up")
+    void recognizeWithoutAlternatives() throws Exception {
+        when(service.recognize(any(FaceImage.class))).thenReturn(resultWithAlternatives(3));
+
+        mvc.perform(multipart("/api/v1/recognize")
+                        .file(new MockMultipartFile("image", "probe.png", "image/png", pngBytes))
+                        .param("maxAlternatives", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.alternatives.length()").value(0));
+    }
+
+    private static RecognitionResult resultWithAlternatives(int count) {
+        List<RecognitionResult.MatchResult> alternatives = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            alternatives.add(new RecognitionResult.MatchResult(new Identity("p" + i), 0.5 - i * 0.01, 2.0 + i));
+        }
+        return RecognitionResult.builder()
+                .status(RecognitionResult.Status.RECOGNIZED)
+                .bestMatch(new RecognitionResult.MatchResult(new Identity("best"), 0.9, 1.0))
+                .alternatives(alternatives)
+                .build();
     }
 
     @Test

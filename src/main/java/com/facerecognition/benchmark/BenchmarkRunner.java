@@ -408,7 +408,7 @@ public class BenchmarkRunner {
         if (config.isVerbose()) {
             System.out.println("\n=== GENERATING REPORTS ===\n");
         }
-        generateReports(runOutputDir, accuracyResults, performanceResults, crossValResults, dataset);
+        generateReports(runOutputDir, accuracyResults, performanceResults, crossValResults);
 
         long endMs = System.currentTimeMillis();
 
@@ -584,8 +584,7 @@ public class BenchmarkRunner {
     private void generateReports(Path outputDir,
                                  Map<String, BenchmarkResult> accuracyResults,
                                  Map<String, BenchmarkResult> performanceResults,
-                                 Map<String, CrossValidator.CrossValidationResult> crossValResults,
-                                 DatasetLoader.LoadedDataset dataset) throws IOException {
+                                 Map<String, CrossValidator.CrossValidationResult> crossValResults) throws IOException {
 
         ReportGenerator generator = new ReportGenerator();
 

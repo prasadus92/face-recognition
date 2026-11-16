@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.facerecognition.domain.model.FaceImage;
-import com.facerecognition.domain.model.FaceLandmarks;
 import com.facerecognition.domain.model.FaceRegion;
 import com.facerecognition.domain.service.FaceDetector;
 import com.facerecognition.infrastructure.detection.haar.HaarCascade;
@@ -187,16 +186,6 @@ public final class HaarCascadeFaceDetector implements FaceDetector, Serializable
         List<FaceRegion> regions = mergeDetections(raw, minConfidence);
         log.debug("Haar detection: {} raw candidates -> {} regions", raw.size(), regions.size());
         return regions;
-    }
-
-    @Override
-    public boolean supportsLandmarks() {
-        return false;
-    }
-
-    @Override
-    public Optional<FaceLandmarks> detectLandmarks(FaceImage image, FaceRegion faceRegion) {
-        return Optional.empty();
     }
 
     @Override

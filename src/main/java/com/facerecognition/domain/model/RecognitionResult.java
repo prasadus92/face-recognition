@@ -57,7 +57,7 @@ public class RecognitionResult implements Serializable {
     /**
      * Represents a single match candidate.
      */
-    public static class MatchResult implements Serializable, Comparable<MatchResult> {
+    public static class MatchResult implements Serializable {
         private static final long serialVersionUID = 1L;
 
         private final Identity identity;
@@ -74,11 +74,6 @@ public class RecognitionResult implements Serializable {
         public double getConfidence() { return confidence; }
         public double getDistance() { return distance; }
 
-        @Override
-        public int compareTo(MatchResult other) {
-            // Higher confidence first
-            return Double.compare(other.confidence, this.confidence);
-        }
 
         @Override
         public String toString() {
@@ -180,7 +175,7 @@ public class RecognitionResult implements Serializable {
         this.requestId = UUID.randomUUID().toString();
         this.timestamp = LocalDateTime.now();
         this.bestMatch = builder.bestMatch;
-        this.alternatives = Collections.unmodifiableList(new ArrayList<>(builder.alternatives));
+        this.alternatives = List.copyOf(builder.alternatives);
         this.detectedFace = builder.detectedFace;
         this.extractedFeatures = builder.extractedFeatures;
         this.metrics = builder.metrics;
@@ -352,7 +347,7 @@ public class RecognitionResult implements Serializable {
      */
     public List<MatchResult> getTopAlternatives(int n) {
         return alternatives.stream()
-            .sorted()
+            .sorted(Comparator.comparingDouble(MatchResult::getConfidence).reversed())
             .limit(n)
             .collect(Collectors.toList());
     }

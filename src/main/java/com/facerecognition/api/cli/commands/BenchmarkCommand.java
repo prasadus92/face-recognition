@@ -7,6 +7,8 @@ import com.facerecognition.benchmark.BenchmarkRunner.RunnerConfig;
 import com.facerecognition.config.FaceRecognitionProperties;
 import com.facerecognition.config.FaceRecognitionProperties.ExtractorType;
 import com.facerecognition.config.FaceRecognitionServiceFactory;
+import com.facerecognition.domain.service.FaceClassifier;
+import com.facerecognition.domain.service.FaceClassifier.DistanceMetric;
 import com.facerecognition.domain.service.FeatureExtractor;
 
 import picocli.CommandLine.Command;
@@ -62,6 +64,10 @@ public final class BenchmarkCommand implements Callable<Integer> {
             description = "Minimum match confidence; 0 measures closed-set rank-1 accuracy (default: ${DEFAULT-VALUE}).")
     private double threshold;
 
+    @Option(names = {"-m", "--metric"}, defaultValue = "EUCLIDEAN",
+            description = "EUCLIDEAN, COSINE, MANHATTAN or CHI_SQUARE nearest-neighbor distance (default: ${DEFAULT-VALUE}).")
+    private DistanceMetric metric;
+
     @Option(names = {"-c", "--components"}, defaultValue = "10",
             description = "Eigenfaces or Fisherfaces components (default: ${DEFAULT-VALUE}).")
     private int components;
@@ -86,6 +92,7 @@ public final class BenchmarkCommand implements Callable<Integer> {
                 .datasetFormat(format.name())
                 .outputDirectory(output)
                 .benchmarkType(type)
+                .classifierSupplier(() -> classifier(config))
                 .config(config);
         for (ExtractorType algorithm : algorithms) {
             Supplier<FeatureExtractor> extractor = () -> extractor(algorithm, config);
@@ -97,12 +104,24 @@ public final class BenchmarkCommand implements Callable<Integer> {
         return 0;
     }
 
-    private static FeatureExtractor extractor(ExtractorType algorithm, RunnerConfig config) {
+    FaceClassifier classifier(RunnerConfig config) {
+        return FaceRecognitionServiceFactory.classifier(properties(null, config));
+    }
+
+    private FeatureExtractor extractor(ExtractorType algorithm, RunnerConfig config) {
+        return FaceRecognitionServiceFactory.extractor(properties(algorithm, config));
+    }
+
+    FaceRecognitionProperties properties(ExtractorType algorithm, RunnerConfig config) {
         FaceRecognitionProperties props = new FaceRecognitionProperties();
-        props.getExtraction().setAlgorithm(algorithm);
+        if (algorithm != null) {
+            props.getExtraction().setAlgorithm(algorithm);
+        }
         props.getExtraction().setNumComponents(config.getNumComponents());
         props.getImage().setTargetWidth(config.getTargetWidth());
         props.getImage().setTargetHeight(config.getTargetHeight());
-        return FaceRecognitionServiceFactory.extractor(props);
+        props.getClassification().setDistanceMetric(metric);
+        props.getRecognition().setThreshold(config.getRecognitionThreshold());
+        return props;
     }
 }
