@@ -9,11 +9,13 @@ import com.facerecognition.infrastructure.extraction.OnnxDeepFeatureExtractor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputFilter;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Set;
@@ -72,17 +74,49 @@ public final class ModelCodec {
      *
      * @param model the model to write
      * @return the encoded bytes
+     * @throws IllegalStateException if the model is too large for {@link #decode(byte[])} to read back
      */
     public static byte[] encode(TrainedModel model) {
+        return encode(model, MAX_STREAM_BYTES);
+    }
+
+    static byte[] encode(TrainedModel model, long maxSerializedBytes) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         bytes.writeBytes(MAGIC);
         bytes.write(FORMAT_VERSION);
-        try (ObjectOutputStream out = new ObjectOutputStream(new GZIPOutputStream(bytes))) {
+        CountingOutputStream counter;
+        try (ObjectOutputStream out = new ObjectOutputStream(
+                counter = new CountingOutputStream(new GZIPOutputStream(bytes)))) {
             out.writeObject(model);
+            out.flush();
+            if (counter.count > maxSerializedBytes) {
+                throw new IllegalStateException("Model is " + counter.count / (1024 * 1024)
+                        + " MB serialized, over the " + maxSerializedBytes / (1024 * 1024) + " MB a model file may hold");
+            }
         } catch (IOException e) {
             throw new UncheckedIOException("Could not encode model", e);
         }
         return bytes.toByteArray();
+    }
+
+    private static final class CountingOutputStream extends FilterOutputStream {
+        private long count;
+
+        CountingOutputStream(OutputStream out) {
+            super(out);
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            out.write(b);
+            count++;
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            out.write(b, off, len);
+            count += len;
+        }
     }
 
     /**

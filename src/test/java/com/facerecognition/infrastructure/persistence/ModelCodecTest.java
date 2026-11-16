@@ -59,6 +59,14 @@ class ModelCodecTest {
     }
 
     @Test
+    @DisplayName("refuses to write a model larger than decode accepts")
+    void refusesOversizedModels() {
+        assertThatThrownBy(() -> ModelCodec.encode(emptyModel(), 16))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("MB a model file may hold");
+    }
+
+    @Test
     @DisplayName("rejects bytes without the FRM header")
     void rejectsMissingMagic() {
         assertThatThrownBy(() -> ModelCodec.decode("not a model".getBytes()))

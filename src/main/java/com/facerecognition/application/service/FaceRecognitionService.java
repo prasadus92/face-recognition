@@ -437,7 +437,7 @@ public class FaceRecognitionService {
         }
         try {
             saveModel();
-        } catch (IOException e) {
+        } catch (IOException | IllegalStateException e) {
             log.warn("Auto-save failed: {}", e.getMessage());
         }
     }

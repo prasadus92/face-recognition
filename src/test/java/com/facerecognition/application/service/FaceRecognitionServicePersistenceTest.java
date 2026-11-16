@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -197,6 +198,34 @@ class FaceRecognitionServicePersistenceTest {
         RecognitionResult gray = service.recognize(SyntheticFaces.colorFace(1, 99).toGrayscale());
 
         assertThat(color.getConfidence()).isEqualTo(gray.getConfidence());
+    }
+
+    @Test
+    @DisplayName("a failed auto-save does not fail training")
+    void autoSaveFailureKeepsTraining() {
+        ModelRepository failing = new ModelRepository() {
+            @Override
+            public void save(String name, byte[] model) {
+                throw new IllegalStateException("model too large");
+            }
+
+            @Override
+            public Optional<byte[]> load(String name) {
+                return Optional.empty();
+            }
+        };
+        FaceRecognitionService service = FaceRecognitionService.builder()
+                .extractor(new EigenfacesExtractor(5))
+                .classifier(new KNNClassifier())
+                .modelRepository(failing)
+                .config(new FaceRecognitionService.Config().setAutoSave(true)
+                        .setTargetWidth(SyntheticFaces.SIZE).setTargetHeight(SyntheticFaces.SIZE))
+                .build();
+        enroll(service, 0, IDENTITIES);
+
+        service.train();
+
+        assertThat(service.isTrained()).isTrue();
     }
 
     private FaceRecognitionService newService(FeatureExtractor extractor) {
