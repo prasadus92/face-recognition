@@ -2,9 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [main]
+    tags: ["v*"]
   pull_request:
-    branches: [master, main]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -15,120 +16,94 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  JAVA_VERSION: "25"
   MAVEN_OPTS: -Xmx1536m -Djava.awt.headless=true
 
 jobs:
   verify:
-    name: Verify (Java ${{ matrix.java }})
+    name: Verify (Java 25)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        java: ["17", "21"]
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
-          java-version: ${{ matrix.java }}
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: temurin
           cache: maven
 
-      - name: Maven verify (tests + Checkstyle + SpotBugs + JaCoCo)
-        run: mvn -B -ntp -Pci verify
+      - name: Maven verify (tests, Checkstyle, SpotBugs, JaCoCo)
+        run: ./mvnw -B -ntp -Pci verify
 
       - name: Upload coverage to Codecov
-        if: matrix.java == '17'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           files: target/site/jacoco/jacoco.xml
           fail_ci_if_error: false
 
-      - name: Upload JaCoCo HTML report
-        if: matrix.java == '17' && always()
-        uses: actions/upload-artifact@v4
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
-          name: jacoco-report
-          path: target/site/jacoco/
-          retention-days: 14
-
-      - name: Upload SpotBugs report
-        if: matrix.java == '17' && always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: spotbugs-report
-          path: target/spotbugsXml.xml
+          name: reports
+          path: |
+            target/site/jacoco/
+            target/spotbugsXml.xml
+            target/bom.*
           retention-days: 14
           if-no-files-found: ignore
 
-      - name: Upload CycloneDX SBOM
-        if: matrix.java == '17'
-        uses: actions/upload-artifact@v4
-        with:
-          name: sbom
-          path: target/bom.*
-          retention-days: 30
-          if-no-files-found: warn
-
-      - name: Upload Spring Boot jar
-        if: matrix.java == '17' && github.event_name == 'push'
-        uses: actions/upload-artifact@v4
-        with:
-          name: face-recognition-jar
-          path: target/face-recognition-*.jar
-          if-no-files-found: warn
-          retention-days: 30
-
   docker:
-    name: Docker image build
+    name: Docker image
     needs: verify
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@v4
 
-      - name: Build image (no push)
+      - name: Build image
         uses: docker/build-push-action@v7
         with:
           context: .
-          push: false
+          load: true
           tags: face-recognition:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test the container
+        run: |
+          docker run -d --name fr -p 8080:8080 face-recognition:ci
+          for _ in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/actuator/health/liveness; then exit 0; fi
+            sleep 2
+          done
+          docker logs fr
+          exit 1
 
   release:
     name: Release
     needs: [verify, docker]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
-          java-version: "17"
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: temurin
           cache: maven
 
       - name: Package release jars
-        run: mvn -B -ntp -DskipTests package
+        run: ./mvnw -B -ntp -DskipTests package
 
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v3
+      - uses: softprops/action-gh-release@v3
         with:
           files: |
             target/face-recognition-*.jar
             target/bom.json
             target/bom.xml
           generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

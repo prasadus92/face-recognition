@@ -1,0 +1,7 @@
+.git
+.github
+target
+data
+logs
+*.md
+!README.md
