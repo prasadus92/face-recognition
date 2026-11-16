@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest — contributions of all shapes (bug fixes, extractors, distance metrics, docs, benchmark datasets, deep-learning adapters) are very welcome.
+Thanks for your interest. Contributions of all shapes (bug fixes, extractors, distance metrics, docs, benchmark datasets, deep-learning adapters) are very welcome.
 
 By participating in this project you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
 
@@ -55,9 +55,9 @@ java -jar target/face-recognition-*-exec.jar --help
 
 ### IDE setup
 
-- **IntelliJ IDEA** — `File → Open` the project root; Maven is auto-detected. Enable annotation processing (Picocli + Spring Boot configuration metadata rely on it).
-- **VS Code** — install the `Extension Pack for Java` and open the project folder.
-- **Eclipse** — `File → Import → Maven → Existing Maven Projects`.
+- **IntelliJ IDEA**: `File → Open` the project root; Maven is auto-detected. Enable annotation processing (Picocli + Spring Boot configuration metadata rely on it).
+- **VS Code**: install the `Extension Pack for Java` and open the project folder.
+- **Eclipse**: `File → Import → Maven → Existing Maven Projects`.
 
 ## Branching and commits
 
@@ -69,17 +69,17 @@ java -jar target/face-recognition-*-exec.jar --help
   fix(persistence): guard against truncated model files
   docs(readme): correct quick-start command
   ```
-- Keep commits atomic — one reviewable idea each. Squash WIP commits before opening the PR.
+- Keep commits atomic: one reviewable idea each. Squash WIP commits before opening the PR.
 
 ## Coding standards
 
 - **Java 25** release target. Prefer records, pattern matching, `switch` expressions, `var` where it aids readability.
-- **4-space indent**, LF line endings, UTF-8, 120 char soft limit — enforced by Checkstyle and `.editorconfig`.
+- **4-space indent**, LF line endings, UTF-8, 120 char soft limit, enforced by Checkstyle and `.editorconfig`.
 - **K&R braces** on classes, methods and control structures (same-line opening brace).
 - Public types and methods in `domain` / `application` / `api` layers have Javadoc with `@param`, `@return`, `@throws` as appropriate.
-- **Clean-architecture dependency rule** — `domain` depends on nothing; `application` depends only on `domain`; `infrastructure` depends on `domain` (+ external libs); `api` composes the three. Don't introduce cycles.
+- **Clean-architecture dependency rule**: `domain` depends on nothing; `application` depends only on `domain`; `infrastructure` depends on `domain` (+ external libs); `api` composes the three. Don't introduce cycles.
 - Keep methods small and cohesive; prefer immutable data where practical.
-- **No `System.out.println`** — use SLF4J (`LoggerFactory.getLogger(MyClass.class)`).
+- **No `System.out.println`**: use SLF4J (`LoggerFactory.getLogger(MyClass.class)`).
 - **No swallowed exceptions.** Wrap, rethrow, or handle meaningfully.
 
 ## Testing
@@ -103,12 +103,12 @@ java -jar target/face-recognition-*-exec.jar benchmark DATASET   # run the bench
 
 `./mvnw -Pci verify` runs, and CI enforces:
 
-- **JUnit** — all tests pass
-- **JaCoCo** — line coverage must not drop below the configured floor (see `pom.xml`)
-- **Checkstyle** — style rules in `config/checkstyle/checkstyle.xml`
-- **SpotBugs** — static analysis, SpotBugs `HIGH` findings fail the build
-- **CycloneDX** — SBOM generation as a side-effect of `verify`
-- **CodeQL** — runs on every PR via GitHub Actions
+- **JUnit**: all tests pass
+- **JaCoCo**: line coverage must not drop below the configured floor (see `pom.xml`)
+- **Checkstyle**: style rules in `config/checkstyle/checkstyle.xml`
+- **SpotBugs**: static analysis, SpotBugs `HIGH` findings fail the build
+- **CycloneDX**: SBOM generation as a side-effect of `verify`
+- **CodeQL**: runs on every PR via GitHub Actions
 
 Please run `./mvnw -Pci verify` locally before pushing.
 
@@ -116,17 +116,17 @@ Please run `./mvnw -Pci verify` locally before pushing.
 
 1. Fork the repo and create your branch.
 2. Make your change, add tests, run `./mvnw -Pci verify`.
-3. Fill out the PR template — what changed, why, how it was tested.
+3. Fill out the PR template: what changed, why, how it was tested.
 4. Link the related issue (`Fixes #123`).
 5. Keep the PR scope focused; split unrelated changes into separate PRs.
-6. A maintainer will review. Please respond to feedback promptly and keep the thread civil — see the [Code of Conduct](CODE_OF_CONDUCT.md).
+6. A maintainer will review. Please respond to feedback promptly and keep the thread civil; see the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Where to start
 
-- Issues tagged `good first issue` — small, focused tickets.
-- Issues tagged `help wanted` — larger items where guidance is available.
+- Issues tagged `good first issue`: small, focused tickets.
+- Issues tagged `help wanted`: larger items where guidance is available.
 - Docs improvements: everything under `docs/`, `README.md`, `ROADMAP.md`.
-- Add a new **distance metric** — implement `DistanceMetric`, add a test, wire it through `application.yml`.
+- Add a new **distance metric**: add a value to `DistanceMetric`, add a test, wire it through `application.yml`.
 - Add a new **benchmark dataset** adapter under `benchmark/`.
 
 ## Security issues
@@ -135,4 +135,4 @@ Do **not** file public issues for security vulnerabilities. See [SECURITY.md](SE
 
 ---
 
-Thanks again — small contributions compound. If anything about the setup or process is unclear, open a Discussion and I'll fix the docs.
+Thanks again. If anything about the setup or process is unclear, open an issue and I will fix the docs.

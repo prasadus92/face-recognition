@@ -1,320 +1,206 @@
-<h1 align="center">Face Recognition</h1>
+# Face recognition for the JVM
 
-<p align="center">
-  <strong>A classical face-recognition library for the JVM — Eigenfaces, Fisherfaces, LBPH — wrapped in a Spring Boot REST API and a Picocli CLI.</strong>
-</p>
+[![CI](https://github.com/prasadus92/face-recognition/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/prasadus92/face-recognition/actions/workflows/build.yml)
+![Java 25](https://img.shields.io/badge/java-25-blue.svg)
+![Spring Boot 4.1](https://img.shields.io/badge/spring--boot-4.1-brightgreen.svg)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](License.txt)
 
-<p align="center">
-  <a href="https://github.com/prasadus92/face-recognition/actions/workflows/build.yml">
-    <img src="https://github.com/prasadus92/face-recognition/actions/workflows/build.yml/badge.svg?branch=main" alt="Build Status"/>
-  </a>
-  <a href="https://codecov.io/gh/prasadus92/face-recognition">
-    <img src="https://codecov.io/gh/prasadus92/face-recognition/branch/main/graph/badge.svg" alt="Code Coverage"/>
-  </a>
-  <img src="https://img.shields.io/badge/java-25-blue.svg" alt="Java 25"/>
-  <img src="https://img.shields.io/badge/spring--boot-4.1-brightgreen.svg" alt="Spring Boot 4.1"/>
-  <a href="License.txt">
-    <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"/>
-  </a>
-  <a href="https://github.com/prasadus92/face-recognition/stargazers">
-    <img src="https://img.shields.io/github/stars/prasadus92/face-recognition?style=social" alt="Stars"/>
-  </a>
-</p>
+Face recognition in plain Java: Eigenfaces, Fisherfaces and LBPH, a Haar face detector that gives the same answers as OpenCV, and one jar that runs as a REST API or as a command-line tool. No native libraries, no Python, no GPU.
 
-<p align="center">
-  <a href="#status">Status</a> ·
-  <a href="#quick-start">Quick Start</a> ·
-  <a href="#algorithms">Algorithms</a> ·
-  <a href="#rest-api">REST API</a> ·
-  <a href="#cli">CLI</a> ·
-  <a href="#benchmarks">Benchmarks</a> ·
-  <a href="#contributing">Contributing</a>
-</p>
+![The detect command boxing the 4 faces in the Artemis II crew portrait](docs/images/artemis-ii-crew-detected.jpg)
 
----
+<sub>`face-recognition detect docs/images/artemis-ii-crew.jpg --min-confidence 0.3 --annotate out.jpg` on the Artemis II crew portrait (NASA, public domain).</sub>
 
-## Status
+## What it does
 
-> **Actively maintained.** Originally released in 2014 as a university project (`TSCD` + Swing GUI); fully rewritten for v2 as a service-shaped library with clean-architecture layering, a REST/CLI surface, and a classical-vision pipeline. v2 is **not yet** published to Maven Central — install from source (see below). See [ROADMAP.md](ROADMAP.md) for what is landed vs. planned and [CHANGELOG.md](CHANGELOG.md) for recent changes.
+- **Finds faces** with OpenCV's frontal-face Haar cascade, evaluated in Java over an image pyramid. On the 400 AT&T/ORL photos it finds a face in 364 with 366 boxes, exactly as OpenCV 4.14 does, and returns OpenCV's box for the test portrait.
+- **Recognizes people** with 3 classical methods behind one `FeatureExtractor` interface: Eigenfaces (PCA), Fisherfaces (LDA) and local binary pattern histograms (LBPH).
+- **Says "unknown"** when it should. Confidence is calibrated on the enrolled photos, so the threshold separates a typical match from a typical stranger.
+- **Runs as a service or a tool.** The same jar serves a REST API with OpenAPI docs, health checks, Prometheus metrics, rate limiting and an optional API key, or runs `train`, `enroll`, `recognize`, `detect` and `benchmark` from the shell.
+- **Saves models you can restore.** A model file holds the fitted extractor, every identity and the training crops, so a restarted service recognizes immediately and can retrain. Files are read back behind a deserialization allowlist.
 
-This repository is a learning-friendly reference implementation of the classical face-recognition pipeline — not a competitor to `dlib`, OpenCV DNN, or modern CNN-based libraries. If you need state-of-the-art accuracy, bring a real model via the [Deep-learning backend](#deep-learning-backend-experimental).
+## Accuracy
 
-## Features
+Measured on the [AT&T Database of Faces](https://www.cl.cam.ac.uk/research/dtg/attarchive/facedatabase.html) (ORL): 400 photos of 40 people. Closed-set rank-1 accuracy, stratified cross-validation, seed 42, 40 components:
 
-- **Three classical feature extractors** — Eigenfaces (PCA), Fisherfaces (LDA), LBPH
-- **Pluggable** `FeatureExtractor` / `FaceClassifier` / `FaceDetector` interfaces
-- **Clean architecture** — `domain` / `application` / `infrastructure` / `api` layers
-- **REST API** with OpenAPI 3 / Swagger UI, request correlation IDs, validation, rate limiting, Prometheus metrics
-- **CLI** (Picocli) for `train`, `enroll`, `recognize`, `benchmark`
-- **Model persistence** — auto-save/auto-load + REST export/import
-- **Docker image** — multi-stage build, non-root user, container-aware JVM
-- **Experimental ONNX backend** scaffold for FaceNet/ArcFace-style embeddings (bring your own weights)
-
-## Status matrix
-
-| Capability | State | Notes |
-|---|---|---|
-| Eigenfaces extractor | Stable | PCA via JAMA |
-| Fisherfaces extractor | Stable | LDA on top of PCA |
-| LBPH extractor | Stable | Uniform LBP histograms, configurable grid |
-| KNN classifier | Stable | Euclidean / Cosine / Manhattan / Chi-square |
-| Haar cascade face detector | Experimental | Vendored stub; real cascade data required for production |
-| Face aligner (eye-centered affine) | Stable (opt-in) | Enabled via `facerecognition.image.face-alignment` |
-| Model persistence | Stable | `FileModelRepository` + `TrainedModel` |
-| REST + OpenAPI | Stable | `/api/v1/*` + `/swagger-ui.html` |
-| Prometheus / health / metrics | Stable | Micrometer + custom `ModelReadyHealthIndicator` |
-| Rate limiting | Stable | Per-IP token bucket (Bucket4j) |
-| CLI (picocli) | Stable | `train`, `enroll`, `recognize`, `benchmark` |
-| ONNX deep-learning extractor | Experimental scaffold | Bring your own model weights |
-| Published Maven artifact | Planned | Not yet on Central |
-
-## Quick Start
-
-### Prerequisites
-
-- JDK 25 (the Maven Wrapper downloads Maven 3.10.1)
-
-### Build
-
-```bash
-git clone https://github.com/prasadus92/face-recognition.git
-cd face-recognition
-./mvnw clean package
-```
-
-The build produces two jars in `target/`:
-- `face-recognition-<version>.jar` — library jar
-- `face-recognition-<version>-exec.jar` — Spring Boot executable (REST + CLI)
-
-### Run the REST API
-
-```bash
-java -jar target/face-recognition-*-exec.jar
-# → http://localhost:8080/swagger-ui.html
-# → http://localhost:8080/actuator/health
-```
-
-### Run the CLI
-
-```bash
-java -jar target/face-recognition-*-exec.jar --help
-java -jar target/face-recognition-*-exec.jar train faces/ -o model.frm -a lbph
-java -jar target/face-recognition-*-exec.jar enroll -m model.frm -n "Jane Doe" jane1.jpg jane2.jpg
-java -jar target/face-recognition-*-exec.jar recognize -m model.frm unknown.jpg
-```
-
-### Run with Docker
-
-```bash
-docker build -t face-recognition:latest .
-docker run --rm -p 8080:8080 -v "$PWD/data:/app/data" face-recognition:latest
-```
-
-### Use as a library
-
-```java
-import com.facerecognition.application.service.FaceRecognitionService;
-import com.facerecognition.infrastructure.extraction.EigenfacesExtractor;
-import com.facerecognition.infrastructure.classification.KNNClassifier;
-import com.facerecognition.domain.model.FaceImage;
-import com.facerecognition.domain.model.RecognitionResult;
-
-import java.io.File;
-
-FaceRecognitionService service = FaceRecognitionService.builder()
-    .extractor(new EigenfacesExtractor(10))
-    .classifier(new KNNClassifier())
-    .build();
-
-service.enrollFromFile(new File("john.jpg"), "John Doe");
-service.enrollFromFile(new File("jane.jpg"), "Jane Smith");
-service.train();
-
-RecognitionResult result = service.recognizeFromFile(new File("unknown.jpg"));
-result.getBestMatch().ifPresent(match ->
-    System.out.printf("%s (conf=%.2f)%n",
-        match.getIdentity().getName(), match.getConfidence()));
-```
-
-## Algorithms
-
-| Algorithm | Idea | Best for | Tradeoffs |
+| Algorithm | Distance | 10-fold (9 train / 1 test) | 2-fold (5 train / 5 test) |
 |---|---|---|---|
-| **Eigenfaces (PCA)** | Project faces onto principal components of training set. | Fast, controlled environments. | Sensitive to lighting and pose. |
-| **Fisherfaces (LDA)** | Maximize between-class / within-class scatter. | Varied lighting with ≥2 samples/identity. | Requires multiple labelled samples per identity. |
-| **LBPH** | Concatenate histograms of local binary patterns over a grid. | Texture-based matching under lighting changes. | Pose-sensitive; higher memory. |
+| Eigenfaces | Euclidean | 98.25% | 94.00% |
+| Fisherfaces | Euclidean | 96.50% | 94.00% |
+| LBPH | Euclidean | 98.00% | 92.25% |
+| LBPH | Chi-square | **99.00%** | **94.25%** |
 
-The classical extractors live under `com.facerecognition.infrastructure.extraction` and are selected declaratively via `application.yml` (`facerecognition.extraction.algorithm = eigenfaces | fisherfaces | lbph | onnx`) or programmatically via the service builder.
+With 20 people enrolled and 20 strangers, the default threshold of 0.6 accepts 10 of 200 stranger photos with Eigenfaces and none with Fisherfaces or LBPH, while matching 73, 68 and 58 of 100 genuine photos. Extracting features from one face crop and matching it against 280 photos takes 0.5 ms with Eigenfaces and 6 ms with LBPH on an Apple M1 Pro; detection adds about 13 ms for a 92x112 photo. Setup, fold deviations, latency and the open-set test are in [docs/benchmarks/orl.md](docs/benchmarks/orl.md). To reproduce every number:
 
-### Deep-learning backend (experimental)
+```bash
+scripts/benchmark-orl.sh
+```
 
-An `OnnxDeepFeatureExtractor` scaffold is included for running modern embedding networks (FaceNet, ArcFace, etc.) via ONNX Runtime. **It ships without model weights** — you must supply your own (`.onnx`) and configure the model path in `application.yml`. See `docs/onnx.md` (forthcoming) for the contract.
+ORL is small, frontal and well lit. These methods are a clear, inspectable baseline; for photos taken in the wild, modern embedding networks do far better (see the [roadmap](ROADMAP.md)).
+
+## Quickstart
+
+With Docker:
+
+```bash
+docker build -t face-recognition .
+docker run --rm -p 8080:8080 -v "$PWD/data:/app/data" face-recognition
+```
+
+From source, with JDK 25 (the Maven Wrapper fetches Maven):
+
+```bash
+./mvnw -DskipTests package
+java -jar target/face-recognition-*-exec.jar
+```
+
+Then open <http://localhost:8080/swagger-ui.html>. The model is saved to `data/models/default.frm` after every training run and loaded again at startup.
 
 ## REST API
 
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/api/v1/enroll` | POST multipart | Register a face sample for a name |
-| `/api/v1/recognize` | POST multipart | Identify a face in an uploaded image |
-| `/api/v1/train` | POST | Train / retrain on all enrolled samples |
-| `/api/v1/identities` | GET | List enrolled identities (paginated) |
-| `/api/v1/identities/{id}` | GET / PATCH / DELETE | Read, update, soft-delete an identity |
-| `/api/v1/model/status` | GET | Model state, algorithm, identity counts |
-| `/api/v1/model/export` | POST | Download a serialized `TrainedModel` |
-| `/api/v1/model/import` | POST multipart | Load a previously exported model |
-| `/actuator/health` | GET | Liveness + custom `model-ready` indicator |
-| `/actuator/prometheus` | GET | Micrometer metrics in Prometheus format |
-| `/swagger-ui.html` | GET | Interactive OpenAPI 3 docs |
+Enroll a few photos per person, train, then recognize:
 
-Every response that represents an error uses the [`ErrorResponse`](src/main/java/com/facerecognition/api/rest/dto/ErrorResponse.java) shape and carries a `traceId` (echoed from the `X-Request-ID` request header or generated if absent).
-
-### Security and limits
-
-- **Rate limit**: per-IP token bucket (default 60 req/min, configurable via `facerecognition.ratelimit.*`).
-- **Upload limit**: `spring.servlet.multipart.max-file-size` (10 MB default).
-- **CORS**: disabled by default; enable via `facerecognition.cors.*`.
-- **Authentication**: no auth by default. Deploy behind an API gateway / reverse proxy, or enable the optional API-key filter (`facerecognition.security.api-key`).
-
-## CLI
-
-```text
-Usage: face-recognition [-h] [COMMAND]
-Train, enroll, recognize and benchmark from the command line.
-Run without a command to start the REST API.
-Commands:
-  train      Train a model from DATASET/<person>/<image> and write it to a file.
-  enroll     Add face images of one person to a model and retrain it.
-  recognize  Identify the person in each image, or in every image under a
-               folder.
-  benchmark  Measure accuracy and speed of the algorithms on a labeled dataset.
-  help       Display help information about the specified command.
+```bash
+curl -F image=@ann-1.jpg -F name="Ann" http://localhost:8080/api/v1/enroll
+curl -F image=@ann-2.jpg -F name="Ann" http://localhost:8080/api/v1/enroll
+curl -X POST http://localhost:8080/api/v1/train
+curl -F image=@probe.jpg -F maxAlternatives=1 http://localhost:8080/api/v1/recognize
 ```
 
-The CLI treats images as face crops. Add `--detect` to detect and crop the largest face first, and use the same setting for every command on a model.
+A recognition response for an ORL photo against a gallery of 3 people, trimmed to the main fields:
+
+```json
+{
+  "status": "RECOGNIZED",
+  "recognized": true,
+  "bestMatch": { "name": "Person 2", "confidence": 0.9996, "distance": 0.265 },
+  "alternatives": [ { "name": "Person 1", "confidence": 0.0426, "distance": 1.293 } ],
+  "metrics": { "detectionTimeMs": 11, "extractionTimeMs": 1, "matchingTimeMs": 2, "totalTimeMs": 14 }
+}
+```
+
+`threshold` (0 to 1) and `maxAlternatives` override the configured values per request. Statuses are `RECOGNIZED`, `UNKNOWN` (nobody passed the threshold) and `NO_FACE_DETECTED`.
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/v1/enroll` | Add a photo of a person (multipart `image`, `name`, optional `externalId`) |
+| `POST /api/v1/train` | Fit the extractor on every enrolled photo |
+| `POST /api/v1/recognize` | Identify the largest face in a photo |
+| `GET /api/v1/identities`, `GET`, `PATCH`, `DELETE /api/v1/identities/{id}` | List, read, rename or soft-delete people |
+| `GET /api/v1/model/status` | Algorithm, people, photos, readiness |
+| `POST /api/v1/model/export`, `POST /api/v1/model/import` | Download or upload a model file |
+| `GET /actuator/health`, `/actuator/prometheus` | Liveness, readiness, model state and metrics |
+
+![Swagger UI for the Face Recognition API](docs/images/swagger-ui.png)
+
+Errors share one JSON shape with a `traceId` that matches the `X-Request-ID` header and every log line of the request. Requests are rate limited per client IP (60 per minute by default), uploads are capped at 10 MB, and setting `facerecognition.security.api-key` requires an `X-API-Key` header.
+
+## Command line
+
+Run the jar with a command instead of starting the server. Photos are treated as face crops unless you add `--detect`; use the same setting for every command on a model.
+
+```console
+$ java -jar target/face-recognition-*-exec.jar train faces/ -o people.frm
+Trained Eigenfaces on 15 images of 3 people in 496 ms. Model: people.frm
+
+$ java -jar target/face-recognition-*-exec.jar recognize -m people.frm probes/
+probes/person-1.png	person-1	0.979
+probes/person-2.png	person-2	0.998
+probes/person-3.png	person-3	0.985
+
+$ java -jar target/face-recognition-*-exec.jar enroll -m people.frm -n "person-4" new/*.png
+Enrolled 3 images of person-4. The model now knows 4 people.
+
+$ java -jar target/face-recognition-*-exec.jar detect portrait.png
+portrait.png	95,88,116,116	1.00
+```
+
+`train` expects one folder per person (`faces/<name>/<photo>`) and reads JPEG, PNG, BMP, GIF and PGM. `recognize` and `detect` take files or folders and can print `--json`. `benchmark DATASET --format orl` runs the accuracy harness. Each command has `--help`.
+
+A gallery of 3 people gives the confidence calibration little to learn from, so expect some strangers to pass at the default threshold; the open-set numbers above use 20.
+
+## How it works
+
+![Detect, crop, extract, match](docs/images/pipeline.svg)
+
+1. **Detect.** The image is converted to grayscale and resized into a pyramid. At each level the 24x24 Haar cascade slides across it; each weak classifier compares a weighted sum of rectangles, read from an integral image, with its threshold scaled by the window's standard deviation. Overlapping hits are grouped as `cv::groupRectangles` does.
+2. **Crop.** The largest face is padded by 10%, cropped and resized to a 100x100 grayscale image. Without a detector (the CLI default) the whole image is the crop.
+3. **Extract.**
+   - Eigenfaces projects the crop onto the principal components of the training set (Turk and Pentland, 1991).
+   - Fisherfaces applies PCA, then the linear discriminant that best separates the enrolled people (Belhumeur, Hespanha and Kriegman, 1997).
+   - LBPH splits the crop into an 8x8 grid and concatenates a histogram of local binary patterns per cell (Ahonen, Hadid and Pietikainen, 2006).
+4. **Match.** The probe goes to the person with the nearest enrolled photo. Confidence is a logistic curve calibrated on the gallery. A probe as close as a typical photo of the same person scores about 0.98; one as far as the typical nearest other person scores about 0.02.
 
 ## Configuration
 
-All runtime settings live in `src/main/resources/application.yml` and can be overridden via environment variables (`FACERECOGNITION_EXTRACTION_ALGORITHM=lbph`) or a custom `application.yml` passed to `--spring.config.location`. Core keys:
+Everything lives in [`application.yml`](src/main/resources/application.yml) and can be overridden with environment variables such as `FACERECOGNITION_EXTRACTION_ALGORITHM=LBPH`:
 
 ```yaml
 facerecognition:
   detection:
+    type: HAAR_CASCADE          # HAAR_CASCADE | SKIN_COLOR
     min-face-size: 30
-    min-confidence: 0.5
   extraction:
-    algorithm: eigenfaces      # eigenfaces | fisherfaces | lbph | onnx
+    algorithm: EIGENFACES       # EIGENFACES | FISHERFACES | LBPH
     num-components: 10
-    onnx:
-      model-path: ""           # path to a .onnx model for the deep backend
   classification:
-    algorithm: knn
-    k-neighbors: 3
-    distance-metric: euclidean # euclidean | cosine | manhattan | chi_square
+    distance-metric: EUCLIDEAN  # EUCLIDEAN | COSINE | MANHATTAN | CHI_SQUARE
   recognition:
     threshold: 0.6
-  quality:
-    min-score: 0.3
-  image:
-    target-width: 100
-    target-height: 100
-    face-alignment: true
   model:
-    auto-save: true
-    auto-load: true
     save-path: data/models/default.frm
-  ratelimit:
-    enabled: true
-    requests-per-minute: 60
 ```
 
-## Benchmarks
+## Use as a library
 
-> **Honest disclaimer.** The numbers currently checked into [docs/benchmarks/](docs/benchmarks/) come from the bundled micro-dataset (`src/test/resources/datasets/mini/`) and are not directly comparable to LFW or Yale B. Classical algorithms on aligned frontal faces typically land in the 80–95% range depending on dataset; don't expect deep-learning-level accuracy.
+```java
+FaceRecognitionService service = FaceRecognitionService.builder()
+        .detector(new HaarCascadeFaceDetector())
+        .extractor(new EigenfacesExtractor(40))
+        .classifier(new KNNClassifier())
+        .build();
 
-Run the benchmark suite locally:
+service.enrollFromFile(new File("ann-1.jpg"), "Ann");
+service.enrollFromFile(new File("ann-2.jpg"), "Ann");
+service.enrollFromFile(new File("bo-1.jpg"), "Bo");
+service.enrollFromFile(new File("bo-2.jpg"), "Bo");
+service.train();
 
-```bash
-java -jar target/face-recognition-*-exec.jar benchmark data/orl --format orl \
-    --type cross_validation --folds 10 -o benchmark-results
+service.recognizeFromFile(new File("probe.jpg")).getBestMatch()
+        .ifPresent(match -> System.out.printf("%s (%.2f)%n",
+                match.getIdentity().getName(), match.getConfidence()));
+
+Files.write(Path.of("people.frm"), service.exportModel());
 ```
-
-The benchmark harness lives under `com.facerecognition.benchmark` and reports top-1 accuracy, per-stage latency, and confusion matrices as JSON / Markdown.
-
-## Observability
-
-- **Logs** — structured via Logback, per-request `traceId` via MDC; file appender rolls daily with 1 GB cap.
-- **Metrics** — custom Micrometer timers `facerecognition.detect`, `facerecognition.extract`, `facerecognition.match`, `facerecognition.recognize.total`; counters for recognitions / enrollments / errors.
-- **Health** — `/actuator/health` exposes a custom `model-ready` component reflecting `FaceRecognitionService#isTrained()`.
-- **Tracing** — propagate `X-Request-ID` from your upstream and it will appear in every log line and response body.
 
 ## Project layout
 
-```
-face-recognition/
-├── src/
-│   ├── main/
-│   │   ├── java/com/facerecognition/
-│   │   │   ├── FaceRecognitionApplication.java     # Spring Boot entry point
-│   │   │   ├── config/                             # @ConfigurationProperties + bean factories
-│   │   │   ├── domain/                             # Pure domain model + service interfaces
-│   │   │   │   ├── model/
-│   │   │   │   └── service/
-│   │   │   ├── application/service/                # Orchestrator (FaceRecognitionService)
-│   │   │   ├── infrastructure/
-│   │   │   │   ├── classification/
-│   │   │   │   ├── detection/
-│   │   │   │   ├── extraction/
-│   │   │   │   ├── persistence/
-│   │   │   │   └── preprocessing/
-│   │   │   ├── api/
-│   │   │   │   ├── rest/                           # Controllers, DTOs, advice, filters
-│   │   │   │   └── cli/                            # Picocli commands
-│   │   │   └── benchmark/                          # Accuracy + performance harness
-│   │   └── resources/
-│   │       ├── application.yml
-│   │       └── logback-spring.xml
-│   └── test/java/com/facerecognition/              # Unit + integration tests
-├── docs/
-│   ├── architecture.md
-│   ├── benchmarks/
-│   └── onnx.md
-├── .github/
-│   ├── workflows/                                  # CI, CodeQL, Dependabot, release
-│   ├── ISSUE_TEMPLATE/
-│   └── PULL_REQUEST_TEMPLATE.md
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-├── CODE_OF_CONDUCT.md
-├── SECURITY.md
-├── ROADMAP.md
-├── Dockerfile
-└── pom.xml
+```text
+src/main/java/com/facerecognition/
+  domain/          FaceImage, Identity, FeatureVector and the detector, extractor and classifier interfaces
+  application/     FaceRecognitionService: enrollment, training, recognition, model export and import
+  infrastructure/  Haar detector, Eigenfaces, Fisherfaces, LBPH, nearest-neighbor classifier, model files
+  config/          the factory and Spring auto-configuration that build the pipeline from application.yml
+  api/rest/        controllers, DTOs, filters, health and metrics
+  api/cli/         picocli commands
+  benchmark/       accuracy, cross-validation and latency harness
 ```
 
-## Contributing
+## Development
 
-Contributions are very welcome — bug fixes, extractors, distance metrics, deep-learning adapters, documentation. Start with [CONTRIBUTING.md](CONTRIBUTING.md), which covers the development loop, coding standards, and how to run the full test + quality-gate suite locally. Please also read the [Code of Conduct](CODE_OF_CONDUCT.md).
+```bash
+./mvnw -Pci verify
+```
 
-## Security
+That runs the unit and integration tests, Checkstyle, SpotBugs and the JaCoCo coverage floor, which is what CI runs on every pull request alongside CodeQL and a Docker build that starts the container and checks its health. See [CONTRIBUTING.md](CONTRIBUTING.md), and [CLAUDE.md](CLAUDE.md) for coding agents.
 
-Report vulnerabilities privately — see [SECURITY.md](SECURITY.md). Do **not** file public issues for security bugs.
+## Credits
 
-## References
-
-This implementation builds on foundational papers:
-
-1. Turk, M. & Pentland, A. (1991). *Eigenfaces for Recognition.*
-2. Belhumeur, P. N., Hespanha, J. P. & Kriegman, D. J. (1997). *Eigenfaces vs. Fisherfaces: Recognition Using Class Specific Linear Projection.*
-3. Ahonen, T., Hadid, A. & Pietikäinen, M. (2006). *Face Description with Local Binary Patterns.*
-4. Schroff, F., Kalenichenko, D. & Philbin, J. (2015). *FaceNet: A Unified Embedding for Face Recognition and Clustering.*
-5. Deng, J., Guo, J., Xue, N. & Zafeiriou, S. (2019). *ArcFace: Additive Angular Margin Loss for Deep Face Recognition.*
+- The face database is courtesy of AT&T Laboratories Cambridge.
+- The Haar cascade is OpenCV's `haarcascade_frontalface_default.xml` (BSD license; see [NOTICE](NOTICE)).
+- The Artemis II crew photo and the test portrait are NASA images in the public domain. Their use implies no NASA endorsement.
+- Built on Spring Boot, picocli, JAMA, Micrometer, Bucket4j and springdoc-openapi.
 
 ## License
 
-Licensed under the **Apache License, Version 2.0** — see [License.txt](License.txt). The project was originally released under the GNU General Public License v3.0 in 2014 and was relicensed to Apache 2.0 in April 2026; the `License.txt` file explains the transition in full.
-
-## Acknowledgements
-
-- [JAMA](https://math.nist.gov/javanumerics/jama/) for numerical linear algebra.
-- [Spring Boot](https://spring.io/projects/spring-boot), [picocli](https://picocli.info/), [Micrometer](https://micrometer.io/), [Bucket4j](https://bucket4j.com/), [springdoc-openapi](https://springdoc.org/).
-- Maintainer: **[Prasad Subrahmanya](https://github.com/prasadus92)** · prasadus92@gmail.com
+[Apache License 2.0](License.txt). Written by [Prasad Subrahmanya](https://github.com/prasadus92).

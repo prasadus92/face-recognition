@@ -41,7 +41,7 @@ body:
     id: version
     attributes:
       label: face-recognition version
-      placeholder: "2.1.0 / master@<sha>"
+      placeholder: "2.1.0 / main@<sha>"
     validations:
       required: true
   - type: input
@@ -70,5 +70,5 @@ body:
       options:
         - label: I searched existing issues and Discussions for duplicates.
           required: true
-        - label: I can reproduce this on `master` (not just an older release).
+        - label: I can reproduce this on `main` (not just an older release).
           required: false
