@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `detect` CLI command: prints face boxes (text or `--json`) for files and folders, or saves a copy of one image with every face boxed (`--annotate`).
+
+### Removed
+- The ONNX extractor. It was a stub that threw on every call; `extraction.algorithm: ONNX` and the `extraction.onnx.*` settings are gone.
+- `bkd.png`, an unused background from the 2014 Swing GUI, and `face.png`, a test image of unknown origin. The detector's fixture is now a public-domain NASA portrait (`portrait.png`).
+
 ### Fixed
+- `sampleCount` in the enroll and identity responses, and `totalSampleCount` in the model status, count enrolled images. They counted feature vectors, which only exist after training, so they read 0 until the first training and lagged after it. The enroll response no longer carries a `sampleId`, which pointed at a training vector rather than the image just enrolled.
 - The Haar face detector, the REST API's default, works. It scaled each Haar rectangle with independent rounding, which read past the integral image (an `ArrayIndexOutOfBoundsException`, so HTTP 500, on images such as the bundled fixture at 375x300) and, where it did not crash, let the window mean leak into the features: it found a face in 25 of the 400 AT&T/ORL images. It now runs the cascade over an image pyramid and groups hits with a port of `cv::groupRectangles`, as OpenCV does, and matches OpenCV 4.14 exactly on ORL: a face in 364 of the 400 images, 366 regions. A face now needs more than `min-neighbours` supporting hits, as in OpenCV (it used to be at least that many). The finest level is at most 1024 pixels on its longest side, so a 4096-pixel photo takes about 2.7 s instead of 25 s, with a proportionally larger smallest detectable face.
 - `POST /api/v1/recognize` honors its `threshold` and `maxAlternatives` parameters. Both were documented and ignored. Without them the configured `recognition.threshold` and `recognition.max-alternatives` apply; the latter was read by nothing before. A threshold outside 0 to 1 (or NaN) or a negative limit returns 400. The classifier reports at most `classification.k-neighbors` minus 1 runners-up for a match.
 - A malformed LFW `pairs.txt` line raises an `IOException` naming the line instead of a bare `NumberFormatException`.
@@ -43,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PGM images larger than 4096 pixels per side, or with samples above their declared maximum, are rejected before allocation.
 - The CLI logs warnings to stderr, so `recognize --json` output stays parseable. `--version` reads the jar manifest.
 - The log line for a service built without a face detector drops from WARN to INFO.
-- The unused `bkd.png` (a background from the 2014 Swing GUI) is gone, and `face.png` moved to test resources, so neither ships in the jar.
+- Swagger UI no longer lists the Actuator endpoints.
 - Benchmark reports use Jackson 3. The `jackson-datatype-jsr310` and `picocli-spring-boot-starter` dependencies are gone.
 
 ## [2.1.0]

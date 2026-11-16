@@ -17,7 +17,6 @@ A living document describing where the project is today, what is actively being 
 | Request correlation (MDC) + rate limiting | Stable |
 | Benchmark harness on bundled micro-dataset | Stable |
 | Haar-cascade face detector (real cascade data) | `help wanted` |
-| ONNX deep-learning backend (model-agnostic) | Experimental scaffold |
 | Publication to Maven Central | Planned |
 | JavaDoc hosted on `javadoc.io` | Planned |
 | Hosted demo (Render / Fly) | Planned |
@@ -36,7 +35,6 @@ Goals: make every claim in the README true, close the biggest correctness and ob
 - [x] Auto-save/auto-load model persistence + REST export/import
 - [x] Request-ID filter + MDC, per-stage Micrometer timers, `ModelReadyHealthIndicator`
 - [x] Per-IP Bucket4j rate limiter
-- [x] Experimental `OnnxDeepFeatureExtractor` scaffold (no bundled weights)
 - [x] Repo hygiene: delete dead Java-3D / JAI scaffolding, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue forms, CODEOWNERS, `.editorconfig`
 - [x] CI: remove `continue-on-error`, add Checkstyle + SpotBugs + JaCoCo threshold, Dependabot, CodeQL, CycloneDX SBOM
 - [x] REST integration tests via MockMvc + concurrency tests
@@ -50,9 +48,8 @@ Goals: make every claim in the README true, close the biggest correctness and ob
 
 ### 2.3 — Real deep-learning backend
 
-- [ ] Finish `OnnxDeepFeatureExtractor` with a recommended free-to-use model (e.g. FaceNet-v2 or InsightFace's `buffalo_s`) under a clear licence, downloaded at first run
+- [ ] A face-embedding extractor (ONNX Runtime) with a model whose license allows redistribution, behind the existing `FeatureExtractor` interface
 - [ ] Cosine-similarity scoring path optimized for 128/512-d embeddings
-- [ ] GPU execution-provider selection (`facerecognition.extraction.onnx.provider: cpu|cuda|directml|coreml`)
 - [ ] Reproducible LFW / CFP-FP / AgeDB-30 benchmark runs in CI (optional profile)
 
 ### 2.4 — Distributed / multi-instance
@@ -81,6 +78,6 @@ Goals: make every claim in the README true, close the biggest correctness and ob
 
 - **Good first issues** are tagged on GitHub. Start with docs, additional distance metrics, or extra benchmark datasets.
 - **Medium tickets**: Haar cascade detector, new extractor implementations, persistence backends.
-- **Hard tickets**: ONNX + deep-learning pipeline, vector store integration.
+- **Hard tickets**: a face-embedding extractor, vector store integration.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and coding conventions.

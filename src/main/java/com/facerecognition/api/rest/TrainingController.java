@@ -3,7 +3,6 @@ package com.facerecognition.api.rest;
 import com.facerecognition.api.rest.dto.ErrorResponse;
 import com.facerecognition.api.rest.dto.ModelStatusDto;
 import com.facerecognition.application.service.FaceRecognitionService;
-import com.facerecognition.domain.model.Identity;
 import com.facerecognition.domain.service.FeatureExtractor;
 import com.facerecognition.infrastructure.persistence.InvalidModelException;
 
@@ -296,12 +295,7 @@ public class TrainingController {
 
         status.setIdentityCount(identityCount);
 
-        // Count total samples
-        int totalSamples = 0;
-        for (Identity identity : faceRecognitionService.getIdentities()) {
-            totalSamples += identity.getSampleCount();
-        }
-        status.setTotalSampleCount(totalSamples);
+        status.setTotalSampleCount(faceRecognitionService.getEnrolledImageCount());
 
         // Get algorithm info
         FeatureExtractor extractor = faceRecognitionService.getExtractor();

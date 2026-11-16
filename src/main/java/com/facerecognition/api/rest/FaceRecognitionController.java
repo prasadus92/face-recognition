@@ -222,15 +222,12 @@ public class FaceRecognitionController {
 
         Identity identity = faceRecognitionService.enroll(faceImage, name.trim(), externalId);
 
-        // Get the latest sample ID
-        String sampleId = identity.getSamples().isEmpty() ? null :
-                identity.getSamples().get(identity.getSamples().size() - 1).getSampleId();
-
-        EnrollmentResponse response = EnrollmentResponse.success(identity, sampleId, qualityScore);
+        EnrollmentResponse response = EnrollmentResponse.success(
+                identity, faceRecognitionService.getEnrolledImageCount(identity.getId()), qualityScore);
         metrics.recordEnrollment();
 
         logger.info("Enrollment completed: identityId={}, name={}, sampleCount={}",
-                identity.getId(), LogValues.safe(identity.getName()), identity.getSampleCount());
+                identity.getId(), LogValues.safe(identity.getName()), response.getSampleCount());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -301,7 +298,7 @@ public class FaceRecognitionController {
 
         List<IdentityDto> result = identities.stream()
                 .filter(identity -> !Boolean.TRUE.equals(activeOnly) || identity.isActive())
-                .map(IdentityDto::summary)
+                .map(identity -> withImageCount(IdentityDto.summary(identity)))
                 .collect(Collectors.toList());
 
         logger.debug("Returning {} identities", result.size());
@@ -343,7 +340,7 @@ public class FaceRecognitionController {
             throw new IdentityNotFoundException(id);
         }
 
-        IdentityDto response = IdentityDto.fromDomain(identity);
+        IdentityDto response = withImageCount(IdentityDto.fromDomain(identity));
 
         return ResponseEntity.ok(response);
     }
@@ -404,7 +401,7 @@ public class FaceRecognitionController {
             identity.setActive(active);
         }
 
-        IdentityDto response = IdentityDto.fromDomain(identity);
+        IdentityDto response = withImageCount(IdentityDto.fromDomain(identity));
 
         logger.info("Identity updated: id={}, name={}", identity.getId(), LogValues.safe(identity.getName()));
 
@@ -419,6 +416,12 @@ public class FaceRecognitionController {
                 .filter(identity -> identity.getId().equals(id))
                 .findFirst()
                 .orElse(null);
+    }
+
+    /** Reports enrolled images, which exist before training, rather than trained feature vectors. */
+    private IdentityDto withImageCount(IdentityDto dto) {
+        dto.setSampleCount(faceRecognitionService.getEnrolledImageCount(dto.getId()));
+        return dto;
     }
 
     /**

@@ -5,7 +5,6 @@ import com.facerecognition.domain.service.FeatureExtractor;
 import com.facerecognition.infrastructure.extraction.EigenfacesExtractor;
 import com.facerecognition.infrastructure.extraction.FisherfacesExtractor;
 import com.facerecognition.infrastructure.extraction.LBPHExtractor;
-import com.facerecognition.infrastructure.extraction.OnnxDeepFeatureExtractor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -63,8 +62,7 @@ public final class ModelCodec {
             FeatureExtractor.ExtractorConfig.class.getName(),
             EigenfacesExtractor.class.getName(),
             FisherfacesExtractor.class.getName(),
-            LBPHExtractor.class.getName(),
-            OnnxDeepFeatureExtractor.class.getName());
+            LBPHExtractor.class.getName());
 
     private ModelCodec() {
     }

@@ -336,7 +336,7 @@ public class RecognitionResult implements Serializable {
      * @return unmodifiable list of alternatives
      */
     public List<MatchResult> getAlternatives() {
-        return alternatives;
+        return Collections.unmodifiableList(alternatives);
     }
 
     /**

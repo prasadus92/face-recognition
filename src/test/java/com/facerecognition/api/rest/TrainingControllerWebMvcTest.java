@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -49,6 +50,16 @@ class TrainingControllerWebMvcTest {
         when(service.getClassifier()).thenReturn(new KNNClassifier());
         when(service.getConfig()).thenReturn(new FaceRecognitionService.Config());
         when(service.getIdentities()).thenReturn(List.of());
+    }
+
+    @Test
+    @DisplayName("GET /model/status counts enrolled images, which exist before training")
+    void statusCountsEnrolledImages() throws Exception {
+        when(service.getEnrolledImageCount()).thenReturn(7);
+
+        mvc.perform(get("/api/v1/model/status"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalSampleCount").value(7));
     }
 
     @Test
