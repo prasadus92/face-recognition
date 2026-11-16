@@ -7,6 +7,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -71,7 +73,7 @@ public class FaceRecognitionService {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private volatile boolean trained;
 
-    /** In-flight training sample — held in-memory until {@link #train()} is called. */
+    /** A preprocessed grayscale crop kept for retraining and persisted with the model. */
     private record TrainingSample(String identityId, FaceImage crop) {
     }
 
@@ -187,7 +189,7 @@ public class FaceRecognitionService {
     public Identity enroll(FaceImage image, String identityName, String externalId) {
         Objects.requireNonNull(image, "Image cannot be null");
         Objects.requireNonNull(identityName, "Identity name cannot be null");
-        FaceImage crop = preprocessForTraining(image).toGrayscale();
+        FaceImage crop = preprocessForTraining(image);
 
         lock.writeLock().lock();
         try {
@@ -234,7 +236,7 @@ public class FaceRecognitionService {
 
             extractor.reset();
             extractor.train(faces, labels);
-            rebuildGallery();
+            applyGallery(extractGallery(extractor, trainingSamples));
 
             log.info("Training complete: identities={} samples={}", identities.size(), faces.size());
             if (config.isAutoSave()) {
@@ -245,16 +247,26 @@ public class FaceRecognitionService {
         }
     }
 
-    private void rebuildGallery() {
+    private static Map<String, List<FeatureVector>> extractGallery(FeatureExtractor fittedExtractor,
+                                                                  List<TrainingSample> samples) {
+        Map<String, List<FeatureVector>> gallery = new HashMap<>();
+        for (TrainingSample sample : samples) {
+            gallery.computeIfAbsent(sample.identityId(), id -> new ArrayList<>())
+                    .add(fittedExtractor.extract(sample.crop()));
+        }
+        return gallery;
+    }
+
+    private void applyGallery(Map<String, List<FeatureVector>> gallery) {
         classifier.clear();
-        identities.values().forEach(Identity::clearSamples);
-        for (TrainingSample sample : trainingSamples) {
-            Identity identity = identities.get(sample.identityId());
-            if (identity != null) {
-                identity.enrollSample(extractor.extract(sample.crop()), 1.0, "training");
+        for (Identity identity : identities.values()) {
+            identity.clearSamples();
+            gallery.getOrDefault(identity.getId(), List.of())
+                    .forEach(features -> identity.enrollSample(features, 1.0, "training"));
+            if (identity.hasSamples()) {
+                classifier.enroll(identity);
             }
         }
-        identities.values().stream().filter(Identity::hasSamples).forEach(classifier::enroll);
         trained = true;
     }
 
@@ -347,7 +359,8 @@ public class FaceRecognitionService {
     }
 
     /**
-     * Replaces all state with a model produced by {@link #exportModel()}.
+     * Replaces all state with a model produced by {@link #exportModel()}. The model's extractor
+     * replaces the configured one. On failure the current state is left untouched.
      *
      * @param data the encoded model
      * @throws InvalidModelException if the data is not a valid model
@@ -357,9 +370,12 @@ public class FaceRecognitionService {
         lock.writeLock().lock();
         try {
             restore(model);
+        } catch (RuntimeException e) {
+            throw new InvalidModelException("Model file could not be restored", e);
         } finally {
             lock.writeLock().unlock();
         }
+        log.info("Imported a {} model with {} identities", extractor.getAlgorithmName(), identities.size());
     }
 
     /**
@@ -383,27 +399,35 @@ public class FaceRecognitionService {
                 .map(s -> new TrainedModel.FaceSample(
                         s.identityId(), s.crop().getWidth(), s.crop().getHeight(), s.crop().toGrayscaleBytes()))
                 .toList();
-        return new TrainedModel(extractor, records, samples, Instant.now());
+        return new TrainedModel(extractor, trained, records, samples, Instant.now());
     }
 
     private void restore(TrainedModel model) {
-        identities.clear();
-        trainingSamples.clear();
-        classifier.clear();
-        trained = false;
+        Map<String, Identity> restoredIdentities = new LinkedHashMap<>();
         for (TrainedModel.IdentityRecord record : model.identities()) {
             Identity identity = new Identity(record.id(), record.name(), record.externalId());
             identity.setActive(record.active());
             record.metadata().forEach(identity::setMetadata);
-            identities.put(identity.getId(), identity);
+            restoredIdentities.put(identity.getId(), identity);
         }
-        for (TrainedModel.FaceSample sample : model.samples()) {
-            trainingSamples.add(new TrainingSample(sample.identityId(),
-                    FaceImage.fromGrayscale(sample.width(), sample.height(), sample.pixels())));
-        }
+        List<TrainingSample> restoredSamples = model.samples().stream()
+                .map(sample -> new TrainingSample(sample.identityId(),
+                        FaceImage.fromGrayscale(sample.width(), sample.height(), sample.pixels())))
+                .toList();
+        Map<String, List<FeatureVector>> gallery = model.trained()
+                ? extractGallery(model.extractor(), restoredSamples)
+                : Map.of();
+
+        identities.clear();
+        identities.putAll(restoredIdentities);
+        trainingSamples.clear();
+        trainingSamples.addAll(restoredSamples);
         extractor = model.extractor();
-        if (extractor.isTrained()) {
-            rebuildGallery();
+        if (model.trained()) {
+            applyGallery(gallery);
+        } else {
+            classifier.clear();
+            trained = false;
         }
     }
 
@@ -413,7 +437,7 @@ public class FaceRecognitionService {
         }
         try {
             saveModel();
-        } catch (IOException e) {
+        } catch (IOException | IllegalStateException e) {
             log.warn("Auto-save failed: {}", e.getMessage());
         }
     }
@@ -478,7 +502,7 @@ public class FaceRecognitionService {
                 || cropped.getHeight() != config.getTargetHeight()) {
             cropped = cropped.resize(config.getTargetWidth(), config.getTargetHeight());
         }
-        return cropped;
+        return cropped.toGrayscale();
     }
 
     private FaceImage cropToRegion(FaceImage image, FaceRegion region) {

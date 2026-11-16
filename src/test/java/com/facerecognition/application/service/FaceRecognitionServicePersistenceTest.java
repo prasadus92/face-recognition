@@ -8,6 +8,9 @@ import com.facerecognition.infrastructure.extraction.EigenfacesExtractor;
 import com.facerecognition.infrastructure.extraction.FisherfacesExtractor;
 import com.facerecognition.infrastructure.extraction.LBPHExtractor;
 import com.facerecognition.infrastructure.persistence.FileModelRepository;
+import com.facerecognition.infrastructure.persistence.InvalidModelException;
+import com.facerecognition.infrastructure.persistence.ModelCodec;
+import com.facerecognition.infrastructure.persistence.TrainedModel;
 import com.facerecognition.infrastructure.persistence.ModelRepository;
 import com.facerecognition.testing.SyntheticFaces;
 
@@ -19,10 +22,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("FaceRecognitionService persistence")
 class FaceRecognitionServicePersistenceTest {
@@ -123,6 +131,101 @@ class FaceRecognitionServicePersistenceTest {
         assertThat(restarted.isTrained()).isFalse();
         restarted.train();
         assertThat(bestName(restarted.recognize(SyntheticFaces.face(1, 99)))).isEqualTo("person-1");
+    }
+
+    @Test
+    @DisplayName("an import that fails while restoring leaves the current model working")
+    void failedImportKeepsState() {
+        FaceRecognitionService service = newService(new EigenfacesExtractor(5));
+        enroll(service, 0, IDENTITIES);
+        service.train();
+        byte[] untrainedExtractorMarkedTrained = ModelCodec.encode(new TrainedModel(
+                new EigenfacesExtractor(5), true,
+                List.of(new TrainedModel.IdentityRecord("x", "intruder", null, true, Map.of())),
+                List.of(new TrainedModel.FaceSample("x", SyntheticFaces.SIZE, SyntheticFaces.SIZE,
+                        SyntheticFaces.face(0, 0).toGrayscaleBytes())),
+                Instant.EPOCH));
+
+        assertThatThrownBy(() -> service.importModel(untrainedExtractorMarkedTrained))
+                .isInstanceOf(InvalidModelException.class);
+
+        assertThat(service.getIdentityCount()).isEqualTo(IDENTITIES);
+
+        assertThat(service.isTrained()).isTrue();
+        assertThat(bestName(service.recognize(SyntheticFaces.face(2, 99)))).isEqualTo("person-2");
+    }
+
+    @Test
+    @DisplayName("a soft-deleted identity stays unmatched after import")
+    void inactiveIdentityStaysInactive() throws Exception {
+        FaceRecognitionService original = newService(new EigenfacesExtractor(5));
+        enroll(original, 0, IDENTITIES);
+        original.getIdentities().stream()
+                .filter(i -> i.getName().equals("person-1")).findFirst().orElseThrow()
+                .setActive(false);
+        original.train();
+
+        FaceRecognitionService copy = newService(new EigenfacesExtractor(5));
+        copy.importModel(original.exportModel());
+
+        assertThat(bestName(copy.recognize(SyntheticFaces.face(1, 99)))).isNotEqualTo("person-1");
+    }
+
+    @Test
+    @DisplayName("enrolling after training exports an untrained model")
+    void staleGalleryStaysUntrained() throws Exception {
+        FaceRecognitionService original = newService(new EigenfacesExtractor(5));
+        enroll(original, 0, IDENTITIES);
+        original.train();
+        enroll(original, IDENTITIES, IDENTITIES + 1);
+
+        FaceRecognitionService copy = newService(new EigenfacesExtractor(5));
+        copy.importModel(original.exportModel());
+
+        assertThat(copy.isTrained()).isFalse();
+        copy.train();
+        assertThat(bestName(copy.recognize(SyntheticFaces.face(IDENTITIES, 99)))).isEqualTo("person-" + IDENTITIES);
+    }
+
+    @Test
+    @DisplayName("a color image and its grayscale copy are recognized identically")
+    void colorAndGrayMatch() {
+        FaceRecognitionService service = newService(new EigenfacesExtractor(5));
+        enroll(service, 0, IDENTITIES);
+        service.train();
+
+        RecognitionResult color = service.recognize(SyntheticFaces.colorFace(1, 99));
+        RecognitionResult gray = service.recognize(SyntheticFaces.colorFace(1, 99).toGrayscale());
+
+        assertThat(color.getConfidence()).isEqualTo(gray.getConfidence());
+    }
+
+    @Test
+    @DisplayName("a failed auto-save does not fail training")
+    void autoSaveFailureKeepsTraining() {
+        ModelRepository failing = new ModelRepository() {
+            @Override
+            public void save(String name, byte[] model) {
+                throw new IllegalStateException("model too large");
+            }
+
+            @Override
+            public Optional<byte[]> load(String name) {
+                return Optional.empty();
+            }
+        };
+        FaceRecognitionService service = FaceRecognitionService.builder()
+                .extractor(new EigenfacesExtractor(5))
+                .classifier(new KNNClassifier())
+                .modelRepository(failing)
+                .config(new FaceRecognitionService.Config().setAutoSave(true)
+                        .setTargetWidth(SyntheticFaces.SIZE).setTargetHeight(SyntheticFaces.SIZE))
+                .build();
+        enroll(service, 0, IDENTITIES);
+
+        service.train();
+
+        assertThat(service.isTrained()).isTrue();
     }
 
     private FaceRecognitionService newService(FeatureExtractor extractor) {

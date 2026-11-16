@@ -1,14 +1,18 @@
 package com.facerecognition.infrastructure.persistence;
 
+import com.facerecognition.domain.model.FaceImage;
 import com.facerecognition.infrastructure.extraction.EigenfacesExtractor;
 import com.facerecognition.testing.SyntheticFaces;
-import com.facerecognition.domain.model.FaceImage;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InvalidClassException;
+import java.io.ObjectInputFilter;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.URI;
@@ -35,9 +39,11 @@ class ModelCodecTest {
         extractor.train(faces, List.of("a", "a", "b", "b"));
         FaceImage probe = SyntheticFaces.face(1, 7);
 
-        TrainedModel model = new TrainedModel(extractor,
+        byte[] pixels = new byte[20 * 20];
+        pixels[0] = (byte) 200;
+        TrainedModel model = new TrainedModel(extractor, true,
                 List.of(new TrainedModel.IdentityRecord("a", "Alice", "ext-1", false, Map.of("team", "red"))),
-                List.of(new TrainedModel.FaceSample("a", 2, 1, new byte[]{1, (byte) 200})),
+                List.of(new TrainedModel.FaceSample("a", 20, 20, pixels)),
                 Instant.parse("2026-11-16T00:00:00Z"));
 
         TrainedModel decoded = ModelCodec.decode(ModelCodec.encode(model));
@@ -46,9 +52,18 @@ class ModelCodecTest {
         assertThat(decoded.extractor().extract(probe).getFeatures())
                 .containsExactly(extractor.extract(probe).getFeatures());
         assertThat(decoded.identities()).containsExactlyElementsOf(model.identities());
+        assertThat(decoded.trained()).isTrue();
         assertThat(decoded.samples()).singleElement()
-                .satisfies(s -> assertThat(s.pixels()).containsExactly(1, (byte) 200));
+                .satisfies(s -> assertThat(s.pixels()).containsExactly(pixels));
         assertThat(decoded.createdAt()).isEqualTo(model.createdAt());
+    }
+
+    @Test
+    @DisplayName("refuses to write a model larger than decode accepts")
+    void refusesOversizedModels() {
+        assertThatThrownBy(() -> ModelCodec.encode(emptyModel(), 16))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("MB a model file may hold");
     }
 
     @Test
@@ -87,7 +102,35 @@ class ModelCodecTest {
 
         assertThatThrownBy(() -> ModelCodec.decode(rawModelFile(payload)))
                 .isInstanceOf(InvalidModelException.class)
-                .hasMessageContaining("rejected");
+                .hasCauseInstanceOf(InvalidClassException.class);
+    }
+
+    @Test
+    @DisplayName("rejects face samples outside the supported image size")
+    void rejectsOversizedSamples() {
+        assertThatThrownBy(() -> new TrainedModel.FaceSample("a", 10, 10, new byte[100]))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new TrainedModel.FaceSample("a", 65_536, 65_536, new byte[0]))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "33, 1, 0, 0",
+        "1, 1000001, 0, 0",
+        "1, 1, 67108865, 0",
+        "1, 1, 0, 16777217"
+    })
+    @DisplayName("rejects streams past the depth, reference, size and array limits")
+    void enforcesLimits(long depth, long references, long streamBytes, long arrayLength) {
+        assertThat(ModelCodec.check(new Info(Integer.class, depth, references, streamBytes, arrayLength)))
+                .isEqualTo(ObjectInputFilter.Status.REJECTED);
+        assertThat(ModelCodec.check(new Info(Integer.class, 1, 1, 0, 0)))
+                .isEqualTo(ObjectInputFilter.Status.ALLOWED);
+    }
+
+    private record Info(Class<?> serialClass, long depth, long references, long streamBytes, long arrayLength)
+            implements ObjectInputFilter.FilterInfo {
     }
 
     @Test
@@ -99,7 +142,7 @@ class ModelCodecTest {
     }
 
     private static TrainedModel emptyModel() {
-        return new TrainedModel(new EigenfacesExtractor(), List.of(), List.of(), Instant.EPOCH);
+        return new TrainedModel(new EigenfacesExtractor(), false, List.of(), List.of(), Instant.EPOCH);
     }
 
     private static byte[] rawModelFile(Object root) throws IOException {
