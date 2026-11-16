@@ -1,8 +1,8 @@
 package com.facerecognition.benchmark;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.*;
 import java.nio.file.*;
@@ -49,10 +49,9 @@ public class ReportGenerator {
      * Creates a new ReportGenerator.
      */
     public ReportGenerator() {
-        this.objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule())
+        this.objectMapper = JsonMapper.builder()
             .enable(SerializationFeature.INDENT_OUTPUT)
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+            .build();
     }
 
     // ==================== Markdown Generation ====================

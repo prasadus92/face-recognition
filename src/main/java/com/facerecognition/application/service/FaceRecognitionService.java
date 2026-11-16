@@ -143,11 +143,7 @@ public class FaceRecognitionService {
             Objects.requireNonNull(extractor, "Extractor is required");
             Objects.requireNonNull(classifier, "Classifier is required");
             if (detector == null) {
-                // Production deployments wire a detector via FaceRecognitionAutoConfiguration;
-                // allowing null here lets tests and simple programmatic embedders run on
-                // pre-cropped faces without standing up a real detector.
-                log.warn("FaceRecognitionService built without a FaceDetector — preprocessing will pass images through unchanged. "
-                        + "This is fine for tests and pre-cropped inputs, but production deployments should wire a detector.");
+                log.info("No face detector configured; images are used as face crops");
             }
             return new FaceRecognitionService(detector, extractor, classifier, modelRepository, config);
         }

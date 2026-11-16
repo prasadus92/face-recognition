@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Saved and imported models now recognize faces. A model file used to hold only each identity's average feature vector, not the trained extractor, so after a restart or `POST /api/v1/model/import` the service reported itself trained and then failed on the first recognition. Model files now carry the trained extractor, every identity and the preprocessed face crops, so a restored service also keeps its identities when it is retrained.
+- The command-line tool works. The executable jar's main class only started Spring, so no CLI command was reachable; `train` failed with `NotSerializableException` because it serialized the whole service; none of the commands could read PGM files. `java -jar face-recognition-exec.jar <command>` now runs the CLI and the jar without a command starts the REST API.
 - `POST /api/v1/model/import` no longer deserializes arbitrary classes from the upload. Decoding runs behind an `ObjectInputFilter` allowlist of the exact classes a model contains, with depth, reference, array and stream-size limits. An import that fails leaves the current model in place and returns 400.
 
 ### Changed
@@ -24,6 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enrollment detects, aligns and crops the face when the image is enrolled, not at training time, so a failing detector now surfaces from `enroll`.
 - A restored model keeps each identity's id, external id, active flag and metadata. Restores used to create new ids and reactivate soft-deleted identities.
 - `POST /api/v1/model/import` drops the `merge` parameter, which never merged.
+- The CLI is `train`, `enroll`, `recognize` and `benchmark`. Model files are the same format the REST API exports. `serve` (a second, hand-written HTTP server) and the `export`/`import` commands are gone; run the jar without a command for the API.
+- `FaceImage.fromFile` reads PGM (P5 and P2), shared by the CLI, the service and the benchmark loader.
+- The CLI and the Spring auto-configuration build the pipeline through one `FaceRecognitionServiceFactory`.
+- `BenchmarkRunner` lost its hand-parsed `main`; the `benchmark` command is its front end. The `benchmarks` Maven profile is gone. Defaults changed: threshold 0 (closed-set rank-1 accuracy, was 0.6), 10 folds (was 5), reports in `benchmark-results/` (was `./benchmark_results`). `--warmup`, `--runs` and `--verbose` are gone.
+- `recognize` reports an unreadable image as an error line and carries on, exiting 1. For an unmatched image it prints the nearest person's confidence instead of 0.
+- Model files written by the CLI and by `FileModelRepository` are replaced atomically and keep the permissions of the file they replace (`rw-r--r--` when new).
+- PGM images larger than 4096 pixels per side, or with samples above their declared maximum, are rejected before allocation.
+- The CLI logs warnings to stderr, so `recognize --json` output stays parseable. `--version` reads the jar manifest.
+- The log line for a service built without a face detector drops from WARN to INFO.
+- Benchmark reports use Jackson 3. The `jackson-datatype-jsr310` and `picocli-spring-boot-starter` dependencies are gone.
 
 ## [2.1.0]
 

@@ -45,7 +45,7 @@ This repository is a learning-friendly reference implementation of the classical
 - **Pluggable** `FeatureExtractor` / `FaceClassifier` / `FaceDetector` interfaces
 - **Clean architecture** — `domain` / `application` / `infrastructure` / `api` layers
 - **REST API** with OpenAPI 3 / Swagger UI, request correlation IDs, validation, rate limiting, Prometheus metrics
-- **CLI** (Picocli) for `enroll`, `train`, `recognize`, `serve`, `benchmark`
+- **CLI** (Picocli) for `train`, `enroll`, `recognize`, `benchmark`
 - **Model persistence** — auto-save/auto-load + REST export/import
 - **Docker image** — multi-stage build, non-root user, container-aware JVM
 - **Experimental ONNX backend** scaffold for FaceNet/ArcFace-style embeddings (bring your own weights)
@@ -64,7 +64,7 @@ This repository is a learning-friendly reference implementation of the classical
 | REST + OpenAPI | Stable | `/api/v1/*` + `/swagger-ui.html` |
 | Prometheus / health / metrics | Stable | Micrometer + custom `ModelReadyHealthIndicator` |
 | Rate limiting | Stable | Per-IP token bucket (Bucket4j) |
-| CLI (picocli) | Stable | `serve`, `recognize`, `enroll`, `train`, `benchmark` |
+| CLI (picocli) | Stable | `train`, `enroll`, `recognize`, `benchmark` |
 | ONNX deep-learning extractor | Experimental scaffold | Bring your own model weights |
 | Published Maven artifact | Planned | Not yet on Central |
 
@@ -98,9 +98,9 @@ java -jar target/face-recognition-*-exec.jar
 
 ```bash
 java -jar target/face-recognition-*-exec.jar --help
-java -jar target/face-recognition-*-exec.jar enroll --image john.jpg --name "John Doe"
-java -jar target/face-recognition-*-exec.jar train
-java -jar target/face-recognition-*-exec.jar recognize --image unknown.jpg
+java -jar target/face-recognition-*-exec.jar train faces/ -o model.frm -a lbph
+java -jar target/face-recognition-*-exec.jar enroll -m model.frm -n "Jane Doe" jane1.jpg jane2.jpg
+java -jar target/face-recognition-*-exec.jar recognize -m model.frm unknown.jpg
 ```
 
 ### Run with Docker
@@ -178,16 +178,19 @@ Every response that represents an error uses the [`ErrorResponse`](src/main/java
 ## CLI
 
 ```text
-Usage: face-recognition [COMMAND]
+Usage: face-recognition [-h] [COMMAND]
+Train, enroll, recognize and benchmark from the command line.
+Run without a command to start the REST API.
 Commands:
-  enroll      Enroll a face image under a name.
-  train       Train or retrain the model.
-  recognize   Recognize a face from an image or directory.
-  benchmark   Run accuracy/performance benchmarks on a dataset.
-  serve       Start the HTTP API server.
+  train      Train a model from DATASET/<person>/<image> and write it to a file.
+  enroll     Add face images of one person to a model and retrain it.
+  recognize  Identify the person in each image, or in every image under a
+               folder.
+  benchmark  Measure accuracy and speed of the algorithms on a labeled dataset.
+  help       Display help information about the specified command.
 ```
 
-All commands honour `--model <path>` and `--config <application.yml>` for reproducible runs.
+The CLI treats images as face crops. Add `--detect` to detect and crop the largest face first, and use the same setting for every command on a model.
 
 ## Configuration
 
@@ -231,12 +234,8 @@ facerecognition:
 Run the benchmark suite locally:
 
 ```bash
-mvn -P benchmarks exec:java
-# or via the CLI
-java -jar target/face-recognition-*-exec.jar benchmark \
-    --dataset src/test/resources/datasets/mini \
-    --algorithm all \
-    --report docs/benchmarks/mini.json
+java -jar target/face-recognition-*-exec.jar benchmark data/orl --format orl \
+    --type cross_validation --folds 10 -o benchmark-results
 ```
 
 The benchmark harness lives under `com.facerecognition.benchmark` and reports top-1 accuracy, per-stage latency, and confusion matrices as JSON / Markdown.

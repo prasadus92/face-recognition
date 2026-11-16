@@ -62,17 +62,17 @@
         <maven-failsafe-plugin.version>3.6.1</maven-failsafe-plugin.version>
         <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
         <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
+        <maven-jar-plugin.version>3.5.1</maven-jar-plugin.version>
         <maven-enforcer-plugin.version>3.7.0</maven-enforcer-plugin.version>
         <jacoco.version>0.8.16</jacoco.version>
         <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
         <checkstyle.version>14.4.0</checkstyle.version>
         <spotbugs-plugin.version>4.10.5.0</spotbugs-plugin.version>
         <cyclonedx-plugin.version>2.9.3</cyclonedx-plugin.version>
-        <exec-maven-plugin.version>3.7.0</exec-maven-plugin.version>
 
         <!-- Coverage floor. Starts at the current honest baseline and is
              expected to ratchet upwards over time — never downwards. -->
-        <jacoco.line.coverage.minimum>0.20</jacoco.line.coverage.minimum>
+        <jacoco.line.coverage.minimum>0.55</jacoco.line.coverage.minimum>
     </properties>
 
     <dependencyManagement>
@@ -125,17 +125,6 @@
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>${picocli.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli-spring-boot-starter</artifactId>
-            <version>${picocli.version}</version>
-        </dependency>
-
-        <!-- JSON processing (managed by Spring Boot BOM) -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
 
         <!-- OpenAPI / Swagger UI (Spring Boot 3 compatible) -->
@@ -233,6 +222,19 @@
                             <version>${spring-boot.version}</version>
                         </path>
                     </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven-jar-plugin.version}</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                        </manifest>
+                    </archive>
                 </configuration>
             </plugin>
 
@@ -479,21 +481,5 @@
             </build>
         </profile>
 
-        <!-- Benchmark profile: reproducible accuracy + latency runs. -->
-        <profile>
-            <id>benchmarks</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <version>${exec-maven-plugin.version}</version>
-                        <configuration>
-                            <mainClass>com.facerecognition.benchmark.BenchmarkRunner</mainClass>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
 </project>
