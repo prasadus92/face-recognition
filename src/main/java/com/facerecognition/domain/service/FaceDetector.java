@@ -95,30 +95,4 @@ public interface FaceDetector {
      * @param minSize the minimum size in pixels
      */
     void setMinFaceSize(int minSize);
-
-    /**
-     * Configuration options for face detection.
-     */
-    class DetectionConfig {
-        private double minConfidence = 0.5;
-        private int minFaceSize = 30;
-        private boolean detectLandmarks = true;
-        private int maxFaces = 10;
-        private double scaleFactor = 1.1;
-
-        public double getMinConfidence() { return minConfidence; }
-        public DetectionConfig setMinConfidence(double c) { this.minConfidence = c; return this; }
-
-        public int getMinFaceSize() { return minFaceSize; }
-        public DetectionConfig setMinFaceSize(int s) { this.minFaceSize = s; return this; }
-
-        public boolean isDetectLandmarks() { return detectLandmarks; }
-        public DetectionConfig setDetectLandmarks(boolean d) { this.detectLandmarks = d; return this; }
-
-        public int getMaxFaces() { return maxFaces; }
-        public DetectionConfig setMaxFaces(int m) { this.maxFaces = m; return this; }
-
-        public double getScaleFactor() { return scaleFactor; }
-        public DetectionConfig setScaleFactor(double s) { this.scaleFactor = s; return this; }
-    }
 }
