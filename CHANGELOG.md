@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- The Haar face detector, the REST API's default, works. It scaled each Haar rectangle with independent rounding, which read past the integral image (an `ArrayIndexOutOfBoundsException`, so HTTP 500, on images such as the bundled fixture at 375x300) and, where it did not crash, let the window mean leak into the features: it found a face in 25 of the 400 AT&T/ORL images. It now runs the cascade over an image pyramid as OpenCV does and finds a face in 377 of them (OpenCV 4 with the same cascade: 364).
 - Saved and imported models now recognize faces. A model file used to hold only each identity's average feature vector, not the trained extractor, so after a restart or `POST /api/v1/model/import` the service reported itself trained and then failed on the first recognition. Model files now carry the trained extractor, every identity and the preprocessed face crops, so a restored service also keeps its identities when it is retrained.
 - The command-line tool works. The executable jar's main class only started Spring, so no CLI command was reachable; `train` failed with `NotSerializableException` because it serialized the whole service; none of the commands could read PGM files. `java -jar face-recognition-exec.jar <command>` now runs the CLI and the jar without a command starts the REST API.
 - `POST /api/v1/model/import` no longer deserializes arbitrary classes from the upload. Decoding runs behind an `ObjectInputFilter` allowlist of the exact classes a model contains, with depth, reference, array and stream-size limits. An import that fails leaves the current model in place and returns 400.
@@ -34,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PGM images larger than 4096 pixels per side, or with samples above their declared maximum, are rejected before allocation.
 - The CLI logs warnings to stderr, so `recognize --json` output stays parseable. `--version` reads the jar manifest.
 - The log line for a service built without a face detector drops from WARN to INFO.
+- The unused `bkd.png` (a background from the 2014 Swing GUI) is gone, and `face.png` moved to test resources, so neither ships in the jar.
 - Benchmark reports use Jackson 3. The `jackson-datatype-jsr310` and `picocli-spring-boot-starter` dependencies are gone.
 
 ## [2.1.0]

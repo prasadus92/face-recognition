@@ -19,44 +19,22 @@ import com.facerecognition.infrastructure.detection.haar.HaarCascade;
 import com.facerecognition.infrastructure.detection.haar.HaarCascadeLoader;
 
 /**
- * Pure-Java Viola-Jones face detector using real Haar cascades from OpenCV.
+ * Pure-Java Viola-Jones face detector that runs OpenCV's trained Haar cascades.
  *
- * <p>Loads a {@link HaarCascade} (typically the bundled
- * {@code cascades/haarcascade_frontalface_default.xml} from OpenCV 4.10) and
- * evaluates it against each candidate window of the input image across multiple
- * scales. The algorithm is the standard Viola-Jones pipeline:</p>
+ * <p>It follows {@code cv::CascadeClassifier::detectMultiScale}: the grayscale image is resized
+ * into a pyramid (one level per {@code scaleFactor} step, starting where the cascade's window
+ * equals {@code minFaceSize}), the cascade's native window slides over each level with its
+ * original rectangles, every weak classifier compares its weighted rectangle sum with its
+ * threshold times the window's standard-deviation term, and hits that overlap by an IoU of
+ * 0.4 or more are merged, keeping groups of at least {@code minNeighbours}.</p>
  *
- * <ol>
- *   <li>Convert the image to a grayscale byte buffer.</li>
- *   <li>Build an <em>integral image</em> (summed-area table) and a
- *       <em>squared integral image</em>, both in a single O(WH) pass, so that
- *       rectangle sums and window variance are later computable in O(1).</li>
- *   <li>Slide a detector window across the image at successively larger scales
- *       (start at the trained window size, grow by {@code scaleFactor} until
- *       larger than the image).</li>
- *   <li>At every window position, scale-normalise the cascade's Haar features
- *       to the current window size, compute window variance for feature
- *       normalisation, and evaluate the cascade stage by stage. A window is
- *       rejected as soon as any stage's summed weak-classifier response falls
- *       below that stage's threshold.</li>
- *   <li>Apply non-maximum suppression to merge overlapping detections into a
- *       final list of face regions, computing each merged region's
- *       confidence from the number of supporting detections.</li>
- * </ol>
- *
- * <p>The default cascade detects upright frontal faces down to 24×24 pixels at
- * roughly 90–95% true-positive rate on well-lit images. It is the same
- * detector used by the OpenCV reference implementation; we are only swapping
- * the evaluator from C++ to pure Java, not the trained weights.</p>
- *
- * <h3>Thread safety</h3>
- * <p>Instances are safe for concurrent use. The cascade data is immutable
- * after construction and detection state is allocated per call.</p>
+ * <p>Instances are safe for concurrent use: the cascade is immutable and each call allocates its
+ * own buffers.</p>
  */
 public final class HaarCascadeFaceDetector implements FaceDetector, Serializable {
 
     private static final long serialVersionUID = 1L;
-    private static final Logger log = LoggerFactory.getLogger(HaarCascadeFaceDetector.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HaarCascadeFaceDetector.class);
 
     /** Algorithm name reported to persistence and metrics. */
     public static final String ALGORITHM_NAME = "HaarCascade";
@@ -119,7 +97,7 @@ public final class HaarCascadeFaceDetector implements FaceDetector, Serializable
         this.minFaceSize = minFaceSize;
         this.scaleFactor = scaleFactor;
         this.minNeighbours = minNeighbours;
-        log.debug("HaarCascadeFaceDetector initialized: {}, minFaceSize={}, scaleFactor={}, minNeighbours={}",
+        LOG.debug("HaarCascadeFaceDetector initialized: {}, minFaceSize={}, scaleFactor={}, minNeighbours={}",
                 cascade, minFaceSize, scaleFactor, minNeighbours);
     }
 
@@ -154,38 +132,28 @@ public final class HaarCascadeFaceDetector implements FaceDetector, Serializable
         BufferedImage src = image.getImage();
         int width = src.getWidth();
         int height = src.getHeight();
-        if (width < cascade.getWindowWidth() || height < cascade.getWindowHeight()) {
-            return Collections.emptyList();
-        }
-
-        // 1. Grayscale buffer + 2. integral + squared integral
+        int windowW = cascade.getWindowWidth();
+        int windowH = cascade.getWindowHeight();
         int[] grayscale = toGrayscale(src, width, height);
-        long[] integral = new long[(width + 1) * (height + 1)];
-        long[] squaredIntegral = new long[(width + 1) * (height + 1)];
-        buildIntegralImages(grayscale, width, height, integral, squaredIntegral);
 
-        // 3. Multi-scale sliding window
         List<RawDetection> raw = new ArrayList<>();
-        double scale = (double) minFaceSize / cascade.getWindowWidth();
-        double maxScaleX = (double) width / cascade.getWindowWidth();
-        double maxScaleY = (double) height / cascade.getWindowHeight();
-        double maxScale = Math.min(maxScaleX, maxScaleY);
-        while (scale <= maxScale) {
-            int windowW = (int) Math.round(cascade.getWindowWidth() * scale);
-            int windowH = (int) Math.round(cascade.getWindowHeight() * scale);
-            if (windowW < minFaceSize || windowH < minFaceSize) {
-                scale *= scaleFactor;
-                continue;
+        for (double factor = (double) minFaceSize / windowW; ; factor *= scaleFactor) {
+            int scaledW = (int) Math.round(width / factor);
+            int scaledH = (int) Math.round(height / factor);
+            if (scaledW < windowW || scaledH < windowH) {
+                break;
             }
-            // Step by ~5% of the window size (OpenCV default), minimum 1 pixel.
-            int step = Math.max(1, (int) Math.round(scale * 2.0));
-            scanAtScale(integral, squaredIntegral, width, height, scale, windowW, windowH, step, raw);
-            scale *= scaleFactor;
+            int[] scaled = resizeBilinear(grayscale, width, height, scaledW, scaledH);
+            long[] integral = new long[(scaledW + 1) * (scaledH + 1)];
+            long[] squaredIntegral = new long[(scaledW + 1) * (scaledH + 1)];
+            buildIntegralImages(scaled, scaledW, scaledH, integral, squaredIntegral);
+            // OpenCV steps 2 pixels on fine levels and 1 pixel once the image is downscaled more than 2x.
+            int step = factor > 2.0 ? 1 : 2;
+            scanLevel(integral, squaredIntegral, scaledW, scaledH, step, factor, raw);
         }
 
-        // 4. Non-maximum suppression
         List<FaceRegion> regions = mergeDetections(raw, minConfidence);
-        log.debug("Haar detection: {} raw candidates -> {} regions", raw.size(), regions.size());
+        LOG.debug("Haar detection: {} raw candidates -> {} regions", raw.size(), regions.size());
         return regions;
     }
 
@@ -223,75 +191,51 @@ public final class HaarCascadeFaceDetector implements FaceDetector, Serializable
     // Cascade evaluation
     // ---------------------------------------------------------------------
 
-    /**
-     * Sweeps the sliding window across the image at a fixed scale and records
-     * every window that survives all cascade stages.
-     */
-    private void scanAtScale(long[] integral,
-                             long[] squaredIntegral,
-                             int imageWidth,
-                             int imageHeight,
-                             double scale,
-                             int windowW,
-                             int windowH,
-                             int step,
-                             List<RawDetection> out) {
-        int stride = imageWidth + 1;
-        int maxX = imageWidth - windowW;
-        int maxY = imageHeight - windowH;
-        int windowArea = windowW * windowH;
-        // Inverse of the current window area — used to normalise every feature
-        // value so comparisons against the (tiny, per-pixel) node thresholds in
-        // the XML remain meaningful across scales. Computed once per scale
-        // rather than once per window.
-        double invWindowArea = 1.0 / windowArea;
-        for (int y = 0; y <= maxY; y += step) {
-            for (int x = 0; x <= maxX; x += step) {
-                double variance = computeVariance(integral, squaredIntegral, stride, x, y, windowW, windowH, windowArea);
-                if (variance < 1.0) {
-                    // Uniform region — cannot contain a face.
-                    continue;
-                }
-                double stddev = Math.sqrt(variance);
-                if (evaluateCascade(integral, stride, x, y, scale, stddev, invWindowArea)) {
-                    out.add(new RawDetection(x, y, windowW, windowH));
+    /** Slides the cascade's native window over one pyramid level, mapping hits back to source pixels. */
+    private void scanLevel(long[] integral,
+                           long[] squaredIntegral,
+                           int levelW,
+                           int levelH,
+                           int step,
+                           double factor,
+                           List<RawDetection> out) {
+        int stride = levelW + 1;
+        int windowW = cascade.getWindowWidth();
+        int windowH = cascade.getWindowHeight();
+        int detectedW = (int) Math.round(windowW * factor);
+        int detectedH = (int) Math.round(windowH * factor);
+        LevelFeatures features = new LevelFeatures(cascade.getFeatures(), stride);
+        for (int y = 0; y + windowH <= levelH; y += step) {
+            for (int x = 0; x + windowW <= levelW; x += step) {
+                if (passesCascade(integral, squaredIntegral, stride, x, y, features)) {
+                    out.add(new RawDetection((int) Math.round(x * factor), (int) Math.round(y * factor),
+                            detectedW, detectedH));
                 }
             }
         }
     }
 
     /**
-     * Runs the full cascade on the window at ({@code x}, {@code y}) at the
-     * given {@code scale}. Returns {@code true} iff every stage's weighted
-     * sum exceeds its rejection threshold.
-     *
-     * <p>The caller passes in the per-scale {@code invWindowArea} so we can
-     * area-normalise each feature value into the same per-pixel units that the
-     * node thresholds in the OpenCV XML are expressed in.</p>
+     * Evaluates every stage at one window position. As in OpenCV, a weak classifier compares its
+     * weighted rectangle sum with its threshold times the standard-deviation term of the window
+     * shrunk by 1 pixel on each side.
      */
-    private boolean evaluateCascade(long[] integral,
-                                    int stride,
-                                    int x,
-                                    int y,
-                                    double scale,
-                                    double stddev,
-                                    double invWindowArea) {
-        HaarCascade.Stage[] stages = cascade.getStages();
-        HaarCascade.Feature[] features = cascade.getFeatures();
-        for (HaarCascade.Stage stage : stages) {
+    private boolean passesCascade(long[] integral, long[] squaredIntegral, int stride, int x, int y,
+                                  LevelFeatures features) {
+        int innerW = cascade.getWindowWidth() - 2;
+        int innerH = cascade.getWindowHeight() - 2;
+        double area = (double) innerW * innerH;
+        double sum = rectSum(integral, stride, x + 1, y + 1, innerW, innerH);
+        double squaredSum = rectSum(squaredIntegral, stride, x + 1, y + 1, innerW, innerH);
+        double spread = area * squaredSum - sum * sum;
+        double norm = spread > 0 ? Math.sqrt(spread) : 1.0;
+
+        int origin = y * stride + x;
+        for (HaarCascade.Stage stage : cascade.getStages()) {
             double stageSum = 0.0;
-            HaarCascade.WeakClassifier[] weaks = stage.getClassifiers();
-            for (HaarCascade.WeakClassifier weak : weaks) {
-                HaarCascade.Feature feature = features[weak.getFeatureIndex()];
-                // Raw sum of weighted rectangle sums, divided by the current
-                // window area so the result is in per-pixel intensity units.
-                double featureValue = computeFeatureValue(integral, stride, x, y, feature, scale) * invWindowArea;
-                // OpenCV stores node thresholds in per-pixel units and normalises
-                // feature values by window stddev at runtime. Equivalent form
-                // (one multiplication per weak classifier):
-                //     featureValue  <  nodeThreshold * stddev
-                double threshold = weak.getNodeThreshold() * stddev;
-                stageSum += (featureValue < threshold) ? weak.getLeftLeaf() : weak.getRightLeaf();
+            for (HaarCascade.WeakClassifier weak : stage.getClassifiers()) {
+                double value = features.value(integral, origin, weak.getFeatureIndex());
+                stageSum += value < weak.getNodeThreshold() * norm ? weak.getLeftLeaf() : weak.getRightLeaf();
             }
             if (stageSum < stage.getThreshold()) {
                 return false;
@@ -300,59 +244,66 @@ public final class HaarCascadeFaceDetector implements FaceDetector, Serializable
         return true;
     }
 
-    /**
-     * Computes the unnormalised Haar feature response at window origin
-     * ({@code x}, {@code y}) for the given scale, using the integral image for
-     * O(1) rectangle sums.
-     *
-     * <p>Rectangle coordinates inside each feature are in the cascade's trained
-     * window coordinate system; we scale them up to the current window size
-     * before reading the integral image. The caller is responsible for dividing
-     * the returned value by the current window area.</p>
-     */
-    private double computeFeatureValue(long[] integral,
-                                       int stride,
-                                       int windowX,
-                                       int windowY,
-                                       HaarCascade.Feature feature,
-                                       double scale) {
-        double sum = 0.0;
-        for (HaarCascade.Rect rect : feature.getRects()) {
-            int rx = (int) Math.round(rect.getX() * scale);
-            int ry = (int) Math.round(rect.getY() * scale);
-            int rw = (int) Math.round(rect.getWidth() * scale);
-            int rh = (int) Math.round(rect.getHeight() * scale);
-            if (rw <= 0 || rh <= 0) {
-                continue;
+    /** Rectangle corners of every feature as offsets into one level's integral image, plus weights. */
+    private static final class LevelFeatures {
+        private final int[][] corners;
+        private final double[][] weights;
+
+        LevelFeatures(HaarCascade.Feature[] features, int stride) {
+            corners = new int[features.length][];
+            weights = new double[features.length][];
+            for (int f = 0; f < features.length; f++) {
+                HaarCascade.Rect[] rects = features[f].getRects();
+                corners[f] = new int[rects.length * 4];
+                weights[f] = new double[rects.length];
+                for (int r = 0; r < rects.length; r++) {
+                    HaarCascade.Rect rect = rects[r];
+                    int topLeft = rect.getY() * stride + rect.getX();
+                    int bottomLeft = topLeft + rect.getHeight() * stride;
+                    corners[f][r * 4] = topLeft;
+                    corners[f][r * 4 + 1] = topLeft + rect.getWidth();
+                    corners[f][r * 4 + 2] = bottomLeft;
+                    corners[f][r * 4 + 3] = bottomLeft + rect.getWidth();
+                    weights[f][r] = rect.getWeight();
+                }
             }
-            long rectSum = rectSum(integral, stride, windowX + rx, windowY + ry, rw, rh);
-            sum += rectSum * rect.getWeight();
         }
-        return sum;
+
+        double value(long[] integral, int origin, int feature) {
+            int[] c = corners[feature];
+            double[] w = weights[feature];
+            double value = 0.0;
+            for (int r = 0; r < w.length; r++) {
+                value += w[r] * (integral[c[r * 4 + 3] + origin] - integral[c[r * 4 + 1] + origin]
+                        - integral[c[r * 4 + 2] + origin] + integral[c[r * 4] + origin]);
+            }
+            return value;
+        }
     }
 
-    /** Computes window variance using the integral and squared integral images. */
-    private double computeVariance(long[] integral,
-                                   long[] squared,
-                                   int stride,
-                                   int x,
-                                   int y,
-                                   int w,
-                                   int h,
-                                   int area) {
-        long s = rectSum(integral, stride, x, y, w, h);
-        long s2 = rectSum(squared, stride, x, y, w, h);
-        double mean = s / (double) area;
-        double variance = (s2 / (double) area) - mean * mean;
-        return Math.max(0.0, variance);
+    /** Bilinear resize with pixel-center alignment, as {@code cv::resize} with {@code INTER_LINEAR}. */
+    static int[] resizeBilinear(int[] src, int srcW, int srcH, int dstW, int dstH) {
+        int[] dst = new int[dstW * dstH];
+        double scaleX = (double) srcW / dstW;
+        double scaleY = (double) srcH / dstH;
+        for (int dy = 0; dy < dstH; dy++) {
+            double sy = Math.max(0.0, (dy + 0.5) * scaleY - 0.5);
+            int y0 = Math.min((int) sy, srcH - 1);
+            int y1 = Math.min(y0 + 1, srcH - 1);
+            double fy = sy - y0;
+            for (int dx = 0; dx < dstW; dx++) {
+                double sx = Math.max(0.0, (dx + 0.5) * scaleX - 0.5);
+                int x0 = Math.min((int) sx, srcW - 1);
+                int x1 = Math.min(x0 + 1, srcW - 1);
+                double fx = sx - x0;
+                double top = src[y0 * srcW + x0] * (1 - fx) + src[y0 * srcW + x1] * fx;
+                double bottom = src[y1 * srcW + x0] * (1 - fx) + src[y1 * srcW + x1] * fx;
+                dst[dy * dstW + dx] = (int) Math.round(top * (1 - fy) + bottom * fy);
+            }
+        }
+        return dst;
     }
 
-    /**
-     * O(1) rectangle sum via summed-area table. The integral image is
-     * {@code (width+1) * (height+1)} with a zero row + column at (0,0) so that
-     * the four-corner formula handles windows touching the image edge without
-     * special cases.
-     */
     private static long rectSum(long[] integral, int stride, int x, int y, int w, int h) {
         int tl = y * stride + x;
         int tr = tl + w;

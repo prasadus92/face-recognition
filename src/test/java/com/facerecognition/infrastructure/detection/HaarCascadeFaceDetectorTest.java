@@ -9,6 +9,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Random;
 import java.util.Optional;
 
 import javax.imageio.ImageIO;
@@ -16,6 +17,9 @@ import javax.imageio.ImageIO;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.facerecognition.domain.model.FaceImage;
 import com.facerecognition.domain.model.FaceRegion;
@@ -64,6 +68,38 @@ class HaarCascadeFaceDetectorTest {
         assertThat(biggest.getWidth()).isGreaterThanOrEqualTo(40);
         assertThat(biggest.getHeight()).isGreaterThanOrEqualTo(40);
         assertThat(biggest.getConfidence()).isBetween(0.0, 1.0);
+    }
+
+    @ParameterizedTest
+    @ValueSource(doubles = {1.0, 0.75, 0.5, 0.33, 0.25})
+    @DisplayName("finds the fixture face from 375 down to 93 pixels wide")
+    void detectsFaceAcrossSizes(double scale) throws IOException {
+        FaceImage full = loadBundledImage("face.png");
+        FaceImage image = full.resize((int) (full.getWidth() * scale), (int) (full.getHeight() * scale));
+
+        List<FaceRegion> regions = new HaarCascadeFaceDetector().detectFaces(image);
+
+        assertThat(regions).singleElement().satisfies(face -> {
+            assertThat(face.getWidth()).isBetween(image.getHeight() / 2, image.getHeight());
+            assertThat(face.getX() + face.getWidth()).isLessThanOrEqualTo(image.getWidth());
+            assertThat(face.getY() + face.getHeight()).isLessThanOrEqualTo(image.getHeight());
+        });
+    }
+
+    @ParameterizedTest
+    @CsvSource({"101, 113", "343, 381", "200, 150", "621, 719"})
+    @DisplayName("scans noise of any size to the edges without errors or detections")
+    void scansNoiseToTheEdges(int width, int height) {
+        Random random = new Random(width * 31L + height);
+        BufferedImage noise = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int v = random.nextInt(256);
+                noise.setRGB(x, y, (v << 16) | (v << 8) | v);
+            }
+        }
+
+        assertThat(new HaarCascadeFaceDetector().detectFaces(FaceImage.fromBufferedImage(noise))).isEmpty();
     }
 
     @Test
