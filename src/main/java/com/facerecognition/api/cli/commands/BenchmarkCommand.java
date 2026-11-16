@@ -35,9 +35,12 @@ public final class BenchmarkCommand implements Callable<Integer> {
     @Parameters(paramLabel = "DATASET", description = "Dataset folder.")
     private Path dataset;
 
-    @Option(names = "--format", defaultValue = "custom",
-            description = "orl, yale, lfw, flat or custom (DATASET/<person>/<image>) (default: ${DEFAULT-VALUE}).")
-    private String format;
+    /** Dataset layouts {@link com.facerecognition.benchmark.DatasetLoader} understands. */
+    enum Format { ORL, YALE, LFW, FLAT, CUSTOM }
+
+    @Option(names = "--format", defaultValue = "CUSTOM",
+            description = "ORL, YALE, LFW, FLAT or CUSTOM (DATASET/<person>/<image>) (default: ${DEFAULT-VALUE}).")
+    private Format format;
 
     @Option(names = {"-a", "--algorithm"}, split = ",", defaultValue = "EIGENFACES,FISHERFACES,LBPH",
             description = "Algorithms to compare (default: ${DEFAULT-VALUE}).")
@@ -80,7 +83,7 @@ public final class BenchmarkCommand implements Callable<Integer> {
                 .setRandomSeed(seed);
         BenchmarkRunner.Builder runner = BenchmarkRunner.builder()
                 .datasetPath(dataset)
-                .datasetFormat(format)
+                .datasetFormat(format.name())
                 .outputDirectory(output)
                 .benchmarkType(type)
                 .config(config);

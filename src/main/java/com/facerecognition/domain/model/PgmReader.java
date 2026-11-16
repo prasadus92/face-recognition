@@ -7,11 +7,10 @@ import java.io.InputStream;
 
 /**
  * Reads binary (P5) and plain (P2) PGM images, the format of the AT&amp;T/ORL face database,
- * which {@code javax.imageio} does not support. Samples above 8 bits are scaled to 0-255.
+ * which {@code javax.imageio} does not support. Samples above 8 bits are scaled to 0-255, and
+ * images larger than {@link FaceImage#MAX_DIMENSION} per side are rejected before allocation.
  */
 final class PgmReader {
-
-    private static final int MAX_DIMENSION = 16_384;
 
     private PgmReader() {
     }
@@ -24,8 +23,8 @@ final class PgmReader {
             case "P2" -> false;
             default -> throw new IOException("Not a PGM file (magic " + magic + ")");
         };
-        int width = number(in, "width", 1, MAX_DIMENSION);
-        int height = number(in, "height", 1, MAX_DIMENSION);
+        int width = number(in, "width", 1, FaceImage.MAX_DIMENSION);
+        int height = number(in, "height", 1, FaceImage.MAX_DIMENSION);
         int maxValue = number(in, "maximum value", 1, 65_535);
 
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -40,11 +39,12 @@ final class PgmReader {
     }
 
     private static int binarySample(InputStream in, int maxValue) throws IOException {
-        int high = in.read();
-        if (maxValue < 256) {
-            return requireByte(high);
+        int high = requireByte(in.read());
+        int sample = maxValue < 256 ? high : (high << 8) | requireByte(in.read());
+        if (sample > maxValue) {
+            throw new IOException("PGM pixel " + sample + " exceeds the maximum value " + maxValue);
         }
-        return (requireByte(high) << 8) | requireByte(in.read());
+        return sample;
     }
 
     private static int requireByte(int b) throws IOException {

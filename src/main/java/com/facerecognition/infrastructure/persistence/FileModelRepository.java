@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -28,14 +27,7 @@ public class FileModelRepository implements ModelRepository {
 
     @Override
     public void save(String name, byte[] model) throws IOException {
-        Path target = pathFor(name);
-        Path temp = Files.createTempFile(directory, name, ".tmp");
-        try {
-            Files.write(temp, model);
-            Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        } finally {
-            Files.deleteIfExists(temp);
-        }
+        AtomicFiles.write(pathFor(name), model);
     }
 
     @Override

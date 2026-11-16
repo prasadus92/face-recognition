@@ -100,7 +100,21 @@ class FaceRecognitionCliTest {
                 .contains("\"name\" : \"person-2\"");
 
         run("recognize", "-m", model.toString(), "-t", "1", dir.resolve("probes/a.png").toString());
-        assertThat(out.toString()).contains("\tunknown\t");
+        assertThat(out.toString()).contains("\tunknown\t").doesNotContain("\t0.000");
+    }
+
+    @Test
+    @DisplayName("recognize reports an unreadable image and still answers for the rest")
+    void recognizeKeepsGoingPastBadImages() throws IOException {
+        run("train", dataset.toString(), "-o", model.toString());
+        writePng(dir.resolve("mixed/good.png"), 2, 60);
+        Files.writeString(dir.resolve("mixed/broken.png"), "not an image");
+
+        assertThat(run("recognize", "-m", model.toString(), "-t", "0", dir.resolve("mixed").toString()))
+                .isEqualTo(1);
+        assertThat(out.toString())
+                .contains("broken.png\terror:")
+                .contains("good.png\tperson-2\t");
     }
 
     @Test
@@ -123,6 +137,19 @@ class FaceRecognitionCliTest {
         assertThat(err.toString()).contains("Error:");
 
         assertThat(run("train", dataset.toString())).isEqualTo(2);
+        assertThat(run("recognize", "-m", model.toString(), "-t", "1.5", "x.png")).isEqualTo(2);
+        assertThat(run("benchmark", dataset.toString(), "--format", "imagenet")).isEqualTo(2);
+        assertThat(run("recognise", "-m", model.toString())).isEqualTo(2);
+
+        assertThat(run("recognize", "-m", dir.resolve("absent.frm").toString(), "x.png")).isEqualTo(1);
+        assertThat(err.toString()).contains("File not found: ");
+    }
+
+    @Test
+    @DisplayName("--version prints the tool name")
+    void version() {
+        assertThat(run("--version")).isZero();
+        assertThat(out.toString()).startsWith("face-recognition ");
     }
 
     @Test
@@ -131,6 +158,8 @@ class FaceRecognitionCliTest {
         assertThat(FaceRecognitionCli.handles(new String[]{"train", "x"})).isTrue();
         assertThat(FaceRecognitionCli.handles(new String[]{"--help"})).isTrue();
         assertThat(FaceRecognitionCli.handles(new String[]{"help"})).isTrue();
+        assertThat(FaceRecognitionCli.handles(new String[]{"--version"})).isTrue();
+        assertThat(FaceRecognitionCli.handles(new String[]{"recognise"})).isTrue();
         assertThat(FaceRecognitionCli.handles(new String[]{})).isFalse();
         assertThat(FaceRecognitionCli.handles(new String[]{"--server.port=9090"})).isFalse();
     }

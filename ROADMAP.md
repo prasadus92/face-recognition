@@ -10,7 +10,7 @@ A living document describing where the project is today, what is actively being 
 | Classical extractors (Eigenfaces, Fisherfaces, LBPH) | Stable |
 | KNN classifier + pluggable distance metrics | Stable |
 | Spring Boot 3.2 REST API + OpenAPI 3 | Stable |
-| Picocli CLI (`enroll`, `train`, `recognize`, `serve`, `benchmark`) | Stable |
+| Picocli CLI (`train`, `enroll`, `recognize`, `benchmark`) | Stable |
 | Multi-stage Docker image | Stable |
 | Model persistence + auto-save/auto-load | Stable |
 | Custom Micrometer metrics + Prometheus endpoint | Stable |
