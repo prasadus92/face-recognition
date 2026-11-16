@@ -28,8 +28,7 @@ By participating in this project you agree to abide by the [Code of Conduct](COD
 
 ### Prerequisites
 
-- **JDK 17 or newer** (Temurin recommended).
-- **Maven 3.9+**.
+- **JDK 25** (Temurin recommended). The Maven Wrapper (`./mvnw`) downloads Maven 3.10.1.
 - Optional: Docker if you want to test the image, `pre-commit` if you want the local hooks.
 
 ### Clone and build
@@ -37,13 +36,13 @@ By participating in this project you agree to abide by the [Code of Conduct](COD
 ```bash
 git clone https://github.com/prasadus92/face-recognition.git
 cd face-recognition
-mvn verify                       # runs the full quality gate (tests + checkstyle + spotbugs + jacoco)
+./mvnw -Pci verify                   # runs the full quality gate (tests + checkstyle + spotbugs + jacoco)
 ```
 
 ### Run the server locally
 
 ```bash
-mvn spring-boot:run
+./mvnw spring-boot:run
 # or
 java -jar target/face-recognition-*-exec.jar
 ```
@@ -62,7 +61,7 @@ java -jar target/face-recognition-*-exec.jar --help
 
 ## Branching and commits
 
-- Base all work on `master`.
+- Base all work on `main`.
 - Use short, descriptive branch names: `feat/fisherfaces-lda`, `fix/knn-confidence`, `docs/onnx-setup`.
 - Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) in commit subjects:
   ```
@@ -74,7 +73,7 @@ java -jar target/face-recognition-*-exec.jar --help
 
 ## Coding standards
 
-- **Java 17** source and target. Prefer records, pattern matching, `switch` expressions, `var` where it aids readability.
+- **Java 25** release target. Prefer records, pattern matching, `switch` expressions, `var` where it aids readability.
 - **4-space indent**, LF line endings, UTF-8, 120 char soft limit — enforced by Checkstyle and `.editorconfig`.
 - **K&R braces** on classes, methods and control structures (same-line opening brace).
 - Public types and methods in `domain` / `application` / `api` layers have Javadoc with `@param`, `@return`, `@throws` as appropriate.
@@ -94,14 +93,14 @@ java -jar target/face-recognition-*-exec.jar --help
 Run targeted subsets:
 
 ```bash
-mvn test                          # unit + integration
-mvn -Dtest=EigenfacesExtractorTest test
-mvn -P benchmarks exec:java       # run the benchmark harness
+./mvnw test                          # unit + integration
+./mvnw -Dtest=EigenfacesExtractorTest test
+./mvnw -P benchmarks exec:java       # run the benchmark harness
 ```
 
 ## Quality gates
 
-`mvn verify` runs, and CI enforces:
+`./mvnw -Pci verify` runs, and CI enforces:
 
 - **JUnit** — all tests pass
 - **JaCoCo** — line coverage must not drop below the configured floor (see `pom.xml`)
@@ -110,12 +109,12 @@ mvn -P benchmarks exec:java       # run the benchmark harness
 - **CycloneDX** — SBOM generation as a side-effect of `verify`
 - **CodeQL** — runs on every PR via GitHub Actions
 
-Please run `mvn verify` locally before pushing.
+Please run `./mvnw -Pci verify` locally before pushing.
 
 ## Submitting a pull request
 
 1. Fork the repo and create your branch.
-2. Make your change, add tests, run `mvn verify`.
+2. Make your change, add tests, run `./mvnw -Pci verify`.
 3. Fill out the PR template — what changed, why, how it was tested.
 4. Link the related issue (`Fixes #123`).
 5. Keep the PR scope focused; split unrelated changes into separate PRs.

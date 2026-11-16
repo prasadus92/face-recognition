@@ -12,8 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Spring Boot 3.2.5 → 4.0.5** (and springdoc 2.3.0 → 3.0.3). See the dedicated 4.0 upgrade commit for the detailed API-change list.
 - Java 25 LTS baseline (was 17), Spring Boot 4.1.2, springdoc 3.2.0, Bucket4j 8.22.0 (`bucket4j_jdk17-core`), Checkstyle 14.4.0, SpotBugs 4.10.5, JaCoCo 0.8.16 and current Maven plugins.
 - Maven Wrapper (Maven 3.10.1); CI, CodeQL and the Docker build use `./mvnw`.
-- Docker image on `eclipse-temurin:25-jre-alpine` with Spring Boot layered extraction. The healthcheck probes liveness, so a container with no trained model is still healthy.
-- CI builds and smoke-tests the Docker image on every pull request; the image job previously targeted the nonexistent `master` branch and never ran.
+- Docker image on `eclipse-temurin:25-jre-alpine` with Spring Boot layered extraction. The healthcheck probes liveness, so a container with no trained model is still healthy. JVM flags now come from `JDK_JAVA_OPTIONS`; the old `JAVA_OPTS` variable is no longer read.
+- CI builds and smoke-tests the Docker image on every pull request; the image job previously targeted the nonexistent `master` branch and never ran. The release job now triggers on `v*` tags, which the old workflow never listened to.
 
 ## [2.1.0]
 

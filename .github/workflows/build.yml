@@ -75,7 +75,10 @@ jobs:
         run: |
           docker run -d --name fr -p 8080:8080 face-recognition:ci
           for _ in $(seq 1 60); do
-            if curl -fsS http://localhost:8080/actuator/health/liveness; then exit 0; fi
+            if curl -fsS http://localhost:8080/actuator/health/liveness; then
+              docker exec fr wget -q -O /dev/null http://localhost:8080/actuator/health/liveness
+              exit 0
+            fi
             sleep 2
           done
           docker logs fr

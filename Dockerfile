@@ -33,9 +33,8 @@ COPY --from=builder --chown=app:app /build/layers/application/ ./
 
 USER app:app
 EXPOSE 8080
-VOLUME ["/app/data"]
 
-ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0 -Djava.awt.headless=true" \
+ENV JDK_JAVA_OPTIONS="-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs -Djava.awt.headless=true" \
     SPRING_PROFILES_ACTIVE=prod
 
 # Liveness, not overall health: an untrained model reports OUT_OF_SERVICE by design.

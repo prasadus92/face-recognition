@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+env:
+  JAVA_VERSION: "25"
+
 jobs:
   analyze:
     name: Analyze (java)
@@ -27,7 +30,7 @@ jobs:
       - name: Set up JDK 25
         uses: actions/setup-java@v6
         with:
-          java-version: "25"
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: temurin
           cache: maven
 
