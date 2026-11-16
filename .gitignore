@@ -66,3 +66,6 @@ data/
 .env
 .env.local
 application-local.yml
+
+# Claude Code local settings
+.claude/settings.local.json

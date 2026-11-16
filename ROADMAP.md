@@ -1,83 +1,21 @@
 # Roadmap
 
-A living document describing where the project is today, what is actively being worked on, and what I'd like to land next. Contributions on any item marked `help wanted` are welcome.
+What works today, and what I would build next. Issues and pull requests on any item are welcome.
 
-## Where we are
+## Works today
 
-| Area | State |
-|---|---|
-| Clean-architecture layering (`domain` / `application` / `infrastructure` / `api`) | Stable |
-| Classical extractors (Eigenfaces, Fisherfaces, LBPH) | Stable |
-| KNN classifier + pluggable distance metrics | Stable |
-| Spring Boot 3.2 REST API + OpenAPI 3 | Stable |
-| Picocli CLI (`train`, `enroll`, `recognize`, `benchmark`) | Stable |
-| Multi-stage Docker image | Stable |
-| Model persistence + auto-save/auto-load | Stable |
-| Custom Micrometer metrics + Prometheus endpoint | Stable |
-| Request correlation (MDC) + rate limiting | Stable |
-| Benchmark harness on bundled micro-dataset | Stable |
-| Haar-cascade face detector (real cascade data) | `help wanted` |
-| Publication to Maven Central | Planned |
-| JavaDoc hosted on `javadoc.io` | Planned |
-| Hosted demo (Render / Fly) | Planned |
+- Eigenfaces, Fisherfaces and LBPH behind one `FeatureExtractor` interface, measured on AT&T/ORL by a script anyone can rerun ([results](docs/benchmarks/orl.md)).
+- A pure-Java Haar face detector that matches OpenCV 4.x on the bundled frontal-face cascade.
+- Nearest-neighbor matching with confidence calibrated on the gallery, so the threshold rejects strangers.
+- One executable jar: a Spring Boot REST API (OpenAPI, Actuator, Prometheus, rate limiting, optional API key) and a CLI (`train`, `enroll`, `recognize`, `detect`, `benchmark`).
+- Model files that carry the fitted extractor and the training crops, read back behind a deserialization allowlist.
+- A Docker image built and smoke-tested in CI.
 
-## Next milestones
+## Next
 
-### 2.1 — Enterprise polish *(current branch)*
-
-Goals: make every claim in the README true, close the biggest correctness and observability gaps, tighten CI, and stop advertising vaporware.
-
-- [x] Spring Boot 3.2 / Java 17 baseline; `javax` → `jakarta`
-- [x] `@ConfigurationProperties` binding for every runtime knob — `application.yml` becomes the single source of truth
-- [x] `FaceRecognitionAutoConfiguration` wires `FaceDetector` / `FeatureExtractor` / `FaceClassifier` / `FaceRecognitionService`
-- [x] Thread-safe `FaceRecognitionService` with `ReadWriteLock` and required detector
-- [x] Correctness pass: `FaceRegion` equality, `RecognitionResult` distance, Eigenfaces projection, KNN confidence calibration
-- [x] Auto-save/auto-load model persistence + REST export/import
-- [x] Request-ID filter + MDC, per-stage Micrometer timers, `ModelReadyHealthIndicator`
-- [x] Per-IP Bucket4j rate limiter
-- [x] Repo hygiene: delete dead Java-3D / JAI scaffolding, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue forms, CODEOWNERS, `.editorconfig`
-- [x] CI: remove `continue-on-error`, add Checkstyle + SpotBugs + JaCoCo threshold, Dependabot, CodeQL, CycloneDX SBOM
-- [x] REST integration tests via MockMvc + concurrency tests
-
-### 2.2 — Real detection + aligned pipeline
-
-- [ ] Bundle a permissive Haar cascade and wire a `HaarCascadeFaceDetector` that actually uses it
-- [ ] Eye-landmark detector (classical) to drive `FaceAligner` without hand-picked landmarks
-- [ ] Make face alignment default-on in the full pipeline
-- [ ] Expand benchmark harness to report per-dataset accuracy, confusion matrices, per-stage latency percentiles
-
-### 2.3 — Real deep-learning backend
-
-- [ ] A face-embedding extractor (ONNX Runtime) with a model whose license allows redistribution, behind the existing `FeatureExtractor` interface
-- [ ] Cosine-similarity scoring path optimized for 128/512-d embeddings
-- [ ] Reproducible LFW / CFP-FP / AgeDB-30 benchmark runs in CI (optional profile)
-
-### 2.4 — Distributed / multi-instance
-
-- [ ] Pluggable `ModelRepository` (S3 / GCS / PostgreSQL + pgvector)
-- [ ] Stateless enrolment: embeddings in a vector store instead of in-memory identities
-- [ ] Optimistic locking on enrollment / training
-- [ ] Horizontal autoscaling-safe health probes
-
-### 3.0 — SDK + demo
-
-- [ ] Publish to Maven Central (`com.facerecognition:face-recognition`)
-- [ ] Hosted demo app + public Swagger
-- [ ] JavaDoc on `javadoc.io`
-- [ ] Small Kotlin/Python thin-client SDK
-- [ ] Performance profiling + native-image (GraalVM) build
-
-## Non-goals
-
-- Re-implementing OpenCV or dlib in pure Java.
-- Shipping a binary blob of model weights bundled into the JAR.
-- Real-time video pipelines (out of scope for a classical library — use a streaming framework).
-- State-of-the-art accuracy from the classical extractors (they're in the 80–95% range on frontal aligned faces and that's by design).
-
-## How to contribute
-
-- **Good first issues** are tagged on GitHub. Start with docs, additional distance metrics, or extra benchmark datasets.
-- **Medium tickets**: Haar cascade detector, new extractor implementations, persistence backends.
-- **Hard tickets**: a face-embedding extractor, vector store integration.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and coding conventions.
+- **A face-embedding baseline.** An ONNX Runtime extractor for a modern embedding network, behind `FeatureExtractor`, benchmarked next to the classical methods. The open question is a model whose license allows redistribution; most public ArcFace weights are for non-commercial research only.
+- **Store the pipeline settings in the model file.** The distance metric and whether detection ran at enrollment should travel with the model, so `recognize` cannot silently use a different setup from `train`.
+- **Landmark-based alignment.** Locate the eyes inside the detected face and level them before cropping; today the crop is the padded detector box.
+- **More datasets.** Extended Yale B for lighting and LFW for photos taken in the wild, both through `benchmark`.
+- **Faster detection.** `int` integral images, buffer reuse across pyramid levels and OpenCV's skip after an early rejection.
+- **Publish to Maven Central** so the library can be used without the server.
