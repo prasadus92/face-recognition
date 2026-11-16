@@ -1,5 +1,6 @@
 package com.facerecognition.infrastructure.persistence;
 
+import com.facerecognition.domain.model.FaceImage;
 import com.facerecognition.domain.service.FeatureExtractor;
 
 import java.io.Serializable;
@@ -18,12 +19,15 @@ import java.util.Objects;
  * without losing the identities that were loaded from disk.</p>
  *
  * @param extractor  the feature extractor, trained or not
+ * @param trained    whether the gallery was built from every sample; false after enrolling
+ *                   new samples without retraining
  * @param identities the enrolled identities
  * @param samples    the training crops, each tagged with its identity id
  * @param createdAt  when this snapshot was taken
  */
 public record TrainedModel(
         FeatureExtractor extractor,
+        boolean trained,
         List<IdentityRecord> identities,
         List<FaceSample> samples,
         Instant createdAt) implements Serializable {
@@ -71,11 +75,15 @@ public record TrainedModel(
 
         public FaceSample {
             Objects.requireNonNull(identityId, "identityId");
-            if (width <= 0 || height <= 0 || pixels.length != width * height) {
-                throw new IllegalArgumentException(
-                        "pixels must hold width * height values: " + width + "x" + height
-                                + " != " + pixels.length);
+            if (outOfRange(width) || outOfRange(height)
+                    || pixels.length != Math.multiplyExact(width, height)) {
+                throw new IllegalArgumentException("Invalid face sample: " + width + "x" + height
+                        + " with " + pixels.length + " pixels");
             }
+        }
+
+        private static boolean outOfRange(int dimension) {
+            return dimension < FaceImage.MIN_DIMENSION || dimension > FaceImage.MAX_DIMENSION;
         }
     }
 }
