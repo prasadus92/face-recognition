@@ -43,7 +43,7 @@ facerecognition:
     max-faces: 10
     # Haar-cascade-only tuning (ignored by other detector types):
     scale-factor: 1.1           # scale step between pyramid levels
-    min-neighbours: 3           # NMS support threshold
+    min-neighbours: 3           # a face needs more than this many overlapping hits
   extraction:
     algorithm: EIGENFACES       # EIGENFACES | FISHERFACES | LBPH | ONNX
     num-components: 10
