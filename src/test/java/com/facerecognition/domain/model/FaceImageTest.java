@@ -1,6 +1,7 @@
 package com.facerecognition.domain.model;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -9,6 +10,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import javax.imageio.ImageIO;
 
@@ -19,6 +21,9 @@ import static org.assertj.core.api.Assertions.*;
  */
 @DisplayName("FaceImage Tests")
 class FaceImageTest {
+
+    @TempDir
+    Path tempDir;
 
     private static final int TEST_WIDTH = 100;
     private static final int TEST_HEIGHT = 100;
@@ -211,8 +216,7 @@ class FaceImageTest {
         @Test
         @DisplayName("Should preserve source path after resize")
         void shouldPreserveSourcePathAfterResize() throws IOException {
-            File tempFile = File.createTempFile("test", ".png");
-            tempFile.deleteOnExit();
+            File tempFile = tempDir.resolve("test.png").toFile();
             BufferedImage original = createTestImage(100, 100, Color.BLUE);
             ImageIO.write(original, "png", tempFile);
 
@@ -434,8 +438,7 @@ class FaceImageTest {
         @Test
         @DisplayName("Should create from PNG file")
         void shouldCreateFromPngFile() throws IOException {
-            File tempFile = File.createTempFile("test", ".png");
-            tempFile.deleteOnExit();
+            File tempFile = tempDir.resolve("test.png").toFile();
             BufferedImage image = createTestImage(100, 100, Color.BLUE);
             ImageIO.write(image, "png", tempFile);
 
@@ -449,8 +452,7 @@ class FaceImageTest {
         @Test
         @DisplayName("Should create from JPG file")
         void shouldCreateFromJpgFile() throws IOException {
-            File tempFile = File.createTempFile("test", ".jpg");
-            tempFile.deleteOnExit();
+            File tempFile = tempDir.resolve("test.jpg").toFile();
             BufferedImage image = createTestImage(100, 100, Color.RED);
             ImageIO.write(image, "jpg", tempFile);
 

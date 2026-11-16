@@ -266,8 +266,19 @@ public class FaceRecognitionService {
         trained = true;
     }
 
-    /** Recognises the largest face in the given image. */
+    /** Recognizes the largest face in the image using the configured threshold. */
     public RecognitionResult recognize(FaceImage image) {
+        return recognize(image, config.getRecognitionThreshold());
+    }
+
+    /**
+     * Recognizes the largest face in the image.
+     *
+     * @param image     the image to search
+     * @param threshold minimum confidence for a match, 0 to 1
+     * @return the match, or an unknown or no-face result
+     */
+    public RecognitionResult recognize(FaceImage image, double threshold) {
         lock.readLock().lock();
         try {
             if (!trained) {
@@ -287,7 +298,7 @@ public class FaceRecognitionService {
             long extractionTime = System.currentTimeMillis() - extractStart;
 
             long matchStart = System.currentTimeMillis();
-            RecognitionResult result = classifier.classify(features, config.getRecognitionThreshold());
+            RecognitionResult result = classifier.classify(features, threshold);
             long matchingTime = System.currentTimeMillis() - matchStart;
 
             long totalTime = System.currentTimeMillis() - start;

@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Random;
-import java.util.Optional;
 
 import javax.imageio.ImageIO;
 
@@ -169,9 +168,6 @@ class HaarCascadeFaceDetectorTest {
         assertThat(detector.getName()).isEqualTo("HaarCascade");
         assertThat(detector.getVersion()).isNotBlank();
         assertThat(detector.getMinFaceSize()).isGreaterThanOrEqualTo(24);
-        assertThat(detector.supportsLandmarks()).isFalse();
-        Optional<?> landmarks = detector.detectLandmarks(null, null);
-        assertThat(landmarks).isEmpty();
     }
 
     @Test

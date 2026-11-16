@@ -117,7 +117,6 @@ public class FisherfacesExtractor implements FeatureExtractor, Serializable {
         // Convert faces to pixel matrix
         double[][] pixelMatrix = constructImageMatrix(faces);
         int numSamples = pixelMatrix.length;
-        int numPixels = pixelMatrix[0].length;
 
         // Step 1: Compute mean face
         computeMeanFace(pixelMatrix);
