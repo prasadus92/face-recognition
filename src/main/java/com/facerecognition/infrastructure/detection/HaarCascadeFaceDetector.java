@@ -25,8 +25,11 @@ import com.facerecognition.infrastructure.detection.haar.HaarCascadeLoader;
  * into a pyramid (one level per {@code scaleFactor} step, starting where the cascade's window
  * equals {@code minFaceSize}), the cascade's native window slides over each level with its
  * original rectangles, every weak classifier compares its weighted rectangle sum with its
- * threshold times the window's standard-deviation term, and hits that overlap by an IoU of
- * 0.4 or more are merged, keeping groups of at least {@code minNeighbours}.</p>
+ * threshold times the window's standard-deviation term, and hits are grouped with OpenCV's
+ * {@code groupRectangles} (see {@link RectangleGrouping}): a face needs more than
+ * {@code minNeighbours} supporting hits. The finest level is at most {@value #MAX_SCAN_SIDE}
+ * pixels on its longest side, which bounds the work per image; in larger photos the smallest
+ * detectable face grows proportionally.</p>
  *
  * <p>Instances are safe for concurrent use: the cascade is immutable and each call allocates its
  * own buffers.</p>
@@ -47,6 +50,9 @@ public final class HaarCascadeFaceDetector implements FaceDetector, Serializable
 
     /** Default minimum neighbour count required for a candidate to survive NMS. */
     public static final int DEFAULT_MIN_NEIGHBOURS = 3;
+
+    /** Longest side of the finest pyramid level, in pixels. */
+    public static final int MAX_SCAN_SIDE = 1024;
 
     /** Default minimum detection size, matching OpenCV's typical setup. */
     public static final int DEFAULT_MIN_FACE_SIZE = 24;
@@ -76,7 +82,7 @@ public final class HaarCascadeFaceDetector implements FaceDetector, Serializable
      * @param cascade       the parsed cascade (never {@code null})
      * @param minFaceSize   minimum detection window side in pixels; smaller windows are skipped
      * @param scaleFactor   scale step between successive pyramid levels (must be &gt; 1.0)
-     * @param minNeighbours minimum number of overlapping raw detections required for a region to survive NMS
+     * @param minNeighbours a face needs more than this many supporting raw hits, as in OpenCV
      */
     public HaarCascadeFaceDetector(HaarCascade cascade, int minFaceSize, double scaleFactor, int minNeighbours) {
         if (cascade == null) {
@@ -136,8 +142,10 @@ public final class HaarCascadeFaceDetector implements FaceDetector, Serializable
         int windowH = cascade.getWindowHeight();
         int[] grayscale = toGrayscale(src, width, height);
 
-        List<RawDetection> raw = new ArrayList<>();
-        for (double factor = (double) minFaceSize / windowW; ; factor *= scaleFactor) {
+        List<RectangleGrouping.Box> raw = new ArrayList<>();
+        double firstFactor = Math.max((double) minFaceSize / windowW,
+                (double) Math.max(width, height) / MAX_SCAN_SIDE);
+        for (double factor = firstFactor; ; factor *= scaleFactor) {
             int scaledW = (int) Math.round(width / factor);
             int scaledH = (int) Math.round(height / factor);
             if (scaledW < windowW || scaledH < windowH) {
@@ -147,8 +155,8 @@ public final class HaarCascadeFaceDetector implements FaceDetector, Serializable
             long[] integral = new long[(scaledW + 1) * (scaledH + 1)];
             long[] squaredIntegral = new long[(scaledW + 1) * (scaledH + 1)];
             buildIntegralImages(scaled, scaledW, scaledH, integral, squaredIntegral);
-            // OpenCV steps 2 pixels on fine levels and 1 pixel once the image is downscaled more than 2x.
-            int step = factor > 2.0 ? 1 : 2;
+            // OpenCV steps 2 pixels on fine levels and 1 pixel once the image is downscaled 2x or more.
+            int step = factor >= 2.0 ? 1 : 2;
             scanLevel(integral, squaredIntegral, scaledW, scaledH, step, factor, raw);
         }
 
@@ -198,7 +206,7 @@ public final class HaarCascadeFaceDetector implements FaceDetector, Serializable
                            int levelH,
                            int step,
                            double factor,
-                           List<RawDetection> out) {
+                           List<RectangleGrouping.Box> out) {
         int stride = levelW + 1;
         int windowW = cascade.getWindowWidth();
         int windowH = cascade.getWindowHeight();
@@ -208,7 +216,7 @@ public final class HaarCascadeFaceDetector implements FaceDetector, Serializable
         for (int y = 0; y + windowH <= levelH; y += step) {
             for (int x = 0; x + windowW <= levelW; x += step) {
                 if (passesCascade(integral, squaredIntegral, stride, x, y, features)) {
-                    out.add(new RawDetection((int) Math.round(x * factor), (int) Math.round(y * factor),
+                    out.add(new RectangleGrouping.Box((int) Math.round(x * factor), (int) Math.round(y * factor),
                             detectedW, detectedH));
                 }
             }
@@ -356,104 +364,20 @@ public final class HaarCascadeFaceDetector implements FaceDetector, Serializable
     // ---------------------------------------------------------------------
 
     /**
-     * Groups overlapping raw detections using OpenCV-style union-find by IoU,
-     * then keeps only groups with at least {@link #minNeighbours} members.
-     * The final region's coordinates are the average of the members'.
+     * Groups raw hits as OpenCV does. Confidence is a group's support relative to the best-supported
+     * group in the same image, so it ranks faces within one image but is not comparable across images.
      */
-    private List<FaceRegion> mergeDetections(List<RawDetection> raw, double minConfidence) {
-        if (raw.isEmpty()) {
-            return Collections.emptyList();
-        }
-        int n = raw.size();
-        int[] parent = new int[n];
-        for (int i = 0; i < n; i++) {
-            parent[i] = i;
-        }
-        for (int i = 0; i < n; i++) {
-            for (int j = i + 1; j < n; j++) {
-                if (iou(raw.get(i), raw.get(j)) >= 0.4) {
-                    union(parent, i, j);
-                }
+    private List<FaceRegion> mergeDetections(List<RectangleGrouping.Box> raw, double minConfidence) {
+        List<RectangleGrouping.Group> groups = RectangleGrouping.group(raw, minNeighbours);
+        int maxSupport = groups.stream().mapToInt(RectangleGrouping.Group::neighbours).max().orElse(1);
+        List<FaceRegion> regions = new ArrayList<>();
+        for (RectangleGrouping.Group group : groups) {
+            double confidence = (double) group.neighbours() / maxSupport;
+            if (confidence >= minConfidence) {
+                RectangleGrouping.Box box = group.box();
+                regions.add(new FaceRegion(box.x(), box.y(), box.width(), box.height(), confidence));
             }
         }
-        // Group by root
-        java.util.Map<Integer, List<RawDetection>> groups = new java.util.HashMap<>();
-        for (int i = 0; i < n; i++) {
-            int root = find(parent, i);
-            groups.computeIfAbsent(root, k -> new ArrayList<>()).add(raw.get(i));
-        }
-        List<FaceRegion> out = new ArrayList<>();
-        int maxSupport = 1;
-        for (List<RawDetection> group : groups.values()) {
-            maxSupport = Math.max(maxSupport, group.size());
-        }
-        for (List<RawDetection> group : groups.values()) {
-            if (group.size() < minNeighbours) {
-                continue;
-            }
-            int sx = 0, sy = 0, sw = 0, sh = 0;
-            for (RawDetection d : group) {
-                sx += d.x;
-                sy += d.y;
-                sw += d.w;
-                sh += d.h;
-            }
-            int size = group.size();
-            int cx = sx / size;
-            int cy = sy / size;
-            int cw = sw / size;
-            int ch = sh / size;
-            // Confidence = fraction of the biggest group that supported this one.
-            double confidence = Math.min(1.0, (double) size / (double) Math.max(1, maxSupport));
-            if (confidence < minConfidence) {
-                continue;
-            }
-            out.add(new FaceRegion(cx, cy, cw, ch, confidence));
-        }
-        return out;
-    }
-
-    private static int find(int[] parent, int i) {
-        while (parent[i] != i) {
-            parent[i] = parent[parent[i]];
-            i = parent[i];
-        }
-        return i;
-    }
-
-    private static void union(int[] parent, int a, int b) {
-        int ra = find(parent, a);
-        int rb = find(parent, b);
-        if (ra != rb) {
-            parent[ra] = rb;
-        }
-    }
-
-    private static double iou(RawDetection a, RawDetection b) {
-        int x1 = Math.max(a.x, b.x);
-        int y1 = Math.max(a.y, b.y);
-        int x2 = Math.min(a.x + a.w, b.x + b.w);
-        int y2 = Math.min(a.y + a.h, b.y + b.h);
-        if (x1 >= x2 || y1 >= y2) {
-            return 0.0;
-        }
-        int inter = (x2 - x1) * (y2 - y1);
-        int union = a.w * a.h + b.w * b.h - inter;
-        return (double) inter / union;
-    }
-
-    /** Lightweight value object for raw sliding-window detections prior to NMS. */
-    private static final class RawDetection {
-        final int x;
-        final int y;
-        final int w;
-        final int h;
-
-        RawDetection(int x, int y, int w, int h) {
-            this.x = x;
-            this.y = y;
-            this.w = w;
-            this.h = h;
-        }
+        return regions;
     }
 }

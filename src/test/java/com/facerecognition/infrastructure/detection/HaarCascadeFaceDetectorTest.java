@@ -70,6 +70,29 @@ class HaarCascadeFaceDetectorTest {
         assertThat(biggest.getConfidence()).isBetween(0.0, 1.0);
     }
 
+    @Test
+    @DisplayName("returns the same box as OpenCV 4.14 for the fixture face")
+    void matchesOpenCv() throws IOException {
+        // cv2.CascadeClassifier(...).detectMultiScale(gray, 1.1, 3, minSize=(24, 24)) on face.png
+        List<FaceRegion> regions = new HaarCascadeFaceDetector().detectFaces(loadBundledImage("face.png"));
+
+        assertThat(regions).singleElement().satisfies(face -> {
+            assertThat(face.getX()).isEqualTo(63);
+            assertThat(face.getY()).isEqualTo(25);
+            assertThat(face.getWidth()).isEqualTo(242);
+            assertThat(face.getHeight()).isEqualTo(242);
+        });
+    }
+
+    @ParameterizedTest
+    @CsvSource({"24, 24", "300, 20", "20, 300"})
+    @DisplayName("handles images at or below the window size on either side")
+    void handlesWindowSizedImages(int width, int height) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+        assertThat(new HaarCascadeFaceDetector().detectFaces(FaceImage.fromBufferedImage(image))).isEmpty();
+    }
+
     @ParameterizedTest
     @ValueSource(doubles = {1.0, 0.75, 0.5, 0.33, 0.25})
     @DisplayName("finds the fixture face from 375 down to 93 pixels wide")
@@ -103,7 +126,18 @@ class HaarCascadeFaceDetectorTest {
     }
 
     @Test
-    @DisplayName("returns empty list on a uniformly-coloured image")
+    @DisplayName("bilinear resize keeps an image at scale 1, averages 2x2 blocks at 0.5 and clamps edges")
+    void resizesLikeOpenCv() {
+        int[] src = {0, 100, 200, 50};
+
+        assertThat(HaarCascadeFaceDetector.resizeBilinear(src, 2, 2, 2, 2)).containsExactly(src);
+        assertThat(HaarCascadeFaceDetector.resizeBilinear(src, 2, 2, 1, 1)).containsExactly(88);
+        assertThat(HaarCascadeFaceDetector.resizeBilinear(new int[]{0, 100}, 2, 1, 4, 1))
+                .containsExactly(0, 25, 75, 100);
+    }
+
+    @Test
+    @DisplayName("returns no faces on a uniform image")
     void returnsEmptyOnUniformImage() {
         BufferedImage uniform = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = uniform.createGraphics();
@@ -113,10 +147,7 @@ class HaarCascadeFaceDetectorTest {
         FaceImage image = FaceImage.fromBufferedImage(uniform);
 
         List<FaceRegion> regions = detector.detectFaces(image);
-        assertThat(regions)
-                .as("A uniform grey image cannot contain a face — the window-variance "
-                        + "early-out must reject every window.")
-                .isEmpty();
+        assertThat(regions).isEmpty();
     }
 
     @Test
