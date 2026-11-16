@@ -1,34 +1,9 @@
 # Getting help
 
-Thanks for using this project. Here is where to go for different kinds of help:
+- **Questions and bugs:** open an [issue](https://github.com/prasadus92/face-recognition/issues/new/choose). For a bug, include your Java version, OS, the command or request you ran, and the stack trace.
+- **Feature ideas:** use the *Feature request* issue form and describe the use case. For larger changes, open the issue before writing code so I can comment on the approach before you invest the time.
+- **Security problems:** do not open a public issue; see [SECURITY.md](SECURITY.md).
 
-## Questions about using the library
+Start with the [README](README.md) for setup and the REST and CLI surface, [docs/benchmarks/orl.md](docs/benchmarks/orl.md) for accuracy, [CONTRIBUTING.md](CONTRIBUTING.md) for the development loop and [ROADMAP.md](ROADMAP.md) for what comes next.
 
-- **GitHub Discussions** — <https://github.com/prasadus92/face-recognition/discussions>. This is the best place for open-ended questions, "how do I…", and sharing what you're building.
-- **Stack Overflow** — tag your question with `face-recognition` + `java`. I watch the tag when I can.
-
-## Documentation
-
-- Start with the [README](README.md) — quick start, feature matrix, REST/CLI surface.
-- [CHANGELOG.md](CHANGELOG.md) for release notes.
-- [ROADMAP.md](ROADMAP.md) for where the project is heading.
-- [CONTRIBUTING.md](CONTRIBUTING.md) for the development loop.
-
-## Bug reports
-
-- Please file a **GitHub issue** using the *Bug report* template.
-- Include your Java version, OS, library version, and a minimal reproducer. Stack traces help enormously.
-- I triage within a few days on weekdays; please don't ping multiple channels for the same issue.
-
-## Feature requests
-
-- File a **GitHub issue** using the *Feature request* template and explain the use-case.
-- For larger features, open a **Discussion** first so we can align on shape before you invest time.
-
-## Security issues
-
-**Do not** file public issues for security vulnerabilities. See [SECURITY.md](SECURITY.md) for the private disclosure channel.
-
-## Commercial / enterprise support
-
-This is a permissively-licensed open-source project maintained in my spare time — I can't commit to SLAs. If you're building something serious on top of it and need prioritised help, reach out at `prasadus92@gmail.com` and we can talk.
+This project is maintained in my spare time, so there is no response-time promise.

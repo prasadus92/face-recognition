@@ -40,10 +40,10 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be repor
 
 Community leaders will follow these guidelines in determining the consequences for any action they deem in violation of this Code of Conduct:
 
-1. **Correction** — Private written warning, clarification around the nature of the violation.
-2. **Warning** — A warning with consequences for continued behavior. No interaction with the people involved for a specified period.
-3. **Temporary ban** — A temporary ban from any sort of interaction or public communication with the community for a specified period.
-4. **Permanent ban** — A permanent ban from any sort of public interaction within the community.
+1. **Correction**: Private written warning, clarification around the nature of the violation.
+2. **Warning**: A warning with consequences for continued behavior. No interaction with the people involved for a specified period.
+3. **Temporary ban**: A temporary ban from any sort of interaction or public communication with the community for a specified period.
+4. **Permanent ban**: A permanent ban from any sort of public interaction within the community.
 
 ## Attribution
 

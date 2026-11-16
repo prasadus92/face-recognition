@@ -1,8 +1,5 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
-  - name: Questions and discussions
-    url: https://github.com/prasadus92/face-recognition/discussions
-    about: Ask a question or share what you're building.
   - name: Security vulnerability
-    url: https://github.com/prasadus92/face-recognition/security/advisories/new
-    about: Privately report a security vulnerability.
+    url: https://github.com/prasadus92/face-recognition/blob/main/SECURITY.md
+    about: Report privately by email; please do not open a public issue.
