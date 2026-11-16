@@ -24,7 +24,7 @@ Out of scope: insecure deployments (for example an API exposed to the internet w
 ## Hardening notes for operators
 
 - Put the API behind an authenticating proxy, or set `facerecognition.security.api-key` to require an `X-API-Key` header.
-- Keep the rate limiter on (`facerecognition.ratelimit.enabled: true`).
+- Keep the rate limiter on (`facerecognition.ratelimit.enabled: true`). It keys on the client address, taking `X-Forwarded-For` only from proxies on private or loopback addresses (Tomcat's `RemoteIpValve` defaults); set `server.tomcat.remoteip.internal-proxies` if your proxy sits elsewhere.
 - Limit `/actuator/*` exposure in production through `management.endpoints.web.exposure.include`.
 - Model files contain the enrolled face crops. Store them as you would any biometric data.
 - `POST /api/v1/model/import` decodes uploads behind an allowlist of the classes a model contains, with size limits. Still, only import model files from a source you trust.
