@@ -132,11 +132,32 @@ class FaceRecognitionCliTest {
         BufferedImage written = ImageIO.read(boxed.toFile());
         assertThat(written.getWidth()).isEqualTo(300);
         assertThat(written.getHeight()).isEqualTo(330);
+        int edge = written.getRGB(95 + 116 / 2, 88);
+        assertThat((edge >> 16) & 0xFF).as("red on the box edge").isLessThan(110);
+        assertThat(edge & 0xFF).as("blue on the box edge").isGreaterThan(180);
 
         assertThat(run("detect", "--json", portrait.toString())).isZero();
         assertThat(out.toString()).contains("\"width\" : 116");
 
         assertThat(run("detect", portrait.toString(), portrait.toString(), "-a", boxed.toString())).isEqualTo(2);
+        assertThat(run("detect", portrait.toString(), "-a", dir.resolve("boxed.bmp").toString())).isEqualTo(2);
+        assertThat(run("detect", "--min-confidence", "1.5", portrait.toString())).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("detect walks folders and reports an unreadable image without stopping")
+    void detectKeepsGoingPastBadImages() throws IOException {
+        Path folder = dir.resolve("photos");
+        Files.createDirectories(folder);
+        try (var in = getClass().getResourceAsStream("/portrait.png")) {
+            Files.copy(in, folder.resolve("a.png"));
+        }
+        Files.writeString(folder.resolve("b.png"), "not an image");
+
+        assertThat(run("detect", folder.toString())).isEqualTo(1);
+        assertThat(out.toString())
+                .contains("a.png\t95,88,116,116\t1.00")
+                .contains("b.png\terror:");
     }
 
     @Test

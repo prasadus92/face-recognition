@@ -1,6 +1,7 @@
 package com.facerecognition.api.cli.commands;
 
 import com.facerecognition.api.cli.HelpOption;
+import com.facerecognition.api.cli.ImageInputs;
 import com.facerecognition.config.FaceRecognitionProperties;
 import com.facerecognition.config.FaceRecognitionServiceFactory;
 import com.facerecognition.domain.model.FaceImage;
@@ -43,7 +44,7 @@ public final class DetectCommand implements Callable<Integer> {
     @Mixin
     private HelpOption help;
 
-    @Parameters(arity = "1..*", paramLabel = "IMAGE", description = "Images to search.")
+    @Parameters(arity = "1..*", paramLabel = "IMAGE", description = "Image files or folders.")
     private List<Path> images;
 
     @Option(names = "--min-confidence", defaultValue = "0",
@@ -52,7 +53,7 @@ public final class DetectCommand implements Callable<Integer> {
     private double minConfidence;
 
     @Option(names = {"-a", "--annotate"}, paramLabel = "OUT",
-            description = "Write a copy of the single input image with every face boxed (PNG or JPEG by extension).")
+            description = "Write a copy of the single input image with every face boxed (.png, .jpg or .jpeg).")
     private Path annotate;
 
     @Option(names = "--json", description = "Print results as JSON.")
@@ -62,30 +63,43 @@ public final class DetectCommand implements Callable<Integer> {
     record Face(int x, int y, int width, int height, double confidence) {
     }
 
-    /** All faces found in one image. */
-    record Detection(String image, List<Face> faces) {
+    /**
+     * All faces found in one image.
+     *
+     * @param error why the image could not be processed, or null
+     */
+    record Detection(String image, List<Face> faces, String error) {
     }
 
     @Override
     public Integer call() throws IOException {
-        if (annotate != null && images.size() != 1) {
-            throw new ParameterException(spec.commandLine(), "--annotate takes exactly one IMAGE");
+        if (!(minConfidence >= 0 && minConfidence <= 1)) {
+            throw new ParameterException(spec.commandLine(), "--min-confidence must be between 0 and 1");
+        }
+        List<Path> files = ImageInputs.expand(images);
+        if (annotate != null && (files.size() != 1 || annotatedFormat(annotate) == null)) {
+            throw new ParameterException(spec.commandLine(),
+                    "--annotate takes exactly one IMAGE and an output ending in .png, .jpg or .jpeg");
         }
         FaceDetector detector = FaceRecognitionServiceFactory.detector(new FaceRecognitionProperties().getDetection());
 
         List<Detection> detections = new ArrayList<>();
-        for (Path path : images) {
-            FaceImage image = FaceImage.fromFile(path.toFile());
-            List<Face> faces = detector.detectFaces(image, minConfidence).stream()
-                    .map(r -> new Face(r.getX(), r.getY(), r.getWidth(), r.getHeight(), r.getConfidence()))
-                    .toList();
-            detections.add(new Detection(path.toString(), faces));
-            if (annotate != null) {
-                writeAnnotated(image.getImage(), faces, annotate);
+        for (Path path : files) {
+            try {
+                FaceImage image = FaceImage.fromFile(path.toFile());
+                List<Face> faces = detector.detectFaces(image, minConfidence).stream()
+                        .map(r -> new Face(r.getX(), r.getY(), r.getWidth(), r.getHeight(), r.getConfidence()))
+                        .toList();
+                detections.add(new Detection(path.toString(), faces, null));
+                if (annotate != null) {
+                    writeAnnotated(image.getImage(), faces, annotate);
+                }
+            } catch (IOException | RuntimeException e) {
+                detections.add(new Detection(path.toString(), List.of(), e.getMessage()));
             }
         }
         print(detections, spec.commandLine().getOut());
-        return 0;
+        return detections.stream().anyMatch(d -> d.error() != null) ? 1 : 0;
     }
 
     private void print(List<Detection> detections, PrintWriter out) {
@@ -95,7 +109,9 @@ public final class DetectCommand implements Callable<Integer> {
             return;
         }
         for (Detection detection : detections) {
-            if (detection.faces().isEmpty()) {
+            if (detection.error() != null) {
+                out.printf("%s\terror: %s%n", detection.image(), detection.error());
+            } else if (detection.faces().isEmpty()) {
                 out.printf("%s\tno faces%n", detection.image());
             }
             for (Face face : detection.faces()) {
@@ -108,6 +124,8 @@ public final class DetectCommand implements Callable<Integer> {
     private static void writeAnnotated(BufferedImage source, List<Face> faces, Path target) throws IOException {
         BufferedImage copy = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_RGB);
         Graphics2D g = copy.createGraphics();
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, copy.getWidth(), copy.getHeight());
         g.drawImage(source, 0, 0, null);
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setColor(BOX);
@@ -116,10 +134,16 @@ public final class DetectCommand implements Callable<Integer> {
             g.drawRoundRect(face.x(), face.y(), face.width(), face.height(), face.width() / 10, face.height() / 10);
         }
         g.dispose();
-        String name = target.getFileName().toString().toLowerCase(Locale.ROOT);
-        String format = name.endsWith(".jpg") || name.endsWith(".jpeg") ? "jpg" : "png";
-        if (!ImageIO.write(copy, format, target.toFile())) {
+        if (!ImageIO.write(copy, annotatedFormat(target), target.toFile())) {
             throw new IOException("No image writer for " + target);
         }
+    }
+
+    private static String annotatedFormat(Path target) {
+        String name = target.getFileName().toString().toLowerCase(Locale.ROOT);
+        if (name.endsWith(".png")) {
+            return "png";
+        }
+        return name.endsWith(".jpg") || name.endsWith(".jpeg") ? "jpg" : null;
     }
 }

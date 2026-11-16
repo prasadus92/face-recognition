@@ -560,6 +560,16 @@ public class FaceRecognitionService {
         }
     }
 
+    /** @return how many face images are enrolled in total, whether or not the model is trained yet */
+    public int getEnrolledImageCount() {
+        lock.readLock().lock();
+        try {
+            return trainingSamples.size();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
     public int getIdentityCount() {
         return identities.size();
     }

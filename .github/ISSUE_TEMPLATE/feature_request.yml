@@ -26,7 +26,7 @@ body:
       label: Which area does this touch?
       multiple: true
       options:
-        - Feature extraction (Eigenfaces / Fisherfaces / LBPH / ONNX)
+        - Feature extraction (Eigenfaces / Fisherfaces / LBPH)
         - Face detection
         - Classification
         - REST API

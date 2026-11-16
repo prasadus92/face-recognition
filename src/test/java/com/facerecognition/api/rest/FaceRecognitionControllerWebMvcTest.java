@@ -239,6 +239,18 @@ class FaceRecognitionControllerWebMvcTest {
     }
 
     @Test
+    @DisplayName("identity endpoints report enrolled images, which exist before training")
+    void identitiesReportEnrolledImages() throws Exception {
+        Identity ann = new Identity("Ann");
+        when(service.getIdentities()).thenReturn(List.of(ann));
+        when(service.getEnrolledImageCount(ann.getId())).thenReturn(4);
+
+        mvc.perform(get("/api/v1/identities"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].sampleCount").value(4));
+    }
+
+    @Test
     @DisplayName("POST /api/v1/enroll returns 400 when name is missing")
     void enrollRejectsMissingName() throws Exception {
         mvc.perform(multipart("/api/v1/enroll")

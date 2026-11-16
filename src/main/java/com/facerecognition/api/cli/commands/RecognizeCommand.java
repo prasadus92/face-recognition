@@ -1,6 +1,7 @@
 package com.facerecognition.api.cli.commands;
 
 import com.facerecognition.api.cli.HelpOption;
+import com.facerecognition.api.cli.ImageInputs;
 import com.facerecognition.api.cli.PipelineOptions;
 import com.facerecognition.application.service.FaceRecognitionService;
 import com.facerecognition.domain.model.FaceImage;
@@ -18,13 +19,10 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Callable;
-import java.util.stream.Stream;
 
 /** Identifies the person in each image. */
 @Command(name = "recognize", description = "Identify the person in each image, or in every image under a folder.")
@@ -70,7 +68,7 @@ public final class RecognizeCommand implements Callable<Integer> {
         FaceRecognitionService service = pipeline.load(model);
         service.getConfig().setRecognitionThreshold(threshold);
 
-        List<Match> matches = expand(inputs).stream().map(image -> recognize(service, image)).toList();
+        List<Match> matches = ImageInputs.expand(inputs).stream().map(image -> recognize(service, image)).toList();
         print(matches, spec.commandLine().getOut());
         return matches.stream().anyMatch(m -> m.error() != null) ? 1 : 0;
     }
@@ -100,22 +98,5 @@ public final class RecognizeCommand implements Callable<Integer> {
                     : match.status().toLowerCase(Locale.ROOT);
             out.printf("%s\t%s\t%.3f%n", match.image(), outcome, match.confidence());
         }
-    }
-
-    private static List<Path> expand(List<Path> inputs) throws IOException {
-        List<Path> images = new ArrayList<>();
-        for (Path input : inputs) {
-            if (!Files.isDirectory(input)) {
-                images.add(input);
-                continue;
-            }
-            try (Stream<Path> files = Files.walk(input)) {
-                files.filter(Files::isRegularFile)
-                        .filter(p -> FaceImage.ImageFormat.fromFilename(p.toString()) != FaceImage.ImageFormat.UNKNOWN)
-                        .sorted()
-                        .forEach(images::add);
-            }
-        }
-        return images;
     }
 }
