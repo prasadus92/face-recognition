@@ -674,7 +674,7 @@ public class DatasetLoader {
     }
 
     /** Parses one pairs.txt line: {@code name n1 n2} for a match, {@code name1 n1 name2 n2} for a non-match. */
-    private VerificationPair parsePair(Path dataPath, String[] parts) {
+    private VerificationPair parsePair(Path dataPath, String[] parts) throws NumberFormatException {
         boolean samePerson = parts.length == 3;
         if (!samePerson && parts.length != 4) {
             return null;

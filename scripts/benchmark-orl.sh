@@ -15,17 +15,18 @@ JAVA="${JAVA_HOME:+$JAVA_HOME/bin/}java"
 sha256() {
   if command -v sha256sum >/dev/null; then
     sha256sum "$1" | cut -d' ' -f1
-  elif command -v shasum >/dev/null; then
-    shasum -a 256 "$1" | cut -d' ' -f1
   else
-    echo "Need sha256sum or shasum to verify the download" >&2
-    exit 1
+    shasum -a 256 "$1" | cut -d' ' -f1
   fi
 }
 
 fetch_dataset() {
   if [[ -f "$DATA/s40/10.pgm" ]]; then
     return
+  fi
+  if ! command -v sha256sum >/dev/null && ! command -v shasum >/dev/null; then
+    echo "Need sha256sum or shasum to verify the download" >&2
+    exit 1
   fi
   TMP="$(mktemp -d)"
   trap 'rm -rf "$TMP"' EXIT
